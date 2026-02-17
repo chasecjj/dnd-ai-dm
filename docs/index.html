@@ -1,0 +1,2081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D&D AI Dungeon Master — System Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-deep: #0a0a12;
+    --bg-card: #13131f;
+    --bg-card-hover: #1a1a2e;
+    --gold: #d4a544;
+    --gold-dim: #8b6914;
+    --red: #c0392b;
+    --red-glow: #e74c3c;
+    --blue: #2980b9;
+    --blue-glow: #3498db;
+    --green: #27ae60;
+    --green-glow: #2ecc71;
+    --purple: #8e44ad;
+    --purple-glow: #9b59b6;
+    --teal: #16a085;
+    --teal-glow: #1abc9c;
+    --orange: #d35400;
+    --orange-glow: #e67e22;
+    --text: #e0ddd5;
+    --text-dim: #8a8780;
+    --text-bright: #f5f0e8;
+    --border: #2a2a3e;
+  }
+
+  body {
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ===== HERO HEADER ===== */
+  .hero {
+    text-align: center;
+    padding: 60px 20px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at center, rgba(212,165,68,0.06) 0%, transparent 60%);
+    animation: heroGlow 8s ease-in-out infinite alternate;
+  }
+  @keyframes heroGlow {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(3%, 2%) scale(1.05); }
+  }
+  .hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    color: var(--gold);
+    letter-spacing: 2px;
+    position: relative;
+    text-shadow: 0 0 30px rgba(212,165,68,0.3);
+  }
+  .hero p {
+    font-size: 1.05rem;
+    color: var(--text-dim);
+    margin-top: 12px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+  }
+  .hero .subtitle-line {
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 20px auto;
+  }
+
+  /* ===== LEGEND ===== */
+  .legend {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+    padding: 0 20px 30px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ===== SECTION HEADERS ===== */
+  .section-header {
+    text-align: center;
+    padding: 40px 20px 20px;
+  }
+  .section-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    color: var(--gold);
+    letter-spacing: 1px;
+  }
+  .section-header p {
+    color: var(--text-dim);
+    font-size: 0.92rem;
+    margin-top: 6px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .section-divider {
+    width: 60px;
+    height: 2px;
+    background: var(--gold-dim);
+    margin: 14px auto 0;
+  }
+
+  /* ===== FLOW ARROWS ===== */
+  .flow-arrow {
+    text-align: center;
+    padding: 10px 0;
+    font-size: 1.6rem;
+    color: var(--gold-dim);
+    animation: pulseArrow 2s ease-in-out infinite;
+  }
+  @keyframes pulseArrow {
+    0%, 100% { opacity: 0.4; transform: translateY(0); }
+    50% { opacity: 1; transform: translateY(4px); }
+  }
+
+  /* ===== CARDS GRID ===== */
+  .cards-grid {
+    display: grid;
+    gap: 16px;
+    padding: 0 20px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .cards-grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .cards-grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .cards-grid.cols-4 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+  /* ===== AGENT CARD ===== */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 12px 12px 0 0;
+    opacity: 0.7;
+    transition: opacity 0.3s;
+  }
+  .card:hover {
+    background: var(--bg-card-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+  }
+  .card:hover::before { opacity: 1; }
+  .card.expanded .card-details { display: block; }
+
+  /* Color accents per team */
+  .card.router::before { background: var(--gold); }
+  .card.live::before { background: var(--red); }
+  .card.prep::before { background: var(--blue); }
+  .card.tool::before { background: var(--teal); }
+  .card.external::before { background: var(--purple); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .card-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+  }
+  .card-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    color: var(--text-bright);
+    font-weight: 600;
+  }
+  .card-analogy {
+    font-size: 0.82rem;
+    color: var(--gold);
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+  .card-summary {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  .card-details {
+    display: none;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .card-details h4 {
+    font-size: 0.8rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .card-details p, .card-details li {
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .card-details ul {
+    padding-left: 18px;
+    margin-bottom: 12px;
+  }
+  .card-details li { margin-bottom: 4px; }
+
+  .card-expand-hint {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-align: right;
+    margin-top: 8px;
+    opacity: 0.6;
+    transition: opacity 0.3s;
+  }
+  .card:hover .card-expand-hint { opacity: 1; }
+  .card.expanded .card-expand-hint span::after { content: 'click to collapse'; }
+  .card:not(.expanded) .card-expand-hint span::after { content: 'click to expand'; }
+
+  /* ===== PIPELINE VISUAL ===== */
+  .pipeline {
+    max-width: 1000px;
+    margin: 20px auto 40px;
+    padding: 0 20px;
+  }
+  .pipeline-track {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .pipeline-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 10px;
+    min-width: 90px;
+    transition: transform 0.3s;
+  }
+  .pipeline-node:hover { transform: scale(1.08); }
+  .pipeline-node .node-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    border: 2px solid;
+    margin-bottom: 6px;
+    position: relative;
+  }
+  .pipeline-node .node-label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 80px;
+  }
+  .pipeline-arrow {
+    font-size: 1.2rem;
+    color: var(--gold-dim);
+    animation: flowRight 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes flowRight {
+    0%, 100% { opacity: 0.3; transform: translateX(0); }
+    50% { opacity: 1; transform: translateX(3px); }
+  }
+
+  .node-icon.router-color { border-color: var(--gold); background: rgba(212,165,68,0.1); }
+  .node-icon.live-color { border-color: var(--red); background: rgba(192,57,43,0.1); }
+  .node-icon.tool-color { border-color: var(--teal); background: rgba(22,160,133,0.1); }
+  .node-icon.external-color { border-color: var(--purple); background: rgba(142,68,173,0.1); }
+
+  /* ===== THE BIG PICTURE BOX ===== */
+  .big-picture {
+    max-width: 1000px;
+    margin: 0 auto 40px;
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(212,165,68,0.04) 0%, rgba(142,68,173,0.04) 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+  @media (min-width: 1040px) {
+    .big-picture { margin-left: auto; margin-right: auto; }
+  }
+  .big-picture h3 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    font-size: 1.15rem;
+    margin-bottom: 12px;
+  }
+  .big-picture p {
+    font-size: 0.92rem;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 10px;
+  }
+
+  /* ===== STATS RIBBON ===== */
+  .stats-ribbon {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 24px;
+    padding: 30px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .stat-item {
+    text-align: center;
+  }
+  .stat-number {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* ===== FOOTER ===== */
+  footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+  }
+
+  /* ===== NODE DIAGRAM ===== */
+  .diagram-wrap {
+    max-width: 1200px;
+    margin: 0 auto 50px;
+    padding: 0 20px;
+  }
+  .diagram-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    min-height: 580px;
+    background:
+      radial-gradient(ellipse at 50% 45%, rgba(212,165,68,0.04) 0%, transparent 55%),
+      linear-gradient(180deg, rgba(19,19,31,0.6) 0%, var(--bg-deep) 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  /* SVG layer for arrows */
+  .diagram-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .diagram-svg line {
+    stroke-width: 1.5;
+    opacity: 0.35;
+    transition: opacity 0.35s, stroke-width 0.35s;
+  }
+  .diagram-svg line.glow {
+    opacity: 0.9;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 4px var(--gold));
+  }
+  .diagram-svg marker path { transition: fill 0.35s; }
+
+  /* Nodes */
+  .dnode {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    text-align: center;
+    cursor: default;
+    transition: transform 0.3s, filter 0.3s;
+  }
+  .dnode:hover { transform: translate(-50%, -50%) scale(1.08); filter: brightness(1.2); }
+  .dnode-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid;
+    font-size: 0.78rem;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  }
+  .dnode-icon { font-size: 1.05rem; flex-shrink: 0; }
+  .dnode-label { line-height: 1.2; }
+  .dnode-sub { display: block; font-size: 0.62rem; opacity: 0.6; font-weight: 300; margin-top: 1px; }
+
+  /* Node color themes */
+  .dnode-box.n-hub    { background: rgba(212,165,68,0.12); border-color: var(--gold);   color: var(--gold); }
+  .dnode-box.n-router { background: rgba(212,165,68,0.08); border-color: var(--gold-dim); color: #c9a84e; }
+  .dnode-box.n-live   { background: rgba(192,57,43,0.10);  border-color: var(--red);    color: #e66a5e; }
+  .dnode-box.n-prep   { background: rgba(41,128,185,0.10); border-color: var(--blue);   color: #5dade2; }
+  .dnode-box.n-tool   { background: rgba(22,160,133,0.10); border-color: var(--teal);   color: var(--teal-glow); }
+  .dnode-box.n-ext    { background: rgba(142,68,173,0.10); border-color: var(--purple);  color: var(--purple-glow); }
+
+  /* Central hub node is larger */
+  .dnode.hub .dnode-box {
+    padding: 12px 20px;
+    font-size: 0.9rem;
+    border-width: 2px;
+    box-shadow: 0 0 28px rgba(212,165,68,0.15), 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  /* Tooltip on hover */
+  .dnode-tip {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 8px);
+    transform: translateX(-50%);
+    background: #1a1a2e;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.72rem;
+    color: var(--text);
+    white-space: normal;
+    width: max-content;
+    max-width: 210px;
+    text-align: left;
+    line-height: 1.45;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    z-index: 10;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  }
+  .dnode:hover .dnode-tip { opacity: 1; }
+
+  /* Diagram legend row */
+  .diagram-legend {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin-top: 14px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+  .diagram-legend span { display: flex; align-items: center; gap: 5px; }
+  .diagram-legend i {
+    display: inline-block; width: 18px; height: 3px; border-radius: 2px;
+  }
+
+  /* Responsive: on small screens, hide diagram, show fallback */
+  .diagram-fallback { display: none; text-align: center; color: var(--text-dim); font-size: 0.85rem; padding: 30px; }
+  @media (max-width: 750px) {
+    .diagram-container { display: none; }
+    .diagram-fallback { display: block; }
+  }
+
+  /* ===== FLOW TRACE SECTION ===== */
+  .trace-section {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+  }
+  .trace-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 24px;
+  }
+  .trace-tab {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-family: 'Inter', sans-serif;
+  }
+  .trace-tab:hover { background: var(--bg-card-hover); color: var(--text); }
+  .trace-tab.active {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(212,165,68,0.08);
+  }
+  .trace-panel { display: none; }
+  .trace-panel.active { display: block; }
+
+  /* The raw input bubble */
+  .trace-input {
+    background: linear-gradient(135deg, rgba(142,68,173,0.12), rgba(142,68,173,0.04));
+    border: 1px solid rgba(142,68,173,0.3);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .trace-input-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--purple);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .trace-input-text {
+    font-size: 1rem;
+    color: var(--text-bright);
+    font-style: italic;
+  }
+  .trace-input-meta {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* The step timeline */
+  .trace-timeline {
+    position: relative;
+    padding-left: 36px;
+  }
+  .trace-timeline::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--gold-dim) 0%, var(--border) 100%);
+  }
+  .trace-step {
+    position: relative;
+    margin-bottom: 6px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.4s ease;
+  }
+  .trace-step.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .trace-step-dot {
+    position: absolute;
+    left: -29px;
+    top: 14px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid;
+    background: var(--bg-deep);
+    z-index: 1;
+  }
+  .trace-step-dot.router-dot { border-color: var(--gold); }
+  .trace-step-dot.live-dot { border-color: var(--red); }
+  .trace-step-dot.prep-dot { border-color: var(--blue); }
+  .trace-step-dot.tool-dot { border-color: var(--teal); }
+  .trace-step-dot.external-dot { border-color: var(--purple); }
+  .trace-step-dot.skip-dot { border-color: var(--text-dim); }
+  .trace-step.visible .trace-step-dot { background: var(--bg-card); }
+
+  .trace-step-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: background 0.3s;
+  }
+  .trace-step-card:hover { background: var(--bg-card-hover); }
+  .trace-step-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .trace-step-icon { font-size: 1rem; }
+  .trace-step-agent {
+    font-family: 'Cinzel', serif;
+    font-size: 0.88rem;
+    color: var(--text-bright);
+    font-weight: 600;
+  }
+  .trace-step-phase {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.04);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: auto;
+  }
+  .trace-step-desc {
+    font-size: 0.84rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+
+  /* Data passed between steps */
+  .trace-data {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.76rem;
+    color: var(--teal-glow);
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+  }
+  .trace-data .data-label {
+    color: var(--gold);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .trace-data .data-arrow {
+    color: var(--text-dim);
+  }
+  .trace-data .data-key { color: var(--gold-dim); }
+  .trace-data .data-val { color: var(--teal-glow); }
+  .trace-data .data-str { color: #a3d9a5; }
+  .trace-data .data-bool { color: #e6a07c; }
+  .trace-data .data-num { color: #7caee6; }
+  .trace-data .data-comment { color: var(--text-dim); font-style: italic; }
+
+  .trace-skip {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  /* The output bubble */
+  .trace-output {
+    margin-top: 8px;
+    background: linear-gradient(135deg, rgba(39,174,96,0.08), rgba(39,174,96,0.02));
+    border: 1px solid rgba(39,174,96,0.25);
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
+  .trace-output-label {
+    font-size: 0.75rem;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .trace-output-text {
+    font-size: 0.92rem;
+    color: var(--text);
+    line-height: 1.65;
+    font-style: italic;
+  }
+
+  .trace-silent {
+    margin-top: 8px;
+    background: linear-gradient(135deg, rgba(22,160,133,0.06), rgba(22,160,133,0.02));
+    border: 1px solid rgba(22,160,133,0.2);
+    border-radius: 12px;
+    padding: 14px 18px;
+  }
+  .trace-silent-label {
+    font-size: 0.72rem;
+    color: var(--teal);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .trace-silent-text {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* Play button */
+  .trace-controls {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .trace-play-btn {
+    padding: 10px 28px;
+    border-radius: 8px;
+    border: 1px solid var(--gold);
+    background: rgba(212,165,68,0.1);
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .trace-play-btn:hover {
+    background: rgba(212,165,68,0.2);
+    box-shadow: 0 0 20px rgba(212,165,68,0.15);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    .pipeline-track { gap: 4px; }
+    .pipeline-node { min-width: 65px; padding: 8px 4px; }
+    .pipeline-node .node-icon { width: 38px; height: 38px; font-size: 1.1rem; }
+    .cards-grid.cols-2, .cards-grid.cols-3, .cards-grid.cols-4 {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<div class="hero">
+  <h1>D&D AI Dungeon Master</h1>
+  <div class="subtitle-line"></div>
+  <p>A multi-agent AI system that runs a D&D 5e campaign through Discord, Foundry VTT, and an Obsidian vault — all powered by Google Gemini.</p>
+</div>
+
+<!-- Stats Ribbon -->
+<div class="stats-ribbon">
+  <div class="stat-item"><div class="stat-number">10</div><div class="stat-label">AI Agents</div></div>
+  <div class="stat-item"><div class="stat-number">6</div><div class="stat-label">Tool Modules</div></div>
+  <div class="stat-item"><div class="stat-number">2</div><div class="stat-label">Agent Teams</div></div>
+  <div class="stat-item"><div class="stat-number">4</div><div class="stat-label">External Services</div></div>
+  <div class="stat-item"><div class="stat-number">12</div><div class="stat-label">Discord Commands</div></div>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div> Routers</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Live DM Team</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Prep Team</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div> Tools &amp; Memory</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div> External Services</div>
+</div>
+
+
+<!-- ==================== THE BIG PICTURE ==================== -->
+<div class="big-picture">
+  <h3>How It All Works Together</h3>
+  <p>Imagine a professional theater production. <strong>Discord</strong> is the stage where the audience (players) interacts with the show. Behind the curtain, a crew of specialists each handle one job. A <strong>stage manager</strong> (the Bot Orchestrator) receives every message and decides who needs to act. <strong>Routers</strong> are the dispatchers — they read the message and figure out which crew members are needed. Then the specialists do their thing in sequence: the <strong>rules ref</strong> checks the math, the <strong>storyteller</strong> writes the scene, the <strong>chronicler</strong> silently updates the records, and optionally the <strong>scene crew</strong> changes the physical stage in Foundry VTT.</p>
+  <p>Between shows (sessions), a separate <strong>prep crew</strong> works in a back room — brainstorming worlds, planning sessions, building NPCs, and even generating custom battle maps with AI. The whole cast shares a single <strong>memory system</strong> (the Obsidian vault) so everyone stays in sync.</p>
+</div>
+
+
+<!-- ==================== NODE-AND-ARROW ARCHITECTURE DIAGRAM ==================== -->
+<div class="section-header">
+  <h2>System Architecture Map</h2>
+  <p>Hover over any node to see what it does and highlight its connections</p>
+  <div class="section-divider"></div>
+</div>
+
+<div class="diagram-wrap">
+  <div class="diagram-container" id="archDiagram">
+
+    <!-- SVG arrow layer -->
+    <svg class="diagram-svg" id="arrowSvg">
+      <defs>
+        <marker id="ah-gold" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="var(--gold)" />
+        </marker>
+        <marker id="ah-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="var(--red)" />
+        </marker>
+        <marker id="ah-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="var(--blue)" />
+        </marker>
+        <marker id="ah-teal" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="var(--teal)" />
+        </marker>
+        <marker id="ah-purple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6" fill="var(--purple)" />
+        </marker>
+      </defs>
+      <!-- Arrows drawn by JS -->
+    </svg>
+
+    <!-- === CENTRAL HUB === -->
+    <div class="dnode hub" id="nd-bot" style="left:50%; top:46%">
+      <div class="dnode-box n-hub"><span class="dnode-icon">🎭</span><span class="dnode-label">Bot Orchestrator<span class="dnode-sub">orchestration/bot.py</span></span></div>
+      <div class="dnode-tip">The central stage manager. Receives every Discord message, wires up the agent pipeline, and sends the final response back to players.</div>
+    </div>
+
+    <!-- === EXTERNAL SERVICES (outer ring) === -->
+    <div class="dnode" id="nd-discord" style="left:50%; top:5%">
+      <div class="dnode-box n-ext"><span class="dnode-icon">💬</span><span class="dnode-label">Discord<span class="dnode-sub">Player messages &amp; channels</span></span></div>
+      <div class="dnode-tip">The front door. Players type in Game Table; the DM preps in the War Room. Two channels, two pipelines.</div>
+    </div>
+    <div class="dnode" id="nd-gemini" style="left:88%; top:18%">
+      <div class="dnode-box n-ext"><span class="dnode-icon">🤖</span><span class="dnode-label">Gemini API<span class="dnode-sub">Google AI models</span></span></div>
+      <div class="dnode-tip">The brain behind every agent. Flash for fast classification, Pro for creative writing, Flash-image for map art.</div>
+    </div>
+    <div class="dnode" id="nd-foundry" style="left:88%; top:78%">
+      <div class="dnode-box n-ext"><span class="dnode-icon">🗺️</span><span class="dnode-label">Foundry VTT<span class="dnode-sub">Virtual tabletop</span></span></div>
+      <div class="dnode-tip">The physical stage. Battle maps, tokens, fog of war, scenes — all controlled via REST API relay.</div>
+    </div>
+    <div class="dnode" id="nd-vault" style="left:12%; top:78%">
+      <div class="dnode-box n-ext"><span class="dnode-icon">📚</span><span class="dnode-label">Obsidian Vault<span class="dnode-sub">Persistent memory</span></span></div>
+      <div class="dnode-tip">The campaign bible. YAML + Markdown files storing NPCs, locations, session logs, and lore with weighted memory decay.</div>
+    </div>
+
+    <!-- === ROUTERS (inner ring, top) === -->
+    <div class="dnode" id="nd-msgrouter" style="left:34%; top:24%">
+      <div class="dnode-box n-router"><span class="dnode-icon">🔀</span><span class="dnode-label">Message Router<span class="dnode-sub">Game Table dispatcher</span></span></div>
+      <div class="dnode-tip">Classifies player messages: action, dialogue, question, casual chat, or out-of-character. Uses heuristic shortcuts before calling the LLM.</div>
+    </div>
+    <div class="dnode" id="nd-preprouter" style="left:66%; top:24%">
+      <div class="dnode-box n-router"><span class="dnode-icon">🔀</span><span class="dnode-label">Prep Router<span class="dnode-sub">War Room dispatcher</span></span></div>
+      <div class="dnode-tip">Routes DM prep messages to the right specialist: worldbuilding, NPC creation, session planning, scene setup, or rules questions.</div>
+    </div>
+
+    <!-- === LIVE DM TEAM (left cluster) === -->
+    <div class="dnode" id="nd-board" style="left:16%; top:38%">
+      <div class="dnode-box n-live"><span class="dnode-icon">🎲</span><span class="dnode-label">Board Monitor<span class="dnode-sub">Scene state reader</span></span></div>
+      <div class="dnode-tip">Queries Foundry VTT for token positions, HP, conditions, and active scene data — giving the Storyteller spatial awareness.</div>
+    </div>
+    <div class="dnode" id="nd-rules" style="left:26%; top:52%">
+      <div class="dnode-box n-live"><span class="dnode-icon">⚖️</span><span class="dnode-label">Rules Lawyer<span class="dnode-sub">Mechanics checker</span></span></div>
+      <div class="dnode-tip">Validates actions against D&D 5e rules. Returns structured JSON: is_valid, dc, roll_type, modifiers, explanation. Temp 0.1 for precision.</div>
+    </div>
+    <div class="dnode" id="nd-story" style="left:38%; top:66%">
+      <div class="dnode-box n-live"><span class="dnode-icon">🎭</span><span class="dnode-label">Storyteller<span class="dnode-sub">Narrative voice</span></span></div>
+      <div class="dnode-tip">The heart of the system. Writes immersive prose, voices NPCs, describes scenes. Temp 0.9 for creativity. Gets context from every other agent.</div>
+    </div>
+    <div class="dnode" id="nd-chron" style="left:22%; top:66%">
+      <div class="dnode-box n-live"><span class="dnode-icon">📜</span><span class="dnode-label">Chronicler<span class="dnode-sub">Silent recorder</span></span></div>
+      <div class="dnode-tip">Runs silently after every exchange. Extracts facts, updates the Obsidian vault with new NPCs, locations, events, and session summaries.</div>
+    </div>
+
+    <!-- === PREP TEAM (right cluster) === -->
+    <div class="dnode" id="nd-world" style="left:66%; top:52%">
+      <div class="dnode-box n-prep"><span class="dnode-icon">🌍</span><span class="dnode-label">World Architect<span class="dnode-sub">Worldbuilder</span></span></div>
+      <div class="dnode-tip">Brainstorms lore, creates NPCs and locations with full stat blocks, and saves them to the vault with YAML frontmatter.</div>
+    </div>
+    <div class="dnode" id="nd-planner" style="left:78%; top:52%">
+      <div class="dnode-box n-prep"><span class="dnode-icon">📋</span><span class="dnode-label">Campaign Planner<span class="dnode-sub">Session architect</span></span></div>
+      <div class="dnode-tip">Plans sessions with 3-act structure, encounter pacing, and dramatic beats. Considers party level, unresolved threads, and campaign arcs.</div>
+    </div>
+    <div class="dnode" id="nd-carto" style="left:62%; top:70%">
+      <div class="dnode-box n-prep"><span class="dnode-icon">🗺️</span><span class="dnode-label">Cartographer<span class="dnode-sub">Map generator</span></span></div>
+      <div class="dnode-tip">AI-generates hand-painted battlemaps using Gemini image generation, then creates Foundry VTT scenes with proper grid and lighting.</div>
+    </div>
+    <div class="dnode" id="nd-farch" style="left:78%; top:70%">
+      <div class="dnode-box n-prep"><span class="dnode-icon">🏗️</span><span class="dnode-label">Foundry Architect<span class="dnode-sub">VTT builder</span></span></div>
+      <div class="dnode-tip">Executes Foundry VTT operations: create actors, place tokens, switch scenes, manage combat, set lighting — 10 action types via REST API.</div>
+    </div>
+
+    <!-- === TOOLS (bottom center) === -->
+    <div class="dnode" id="nd-context" style="left:42%; top:86%">
+      <div class="dnode-box n-tool"><span class="dnode-icon">🧩</span><span class="dnode-label">Context Assembler<span class="dnode-sub">Memory builder</span></span></div>
+      <div class="dnode-tip">Builds tailored context packets for each agent. Manages ~4000 token budgets, conversation history, and weighted memory decay.</div>
+    </div>
+    <div class="dnode" id="nd-vaultmgr" style="left:58%; top:86%">
+      <div class="dnode-box n-tool"><span class="dnode-icon">🗄️</span><span class="dnode-label">Vault Manager<span class="dnode-sub">File I/O layer</span></span></div>
+      <div class="dnode-tip">Reads and writes the Obsidian vault. Manages 8 subdirectories of YAML+Markdown files: NPCs, locations, sessions, lore, quests, and more.</div>
+    </div>
+
+  </div><!-- /diagram-container -->
+
+  <div class="diagram-fallback">
+    <p>📐 Architecture diagram is best viewed on a wider screen (750px+).</p>
+  </div>
+
+  <!-- Legend for arrow colors -->
+  <div class="diagram-legend">
+    <span><i style="background:var(--gold)"></i> Orchestration</span>
+    <span><i style="background:var(--red)"></i> Live pipeline</span>
+    <span><i style="background:var(--blue)"></i> Prep pipeline</span>
+    <span><i style="background:var(--teal)"></i> Tool access</span>
+    <span><i style="background:var(--purple)"></i> External service</span>
+  </div>
+</div><!-- /diagram-wrap -->
+
+<script>
+(function() {
+  // --- Arrow definitions: [fromId, toId, color, markerColor] ---
+  const arrows = [
+    // Orchestration (gold): Bot <-> Discord, Bot <-> Routers
+    ['nd-discord', 'nd-bot',       'var(--gold)',   'ah-gold'],
+    ['nd-bot',     'nd-discord',   'var(--gold)',   'ah-gold'],
+    ['nd-bot',     'nd-msgrouter', 'var(--gold)',   'ah-gold'],
+    ['nd-bot',     'nd-preprouter','var(--gold)',   'ah-gold'],
+
+    // Live pipeline (red): Router -> agents in sequence
+    ['nd-msgrouter','nd-board',    'var(--red)',     'ah-red'],
+    ['nd-msgrouter','nd-rules',    'var(--red)',     'ah-red'],
+    ['nd-rules',   'nd-story',    'var(--red)',     'ah-red'],
+    ['nd-story',   'nd-bot',      'var(--red)',     'ah-red'],
+    ['nd-bot',     'nd-chron',    'var(--red)',     'ah-red'],
+
+    // Prep pipeline (blue): Prep Router -> prep agents
+    ['nd-preprouter','nd-world',   'var(--blue)',    'ah-blue'],
+    ['nd-preprouter','nd-planner', 'var(--blue)',    'ah-blue'],
+    ['nd-preprouter','nd-carto',   'var(--blue)',    'ah-blue'],
+    ['nd-preprouter','nd-farch',   'var(--blue)',    'ah-blue'],
+
+    // Tool access (teal): agents -> tools
+    ['nd-bot',     'nd-context',   'var(--teal)',    'ah-teal'],
+    ['nd-chron',   'nd-vaultmgr', 'var(--teal)',    'ah-teal'],
+    ['nd-world',   'nd-vaultmgr', 'var(--teal)',    'ah-teal'],
+    ['nd-context', 'nd-vaultmgr', 'var(--teal)',    'ah-teal'],
+
+    // External services (purple): agents -> external
+    ['nd-board',   'nd-foundry',  'var(--purple)',  'ah-purple'],
+    ['nd-farch',   'nd-foundry',  'var(--purple)',  'ah-purple'],
+    ['nd-carto',   'nd-foundry',  'var(--purple)',  'ah-purple'],
+    ['nd-story',   'nd-gemini',   'var(--purple)',  'ah-purple'],
+    ['nd-rules',   'nd-gemini',   'var(--purple)',  'ah-purple'],
+    ['nd-world',   'nd-gemini',   'var(--purple)',  'ah-purple'],
+    ['nd-carto',   'nd-gemini',   'var(--purple)',  'ah-purple'],
+  ];
+
+  const svg = document.getElementById('arrowSvg');
+  const container = document.getElementById('archDiagram');
+  if (!svg || !container) return;
+
+  // Build a lookup: nodeId -> list of arrow line elements
+  const nodeArrows = {};
+
+  function getCenter(id) {
+    const el = document.getElementById(id);
+    if (!el) return {x: 0, y: 0};
+    const box = el.querySelector('.dnode-box');
+    const cRect = container.getBoundingClientRect();
+    const bRect = (box || el).getBoundingClientRect();
+    return {
+      x: bRect.left + bRect.width / 2 - cRect.left,
+      y: bRect.top + bRect.height / 2 - cRect.top,
+    };
+  }
+
+  function shortenLine(x1, y1, x2, y2, pad) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    if (len < pad * 2) return {x1, y1, x2, y2};
+    const ux = dx/len, uy = dy/len;
+    return {
+      x1: x1 + ux * pad,
+      y1: y1 + uy * pad,
+      x2: x2 - ux * pad,
+      y2: y2 - uy * pad,
+    };
+  }
+
+  function drawArrows() {
+    // Clear old lines
+    svg.querySelectorAll('line').forEach(l => l.remove());
+    Object.keys(nodeArrows).forEach(k => nodeArrows[k] = []);
+
+    arrows.forEach(([fromId, toId, color, marker]) => {
+      const a = getCenter(fromId);
+      const b = getCenter(toId);
+      const s = shortenLine(a.x, a.y, b.x, b.y, 28);
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', s.x1);
+      line.setAttribute('y1', s.y1);
+      line.setAttribute('x2', s.x2);
+      line.setAttribute('y2', s.y2);
+      line.setAttribute('stroke', color);
+      line.setAttribute('marker-end', `url(#${marker})`);
+      line.dataset.from = fromId;
+      line.dataset.to = toId;
+      svg.appendChild(line);
+
+      // Register for both nodes
+      [fromId, toId].forEach(nid => {
+        if (!nodeArrows[nid]) nodeArrows[nid] = [];
+        nodeArrows[nid].push(line);
+      });
+    });
+  }
+
+  // Initial draw
+  drawArrows();
+  // Redraw on resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(drawArrows, 150);
+  });
+
+  // Hover: highlight connected arrows
+  document.querySelectorAll('.dnode').forEach(node => {
+    node.addEventListener('mouseenter', () => {
+      // Dim all
+      svg.querySelectorAll('line').forEach(l => l.style.opacity = '0.08');
+      // Highlight connected
+      const connected = nodeArrows[node.id] || [];
+      connected.forEach(l => {
+        l.classList.add('glow');
+        l.style.opacity = '';
+      });
+    });
+    node.addEventListener('mouseleave', () => {
+      svg.querySelectorAll('line').forEach(l => {
+        l.classList.remove('glow');
+        l.style.opacity = '';
+      });
+    });
+  });
+})();
+</script>
+
+
+<!-- ==================== LIVE GAME PIPELINE ==================== -->
+<div class="section-header">
+  <h2>The Live Game Pipeline</h2>
+  <p>What happens when a player types an action in the Game Table channel</p>
+  <div class="section-divider"></div>
+</div>
+
+<div class="pipeline">
+  <div class="pipeline-track">
+    <div class="pipeline-node">
+      <div class="node-icon external-color">💬</div>
+      <div class="node-label">Player Message</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node">
+      <div class="node-icon router-color">📋</div>
+      <div class="node-label">Message Router</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node">
+      <div class="node-icon live-color">🗺️</div>
+      <div class="node-label">Board Monitor</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node">
+      <div class="node-icon live-color">⚖️</div>
+      <div class="node-label">Rules Lawyer</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node">
+      <div class="node-icon live-color">🎭</div>
+      <div class="node-label">Storyteller</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node">
+      <div class="node-icon external-color">💬</div>
+      <div class="node-label">Player Sees Response</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node">
+      <div class="node-icon live-color">📜</div>
+      <div class="node-label">Chronicler</div>
+    </div>
+    <div class="pipeline-arrow">→</div>
+    <div class="pipeline-node">
+      <div class="node-icon tool-color">🏛️</div>
+      <div class="node-label">Vault Updated</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== ROUTERS ==================== -->
+<div class="section-header">
+  <h2>The Dispatchers</h2>
+  <p>Traffic controllers that read every message and decide who needs to handle it</p>
+  <div class="section-divider"></div>
+</div>
+
+<div class="cards-grid cols-2">
+
+  <div class="card router" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">📋</div>
+      <div class="card-title">Message Router</div>
+    </div>
+    <div class="card-analogy">Think: "The Secretary who reads your mail and puts it on the right desk"</div>
+    <div class="card-summary">Classifies every player message in the Game Table channel. Decides if it's a game action, a question, casual chat, or a narrative request — then activates only the agents that are actually needed.</div>
+    <div class="card-details">
+      <h4>How It Decides</h4>
+      <ul>
+        <li><strong>Quick shortcuts:</strong> Very short messages ("lol", "brb") are recognized instantly as casual chat — no AI call needed</li>
+        <li><strong>Keyword detection:</strong> Messages about backstory, flashbacks, or lore are fast-tracked to the Storyteller</li>
+        <li><strong>AI classification:</strong> Ambiguous messages are sent to Gemini for classification into one of 5 categories</li>
+      </ul>
+      <h4>What It Activates</h4>
+      <ul>
+        <li><strong>Game Action</strong> → Board Monitor + Rules Lawyer + Storyteller (the full pipeline)</li>
+        <li><strong>Narrative Request</strong> → Storyteller only (no mechanics needed for a flashback)</li>
+        <li><strong>Game Question</strong> → Board Monitor + Storyteller (spatial awareness, then describe it)</li>
+        <li><strong>Out of Game</strong> → Direct answer from the Router itself (quick factual reply)</li>
+        <li><strong>Casual Chat</strong> → Ignored entirely (saves API calls)</li>
+      </ul>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card router" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🗂️</div>
+      <div class="card-title">Prep Router</div>
+    </div>
+    <div class="card-analogy">Think: "The receptionist at the creative studio"</div>
+    <div class="card-summary">Classifies DM messages in the War Room channel. Routes them to the right prep agent — worldbuilding ideas go to the World Architect, session planning to the Campaign Planner, scene setup to the Foundry Architect.</div>
+    <div class="card-details">
+      <h4>Categories</h4>
+      <ul>
+        <li><strong>Worldbuilding</strong> → World Architect (brainstorming, lore, ideas)</li>
+        <li><strong>NPC Create</strong> → World Architect's NPC builder (structured creation + vault save)</li>
+        <li><strong>Location Create</strong> → World Architect's location builder (structured creation + vault save)</li>
+        <li><strong>Session Planning</strong> → Campaign Planner (outlines, pacing, branching paths)</li>
+        <li><strong>Scene Setup</strong> → Foundry Architect (build it in the VTT)</li>
+        <li><strong>General Question</strong> → Direct response (rules clarifications, etc.)</li>
+      </ul>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+</div>
+
+<div class="flow-arrow">▼</div>
+
+
+<!-- ==================== LIVE DM TEAM ==================== -->
+<div class="section-header">
+  <h2>Live DM Team</h2>
+  <p>The crew that runs the game in real time — every player action flows through them in sequence</p>
+  <div class="section-divider"></div>
+</div>
+
+<div class="cards-grid cols-2">
+
+  <div class="card live" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🗺️</div>
+      <div class="card-title">Board Monitor</div>
+    </div>
+    <div class="card-analogy">Think: "The guy with the binoculars watching the battlefield"</div>
+    <div class="card-summary">Queries the live Foundry VTT game state — active combat, token positions, actor stats. Feeds spatial awareness into the pipeline so the Rules Lawyer and Storyteller know what's actually happening on the board.</div>
+    <div class="card-details">
+      <h4>What It Sees</h4>
+      <ul>
+        <li>Active combat encounters (round number, combatant count)</li>
+        <li>Actor details — HP, AC, ability scores, inventory</li>
+        <li>Scene overview — how many actors and scenes exist in the world</li>
+      </ul>
+      <h4>Why It Matters</h4>
+      <p>Without this, the AI would be guessing about distances, positions, and monster stats. The Board Monitor grounds the AI's imagination in the actual game state.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card live" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">⚖️</div>
+      <div class="card-title">Rules Lawyer</div>
+    </div>
+    <div class="card-analogy">Think: "The strict but fair referee checking every play"</div>
+    <div class="card-summary">Validates player actions against D&D 5e rules. Checks spell slots, calculates damage, verifies ranges and class features. Outputs a structured mechanical ruling that the Storyteller translates into narrative.</div>
+    <div class="card-details">
+      <h4>What It Checks</h4>
+      <ul>
+        <li>Does the character actually have this spell/ability?</li>
+        <li>Are there enough spell slots left? Is concentration being maintained?</li>
+        <li>Is the action valid given current conditions (range, action economy)?</li>
+        <li>What resources are consumed? What state changes result?</li>
+      </ul>
+      <h4>How It Works</h4>
+      <p>Runs at very low AI temperature (0.1) for precise, deterministic rulings. Reads the current party state from the vault so it knows exact HP, spell slots, and conditions. Outputs pure JSON — never speaks to the player directly.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card live" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🎭</div>
+      <div class="card-title">Storyteller</div>
+    </div>
+    <div class="card-analogy">Think: "The dramatic narrator who turns dice rolls into cinema"</div>
+    <div class="card-summary">Takes the dry mechanical ruling from the Rules Lawyer and transforms it into vivid, sensory-rich prose. This is the voice the players actually hear — cinematic descriptions, NPC dialogue, and narrative hooks.</div>
+    <div class="card-details">
+      <h4>What Makes It Special</h4>
+      <ul>
+        <li>Runs at high AI temperature (0.9) for creative, varied prose</li>
+        <li>Weaves in due consequences from the vault naturally into the narrative</li>
+        <li>Maintains location awareness — knows the current scene's atmosphere</li>
+        <li>Never breaks the fourth wall or mentions game mechanics</li>
+        <li>Ends responses with implicit calls to action to keep players engaged</li>
+      </ul>
+      <h4>Context It Receives</h4>
+      <p>Party state, current location details, active quests, world clock, weighted conversation history, and lore references from source books — all assembled fresh for every turn.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card live" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">📜</div>
+      <div class="card-title">Chronicler</div>
+    </div>
+    <div class="card-analogy">Think: "The silent scribe in the corner, writing everything down"</div>
+    <div class="card-summary">Runs silently after every game exchange. Analyzes what just happened and writes structured updates to the vault — HP changes, NPC disposition shifts, quest progress, new consequences. Never speaks to players.</div>
+    <div class="card-details">
+      <h4>What It Extracts</h4>
+      <ul>
+        <li><strong>Events</strong> — Summarized with an impact score (1-10 scale)</li>
+        <li><strong>Party updates</strong> — HP changes, conditions gained/removed, resources spent</li>
+        <li><strong>NPC updates</strong> — Disposition changes, alive/dead status</li>
+        <li><strong>Quest progress</strong> — Status changes, completion tracking</li>
+        <li><strong>New consequences</strong> — Future events triggered by player actions</li>
+        <li><strong>Resolved consequences</strong> — Pending events that just fired in the narrative</li>
+        <li><strong>Clock advances</strong> — In-game time progression</li>
+      </ul>
+      <h4>Why It's Critical</h4>
+      <p>This is the system's long-term memory writer. Without the Chronicler, the AI would forget everything that happened. Every vault update it makes feeds back into future turns through the Context Assembler.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+</div>
+
+<div class="flow-arrow">▼</div>
+
+
+<!-- ==================== SCENE SYNC ==================== -->
+<div class="section-header">
+  <h2>Scene Sync Layer</h2>
+  <p>An invisible bridge between the narrative and the virtual tabletop</p>
+  <div class="section-divider"></div>
+</div>
+
+<div class="cards-grid cols-2">
+
+  <div class="card tool" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🔍</div>
+      <div class="card-title">Scene Classifier</div>
+    </div>
+    <div class="card-analogy">Think: "The spotter who notices the set needs to change"</div>
+    <div class="card-summary">Analyzes the Storyteller's narrative output and detects if the board state needs updating — did combat start? Did the party move to a new location? Should the lighting change?</div>
+    <div class="card-details">
+      <h4>What It Detects</h4>
+      <ul>
+        <li>Combat starting or ending</li>
+        <li>Location changes (the party moved somewhere new)</li>
+        <li>Lighting changes (day to night, entering a dark cave)</li>
+        <li>New monsters being introduced</li>
+      </ul>
+      <p>When it detects a change, it dispatches the Foundry Architect to update the board — all in the background so players aren't waiting.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card live" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🏗️</div>
+      <div class="card-title">Foundry Architect</div>
+    </div>
+    <div class="card-analogy">Think: "The stage crew building sets between scenes"</div>
+    <div class="card-summary">Translates natural-language encounter descriptions into real Foundry VTT actions. Searches for monsters, creates actors, places tokens, switches scenes, adjusts lighting — all through the REST API.</div>
+    <div class="card-details">
+      <h4>Available Actions</h4>
+      <ul>
+        <li><strong>Search</strong> — Find existing actors, items, or scenes</li>
+        <li><strong>Create/Import Actors</strong> — Bring monsters from the compendium into the world</li>
+        <li><strong>Place Tokens</strong> — Position actors on the active scene at specific coordinates</li>
+        <li><strong>Switch Scene</strong> — Activate a different battle map</li>
+        <li><strong>Set Darkness</strong> — Change lighting (0 = daylight → 1 = pitch black)</li>
+        <li><strong>Start/End Encounter</strong> — Begin or end combat tracking</li>
+      </ul>
+      <h4>How It Plans</h4>
+      <p>Uses AI to generate a JSON action plan from natural language, then executes each step sequentially through the Foundry REST API relay. It always searches before creating to avoid duplicates.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+</div>
+
+<div class="flow-arrow">▼</div>
+
+
+<!-- ==================== PREP TEAM ==================== -->
+<div class="section-header">
+  <h2>Prep Team</h2>
+  <p>The behind-the-scenes crew that builds the world between sessions — all in the War Room channel</p>
+  <div class="section-divider"></div>
+</div>
+
+<div class="cards-grid cols-2">
+
+  <div class="card prep" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🌍</div>
+      <div class="card-title">World Architect</div>
+    </div>
+    <div class="card-analogy">Think: "The creative director brainstorming in a writers' room"</div>
+    <div class="card-summary">A collaborative worldbuilding partner. Brainstorms NPCs, locations, factions, and plot hooks — then saves structured entries directly to the vault. Reads existing content for continuity.</div>
+    <div class="card-details">
+      <h4>Capabilities</h4>
+      <ul>
+        <li><strong>Brainstorm</strong> — Open-ended creative ideation about any campaign topic</li>
+        <li><strong>Create NPC</strong> — Generates a full NPC profile (description, personality, secret, connections, plot hooks) and saves it to the vault</li>
+        <li><strong>Create Location</strong> — Builds a detailed location entry (features, NPCs present, secrets, encounter possibilities) and saves it</li>
+      </ul>
+      <h4>Why It's Smart</h4>
+      <p>It reads ALL existing NPCs, locations, and factions before generating anything — so new content always connects to what already exists. Multi-turn conversation history lets you iterate on ideas naturally.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card prep" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Campaign Planner</div>
+    </div>
+    <div class="card-analogy">Think: "The showrunner planning the season arc"</div>
+    <div class="card-summary">Strategic session planner that structures outlines with 3-act structure, branching paths for player choice, encounter difficulty estimates, and preparation checklists.</div>
+    <div class="card-details">
+      <h4>Capabilities</h4>
+      <ul>
+        <li><strong>Plan Sessions</strong> — Creates Hook → Rising Action → Climax → Resolution outlines</li>
+        <li><strong>Suggest Hooks</strong> — Generates plot hooks from unresolved quests and backstories</li>
+        <li><strong>Review Arcs</strong> — Analyzes pacing, tension curves, and character arc progress</li>
+        <li><strong>Track Threads</strong> — Identifies dangling plot lines that need resolution</li>
+      </ul>
+      <h4>Planning Style</h4>
+      <p>Always includes "If/Then" branches — "If the party goes left, prepare X. If they go right, prepare Y." Ends with a concrete preparation checklist (maps needed, NPCs to prep, music cues).</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card prep" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🗺️</div>
+      <div class="card-title">Cartographer</div>
+    </div>
+    <div class="card-analogy">Think: "The concept artist who paints the world maps"</div>
+    <div class="card-summary">Generates custom AI battlemap images using Gemini's image generation, then creates Foundry VTT scenes from them. Produces hand-painted watercolor-style top-down maps.</div>
+    <div class="card-details">
+      <h4>The Pipeline</h4>
+      <ul>
+        <li><strong>Step 1:</strong> An AI "prompt engineer" crafts an optimized image prompt from the location description</li>
+        <li><strong>Step 2:</strong> Gemini's image model generates the battlemap with a consistent art style anchor (Forgotten Adventures watercolor style)</li>
+        <li><strong>Step 3:</strong> The image is saved locally</li>
+        <li><strong>Step 4:</strong> A Foundry VTT scene is created with the image as background, grid overlay, and lighting configured</li>
+      </ul>
+      <h4>Style Consistency</h4>
+      <p>Every map generation prepends a "style anchor" prompt that enforces orthographic bird's-eye view, warm earth tones, hand-painted textures, and no text/labels/characters — ensuring all maps look like they belong in the same art pack.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card prep" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🧙</div>
+      <div class="card-title">Blind Prep Pipeline</div>
+    </div>
+    <div class="card-analogy">Think: "The overnight prep kitchen that stocks tomorrow's ingredients"</div>
+    <div class="card-summary">A spoiler-free automated pipeline triggered by <code>!prep</code>. The AI plans the next session, builds scenes, creates NPCs, and generates maps — all without the player (who is also the admin) seeing any details.</div>
+    <div class="card-details">
+      <h4>How Spoiler-Free Works</h4>
+      <ul>
+        <li>The Campaign Planner generates branching scenarios based on vault state</li>
+        <li>The World Architect creates any needed NPCs and locations</li>
+        <li>The Foundry Architect builds scenes and imports monsters</li>
+        <li>The Cartographer generates custom maps for unique locations</li>
+        <li>Full details go to the <strong>moderator log</strong> (hidden channel)</li>
+        <li>The player only sees: "✅ Prep complete. 3 scenes ready, 8 NPCs imported"</li>
+      </ul>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+</div>
+
+<div class="flow-arrow">▼</div>
+
+
+<!-- ==================== TOOLS & MEMORY ==================== -->
+<div class="section-header">
+  <h2>Tools &amp; Memory</h2>
+  <p>The infrastructure that keeps every agent informed, grounded, and consistent</p>
+  <div class="section-divider"></div>
+</div>
+
+<div class="cards-grid cols-3">
+
+  <div class="card tool" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🧠</div>
+      <div class="card-title">Context Assembler</div>
+    </div>
+    <div class="card-analogy">Think: "The briefing officer who gives each agent exactly what they need to know"</div>
+    <div class="card-summary">Builds custom context packages for each agent from the vault. The Storyteller gets lore and atmosphere; the Rules Lawyer gets spell slots and HP; the Campaign Planner gets session history and arcs.</div>
+    <div class="card-details">
+      <h4>Weighted Memory System</h4>
+      <p>Events have an "impact score" (1-10). Memory decays exponentially over turns — a critical combat result (impact 10) persists for 15+ turns, while flavor text (impact 2) fades after 5 turns. This means the AI naturally "remembers" important things longer without being told to.</p>
+      <h4>Context Budget</h4>
+      <ul>
+        <li>Party state: ~500 tokens</li>
+        <li>Location + NPCs: ~500 tokens</li>
+        <li>Active quests: ~300 tokens</li>
+        <li>Weighted history: ~1500 tokens</li>
+        <li>Consequences: ~200 tokens</li>
+        <li>Reference excerpts: ~1000 tokens</li>
+      </ul>
+      <p>Also handles checkpointing — saves memory to disk so the AI remembers across bot restarts.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card tool" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🏛️</div>
+      <div class="card-title">Vault Manager</div>
+    </div>
+    <div class="card-analogy">Think: "The librarian who organizes and retrieves every scroll in the archive"</div>
+    <div class="card-summary">Centralized file I/O for the Obsidian vault. All agents read and write campaign data through this single interface — party state, NPCs, locations, quests, session logs, consequences, and world clock.</div>
+    <div class="card-details">
+      <h4>Vault Structure</h4>
+      <ul>
+        <li><strong>00 - Session Log</strong> — Chronological session records</li>
+        <li><strong>01 - Party</strong> — Character sheets with HP, AC, spell slots, conditions</li>
+        <li><strong>02 - NPCs</strong> — Every NPC with disposition, location, secrets</li>
+        <li><strong>03 - Locations</strong> — Detailed location profiles</li>
+        <li><strong>04 - Quests</strong> — Active and completed quests with status tracking</li>
+        <li><strong>05 - Factions</strong> — Political groups and their dynamics</li>
+        <li><strong>06 - World State</strong> — World clock, consequences, memory checkpoints</li>
+        <li><strong>07 - Lore</strong> — Background world information</li>
+      </ul>
+      <p>Every file uses YAML frontmatter for structured data + Obsidian wikilinks for cross-references.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card tool" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">📚</div>
+      <div class="card-title">Reference Manager</div>
+    </div>
+    <div class="card-analogy">Think: "The rules encyclopedia that you can query by topic"</div>
+    <div class="card-summary">Indexes extracted D&D source books and provides context-aware search. When a player casts a spell, the Reference Manager finds the relevant rules text and injects it into the agent's context.</div>
+    <div class="card-details">
+      <h4>Two Search Modes</h4>
+      <ul>
+        <li><strong>Rules mode</strong> — Searches PHB, DMG, and other core rulebooks for mechanical text (fed to the Rules Lawyer)</li>
+        <li><strong>Lore mode</strong> — Searches adventure modules and setting guides for world lore (fed to the Storyteller)</li>
+      </ul>
+      <p>Also supports image/asset search — the <code>!image</code> command finds illustrations from source books by keyword.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card tool" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">⏱️</div>
+      <div class="card-title">Rate Limiter</div>
+    </div>
+    <div class="card-analogy">Think: "The traffic light that prevents everyone from rushing the intersection"</div>
+    <div class="card-summary">Controls the flow of API calls to Google Gemini so the system doesn't hit rate limits. Every agent call goes through the limiter before making a request.</div>
+    <div class="card-details">
+      <p>Uses a token-bucket algorithm — each API call must "acquire" a token before proceeding. This prevents burst overload during complex turns that chain 4-5 agent calls in sequence.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card tool" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🔌</div>
+      <div class="card-title">Foundry Client</div>
+    </div>
+    <div class="card-analogy">Think: "The remote control for the virtual tabletop"</div>
+    <div class="card-summary">Python client that communicates with Foundry VTT through its REST API relay module. Handles everything from rolling dice to placing tokens to searching the compendium.</div>
+    <div class="card-details">
+      <h4>Key Operations</h4>
+      <ul>
+        <li>Search actors, scenes, and items</li>
+        <li>Get detailed stat blocks for any creature</li>
+        <li>Import from compendium to world</li>
+        <li>Place and manage tokens on scenes</li>
+        <li>Roll dice using Foundry's dice engine</li>
+        <li>Control scene lighting and darkness</li>
+        <li>Start/end combat encounters</li>
+      </ul>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card tool" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">⚡</div>
+      <div class="card-title">Bot Orchestrator</div>
+    </div>
+    <div class="card-analogy">Think: "The stage manager running the entire show"</div>
+    <div class="card-summary">The central Discord bot that wires everything together. Initializes all agents, handles all <code>!</code> commands, routes messages by channel, manages error recovery, and ensures the player always gets a response.</div>
+    <div class="card-details">
+      <h4>Channel Routing</h4>
+      <ul>
+        <li><strong>Game Table channel</strong> → Live DM Team pipeline (full agent chain)</li>
+        <li><strong>War Room channel</strong> → Prep Team pipeline (creative & planning agents)</li>
+        <li><strong>Other channels</strong> → Falls back to Game Table behavior</li>
+      </ul>
+      <h4>Discord Commands</h4>
+      <ul>
+        <li><code>!status</code> — Party HP, quests, world clock</li>
+        <li><code>!recap</code> — Session summary</li>
+        <li><code>!setup</code> — Build encounters in Foundry</li>
+        <li><code>!build</code> — Smart encounter builder (finds maps + imports + places tokens)</li>
+        <li><code>!prep</code> — Spoiler-free session preparation</li>
+        <li><code>!roll</code> — Dice rolls through Foundry's engine</li>
+        <li><code>!monster</code> / <code>!pc</code> — Stat block lookups</li>
+        <li><code>!scene</code> / <code>!image</code> — Search maps and illustrations</li>
+        <li><code>!brainstorm</code> / <code>!plan</code> — War Room creative tools</li>
+        <li><code>!daytime</code> / <code>!nighttime</code> — Quick lighting toggles</li>
+        <li><code>!reset</code> — Clear conversation memory (vault untouched)</li>
+      </ul>
+      <h4>Safety Design</h4>
+      <p>Chronicler and scene sync errors are caught silently — they never block the player from getting their narrative response. The moderator log channel receives detailed error reports for debugging.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+</div>
+
+<div class="flow-arrow">▼</div>
+
+
+<!-- ==================== EXTERNAL SERVICES ==================== -->
+<div class="section-header">
+  <h2>External Services</h2>
+  <p>The platforms and APIs the system connects to</p>
+  <div class="section-divider"></div>
+</div>
+
+<div class="cards-grid cols-4">
+
+  <div class="card external" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🤖</div>
+      <div class="card-title">Google Gemini</div>
+    </div>
+    <div class="card-summary">The AI brain. Gemini 2.0 Flash handles text (classification, rules, narrative, analysis). Gemini 2.5 Flash handles image generation for custom battlemaps.</div>
+    <div class="card-details">
+      <p>Each agent uses different temperature settings — the Rules Lawyer uses 0.1 (precise), the Storyteller uses 0.9 (creative), and the Cartographer uses 0.8 for image prompts.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card external" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">💬</div>
+      <div class="card-title">Discord</div>
+    </div>
+    <div class="card-summary">The player-facing interface. Channels separate gameplay (Game Table) from preparation (War Room) from debugging (Moderator Log). Commands use the <code>!</code> prefix.</div>
+    <div class="card-details">
+      <p>The bot uses discord.py with message_content intent. Long responses are chunked into 2000-character segments. Player identity is mapped from Discord username to character name via environment config.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card external" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">🎲</div>
+      <div class="card-title">Foundry VTT</div>
+    </div>
+    <div class="card-summary">The virtual tabletop. Hosts battle maps, tokens, combat tracking, and the D&D 5e compendium. Connected via a REST API relay module running in Docker.</div>
+    <div class="card-details">
+      <p>The REST API relay exposes Foundry's internal data model over HTTP. The system can search the entire D&D 5e compendium (monsters, items, spells), manage scenes, roll dice, and control lighting — all programmatically.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+  <div class="card external" onclick="this.classList.toggle('expanded')">
+    <div class="card-header">
+      <div class="card-icon">📓</div>
+      <div class="card-title">Obsidian Vault</div>
+    </div>
+    <div class="card-summary">The persistent memory. A folder of markdown files with YAML frontmatter that stores every piece of campaign state — characters, NPCs, quests, locations, session logs, and consequences.</div>
+    <div class="card-details">
+      <p>Human-readable and editable in Obsidian (or any text editor). Uses wikilinks for cross-referencing between entries. The vault is the single source of truth — if you edit a file manually, the AI picks up the change on the next turn.</p>
+    </div>
+    <div class="card-expand-hint"><span></span></div>
+  </div>
+
+</div>
+
+
+<!-- ==================== INTERACTIVE FLOW TRACES ==================== -->
+<div class="section-header" style="padding-top:60px;">
+  <h2>Trace the Data Flow</h2>
+  <p>Pick an example input and watch it travel through the system step by step — see exactly what data each agent sends to the next</p>
+  <div class="section-divider"></div>
+</div>
+
+<div class="trace-section">
+  <div class="trace-tabs">
+    <button class="trace-tab active" onclick="showTrace('fireball')">&#9876;&#65039; "I cast Fireball at the troll"</button>
+    <button class="trace-tab" onclick="showTrace('casual')">&#128172; "lol nice"</button>
+    <button class="trace-tab" onclick="showTrace('prep')">&#127759; "Create a mysterious tavern keeper"</button>
+  </div>
+
+  <!-- ===== TRACE 1: FIREBALL ===== -->
+  <div class="trace-panel active" id="trace-fireball">
+    <div class="trace-input">
+      <div class="trace-input-avatar">&#9876;&#65039;</div>
+      <div>
+        <div class="trace-input-text">"I cast Fireball at the troll"</div>
+        <div class="trace-input-meta">Player: chasecjj &nbsp;|&nbsp; Channel: #game-table &nbsp;|&nbsp; Character: Krusk</div>
+      </div>
+    </div>
+
+    <div class="trace-controls">
+      <button class="trace-play-btn" onclick="playTrace('fireball')">&#9654; Play step by step</button>
+    </div>
+
+    <div class="trace-timeline" id="timeline-fireball">
+
+      <div class="trace-step" data-delay="0">
+        <div class="trace-step-dot external-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#9889;</span>
+            <span class="trace-step-agent">Bot Orchestrator</span>
+            <span class="trace-step-phase">Entry</span>
+          </div>
+          <div class="trace-step-desc">The Discord bot receives the message. It checks the channel ID and routes to the Game Table handler. It also resolves the player identity.</div>
+          <div class="trace-data"><span class="data-label">Data passed forward</span><span class="data-key">channel:</span> <span class="data-str">#game-table</span> <span class="data-arrow">→</span> Game Table pipeline
+<span class="data-key">user_input:</span> <span class="data-str">"[Krusk]: I cast Fireball at the troll"</span>
+<span class="data-comment">// Player identity resolved via PLAYER_MAP: chasecjj → Krusk</span></div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="400">
+        <div class="trace-step-dot router-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#128203;</span>
+            <span class="trace-step-agent">Message Router</span>
+            <span class="trace-step-phase">Phase 0</span>
+          </div>
+          <div class="trace-step-desc">The Router sees combat keywords ("cast", "Fireball") and sends the message to Gemini for classification. It comes back as <strong>game_action</strong> — which activates the full pipeline.</div>
+          <div class="trace-data"><span class="data-label">Classification result</span>{
+  <span class="data-key">"type":</span> <span class="data-str">"game_action"</span>,
+  <span class="data-key">"reason":</span> <span class="data-str">"Player is casting a spell at a creature"</span>
+}
+
+<span class="data-label">Route built</span>AgentRoute(game_action, agents=[<span class="data-bool">BoardMonitor</span>, <span class="data-bool">RulesLawyer</span>, <span class="data-bool">Storyteller</span>])</div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="800">
+        <div class="trace-step-dot live-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#128506;&#65039;</span>
+            <span class="trace-step-agent">Board Monitor</span>
+            <span class="trace-step-phase">Phase 1</span>
+          </div>
+          <div class="trace-step-desc">Queries Foundry VTT via the REST API relay. Finds the active combat encounter and looks up the troll's stats. This spatial context grounds the Rules Lawyer's ruling in reality.</div>
+          <div class="trace-data"><span class="data-label">Board context returned</span><span class="data-key">Active Combat:</span> <span class="data-str">Encounter — Round 3, Turn 2 (5 combatants)</span>
+<span class="data-key">Troll:</span> <span class="data-str">HP: 84/84 | AC: 15 | STR: 18(+4) | CON: 20(+5)</span>
+<span class="data-comment">// This text block gets injected into the Rules Lawyer's prompt</span></div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="1200">
+        <div class="trace-step-dot live-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#9878;&#65039;</span>
+            <span class="trace-step-agent">Rules Lawyer</span>
+            <span class="trace-step-phase">Phase 2</span>
+          </div>
+          <div class="trace-step-desc">Reads Krusk's party sheet from the vault (spell slots, level, class). Validates that Krusk can cast Fireball, has a 3rd-level slot available, and checks the rules. Outputs a structured JSON ruling.</div>
+          <div class="trace-data"><span class="data-label">Context assembled from vault</span><span class="data-str">"Krusk — Level 5 Half-Orc | HP: 38/45 | AC: 18 | Spell Slots: 2/4 remaining"</span>
+
+<span class="data-label">Mechanical ruling (JSON output)</span>{
+  <span class="data-key">"valid":</span> <span class="data-bool">true</span>,
+  <span class="data-key">"mechanic_used":</span> <span class="data-str">"Fireball (3rd-level Evocation)"</span>,
+  <span class="data-key">"result":</span> <span class="data-str">"8d6 fire damage in a 20-ft radius. DC 14 DEX save for half."</span>,
+  <span class="data-key">"resource_cost":</span> <span class="data-str">"1 spell slot (3rd level)"</span>,
+  <span class="data-key">"state_changes":</span> {
+    <span class="data-key">"spell_slots_used":</span> <span class="data-num">3</span>,
+    <span class="data-key">"conditions_add":</span> []
+  }
+}</div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="1600">
+        <div class="trace-step-dot tool-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#128218;</span>
+            <span class="trace-step-agent">Context Assembler</span>
+            <span class="trace-step-phase">Context Build</span>
+          </div>
+          <div class="trace-step-desc">Builds the Storyteller's full context package from the vault — party state, current location atmosphere, active quests, weighted memory of recent events, any due consequences, and lore excerpts about trolls.</div>
+          <div class="trace-data"><span class="data-label">Context sections assembled (~4000 tokens)</span><span class="data-key">&#128308; Party state:</span>       <span class="data-str">Krusk HP 38/45, AC 18, 1 slot remaining...</span>
+<span class="data-key">&#128308; Location:</span>         <span class="data-str">The Yawning Portal cellar — damp stone, flickering torches...</span>
+<span class="data-key">&#128308; Active quests:</span>    <span class="data-str">Find the source of the troll infestation (from Durnan)</span>
+<span class="data-key">&#128309; Recent events:</span>    <span class="data-str">&#128308; Krusk kicked down the cellar door (impact 6, 2 turns ago)</span>
+                         <span class="data-str">&#128309; Party found claw marks on the walls (impact 4, 3 turns ago)</span>
+<span class="data-key">&#128218; Lore reference:</span>   <span class="data-str">"Trolls regenerate unless damaged by fire or acid..."</span></div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="2000">
+        <div class="trace-step-dot live-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#127917;</span>
+            <span class="trace-step-agent">Storyteller</span>
+            <span class="trace-step-phase">Phase 3</span>
+          </div>
+          <div class="trace-step-desc">Takes the mechanical ruling and all the assembled context, then generates vivid, cinematic prose. This is the only output the player actually sees. Runs at high temperature (0.9) for creative variety.</div>
+          <div class="trace-data"><span class="data-label">Inputs received</span><span class="data-key">rules_ruling:</span>    <span class="data-str">The full JSON from the Rules Lawyer</span>
+<span class="data-key">vault_context:</span>    <span class="data-str">The full context package from the Context Assembler</span>
+<span class="data-key">system_prompt:</span>    <span class="data-str">STORYTELLER_IDENTITY (stable persona — never changes)</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="trace-output" id="output-fireball" style="opacity:0; transition: opacity 0.6s;">
+      <div class="trace-output-label">&#128172; What the player sees in Discord</div>
+      <div class="trace-output-text">Krusk's eyes blaze with arcane fury as he thrusts his palm forward, ancient words of power rolling from his tongue like thunder. A tiny bead of orange light streaks from his fingertips, arcing across the damp cellar before erupting into a roaring sphere of flame. The troll shrieks — a sound like tearing metal — as fire engulfs its mottled green flesh. For the first time, the creature's wounds do not knit themselves shut. The stench of charred troll fills the cellar. But through the smoke, you hear more scraping from deeper in the tunnels...</div>
+    </div>
+
+    <div class="trace-silent" id="silent-fireball" style="opacity:0; transition: opacity 0.6s;">
+      <div class="trace-silent-label">&#128220; Silent background operations (player never sees these)</div>
+      <div class="trace-silent-text">
+        <strong>Scene Classifier</strong> detects the combat is ongoing — no board changes needed this turn.<br><br>
+        <strong>Chronicler</strong> analyzes the full exchange and writes to the vault:<br>
+        &bull; Event recorded: "Krusk cast Fireball on the troll, dealing fire damage" (impact: 8)<br>
+        &bull; Party update: Krusk spell_slots_used → 3<br>
+        &bull; New consequence planted: "Troll clan retaliates — session >= 4" (impact: 7)<br>
+        &bull; Memory checkpoint saved to disk
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TRACE 2: CASUAL CHAT ===== -->
+  <div class="trace-panel" id="trace-casual">
+    <div class="trace-input">
+      <div class="trace-input-avatar">&#128172;</div>
+      <div>
+        <div class="trace-input-text">"lol nice"</div>
+        <div class="trace-input-meta">Player: chasecjj &nbsp;|&nbsp; Channel: #game-table</div>
+      </div>
+    </div>
+
+    <div class="trace-controls">
+      <button class="trace-play-btn" onclick="playTrace('casual')">&#9654; Play step by step</button>
+    </div>
+
+    <div class="trace-timeline" id="timeline-casual">
+
+      <div class="trace-step" data-delay="0">
+        <div class="trace-step-dot external-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#9889;</span>
+            <span class="trace-step-agent">Bot Orchestrator</span>
+            <span class="trace-step-phase">Entry</span>
+          </div>
+          <div class="trace-step-desc">Message arrives in the Game Table channel. No <code>!</code> prefix, so it goes to the message handler.</div>
+          <div class="trace-data"><span class="data-label">Data passed forward</span><span class="data-key">user_input:</span> <span class="data-str">"lol nice"</span></div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="400">
+        <div class="trace-step-dot router-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#128203;</span>
+            <span class="trace-step-agent">Message Router</span>
+            <span class="trace-step-phase">Phase 0</span>
+          </div>
+          <div class="trace-step-desc">The Router's <strong>heuristic shortcut</strong> fires: the message is only 8 characters and contains no game keywords. It's classified instantly as casual chat — <strong>no AI call is made</strong>. This saves an API call and ~200ms.</div>
+          <div class="trace-data"><span class="data-label">Heuristic classification (no API call)</span>{
+  <span class="data-key">"type":</span> <span class="data-str">"casual_chat"</span>,
+  <span class="data-key">"reason":</span> <span class="data-str">"Very short message, likely casual"</span>
+}
+
+<span class="data-label">Route built</span>AgentRoute(casual_chat, agents=[<span class="data-comment">none</span>])
+<span class="data-comment">// No agents activated — pipeline ends here</span></div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="800">
+        <div class="trace-step-dot skip-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#9940;</span>
+            <span class="trace-step-agent">Pipeline Skipped</span>
+            <span class="trace-step-phase">Done</span>
+          </div>
+          <div class="trace-step-desc">Board Monitor, Rules Lawyer, Storyteller, Chronicler — all skipped. The bot does nothing. No response is sent. No API tokens are consumed. The system efficiently ignores banter.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="trace-output" id="output-casual" style="opacity:0; transition: opacity 0.6s;">
+      <div class="trace-output-label" style="color: var(--text-dim);">&#128172; What the player sees</div>
+      <div class="trace-output-text" style="color: var(--text-dim);">Nothing. The bot stays silent. Total cost: zero API calls, zero tokens, near-zero latency.</div>
+    </div>
+  </div>
+
+  <!-- ===== TRACE 3: PREP NPC ===== -->
+  <div class="trace-panel" id="trace-prep">
+    <div class="trace-input">
+      <div class="trace-input-avatar">&#127759;</div>
+      <div>
+        <div class="trace-input-text">"Create a mysterious tavern keeper who secretly works for the Zhentarim"</div>
+        <div class="trace-input-meta">DM: Chase &nbsp;|&nbsp; Channel: #war-room</div>
+      </div>
+    </div>
+
+    <div class="trace-controls">
+      <button class="trace-play-btn" onclick="playTrace('prep')">&#9654; Play step by step</button>
+    </div>
+
+    <div class="trace-timeline" id="timeline-prep">
+
+      <div class="trace-step" data-delay="0">
+        <div class="trace-step-dot external-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#9889;</span>
+            <span class="trace-step-agent">Bot Orchestrator</span>
+            <span class="trace-step-phase">Entry</span>
+          </div>
+          <div class="trace-step-desc">Message arrives in the War Room channel. The bot recognizes this as a prep channel and routes to the <strong>Prep Team handler</strong> instead of the Game Table handler.</div>
+          <div class="trace-data"><span class="data-label">Channel routing</span><span class="data-key">channel_id:</span> <span class="data-str">#war-room</span> <span class="data-arrow">→</span> <span class="data-bool">_handle_war_room()</span>
+<span class="data-comment">// Different channel = completely different agent team</span></div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="400">
+        <div class="trace-step-dot router-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#128450;&#65039;</span>
+            <span class="trace-step-agent">Prep Router</span>
+            <span class="trace-step-phase">Classification</span>
+          </div>
+          <div class="trace-step-desc">The Prep Router classifies the intent. "Create a... tavern keeper" matches <strong>npc_create</strong> — the DM wants to build and save a specific NPC, not just brainstorm ideas.</div>
+          <div class="trace-data"><span class="data-label">Classification result</span>{
+  <span class="data-key">"intent":</span> <span class="data-str">"npc_create"</span>,
+  <span class="data-key">"reason":</span> <span class="data-str">"DM explicitly wants to create a specific NPC"</span>
+}
+
+<span class="data-label">Route</span>PrepRoute(intent=<span class="data-bool">npc_create</span>) <span class="data-arrow">→</span> World Architect.create_npc()</div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="800">
+        <div class="trace-step-dot tool-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#128218;</span>
+            <span class="trace-step-agent">Context Assembler</span>
+            <span class="trace-step-phase">Context Build</span>
+          </div>
+          <div class="trace-step-desc">Builds the World Architect's context — existing NPCs, locations, factions, active quests, and party info. This ensures the new NPC connects to what already exists in the campaign.</div>
+          <div class="trace-data"><span class="data-label">World Architect context assembled</span><span class="data-key">Existing NPCs:</span>    <span class="data-str">Durnan (Human) — The Yawning Portal | unaffiliated</span>
+                        <span class="data-str">Yagra Stonefist (Half-Orc) — The Yawning Portal | Zhentarim</span>
+                        <span class="data-str">Volo (Human) — Roaming | unaffiliated</span>
+<span class="data-key">Locations:</span>        <span class="data-str">The Yawning Portal (tavern), Dock Ward (district)...</span>
+<span class="data-key">Factions:</span>         <span class="data-str">Zhentarim, Harpers, Xanathar Guild...</span>
+<span class="data-key">Active quests:</span>    <span class="data-str">Find the source of the troll infestation</span></div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="1200">
+        <div class="trace-step-dot prep-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#127758;</span>
+            <span class="trace-step-agent">World Architect</span>
+            <span class="trace-step-phase">NPC Creation</span>
+          </div>
+          <div class="trace-step-desc">Generates a full NPC profile using AI — description, personality, secret, connections to existing campaign elements, and plot hooks. The AI knows about existing Zhentarim NPCs and avoids duplication.</div>
+          <div class="trace-data"><span class="data-label">AI generates structured NPC data (JSON)</span>{
+  <span class="data-key">"name":</span> <span class="data-str">"Marta Valdris"</span>,
+  <span class="data-key">"race":</span> <span class="data-str">"Human"</span>,
+  <span class="data-key">"class":</span> <span class="data-str">"Rogue (Spy)"</span>,
+  <span class="data-key">"location":</span> <span class="data-str">"The Skewered Dragon"</span>,
+  <span class="data-key">"faction":</span> <span class="data-str">"Zhentarim"</span>,
+  <span class="data-key">"disposition":</span> <span class="data-str">"neutral"</span>,
+  <span class="data-key">"secret":</span> <span class="data-str">"Reports smuggling routes to the Zhentarim via coded drink orders"</span>,
+  <span class="data-key">"connections":</span> <span class="data-str">"Knows Yagra Stonefist. Hides packages for the Dock Ward cell."</span>,
+  <span class="data-key">"hooks":</span> <span class="data-str">"Offers quests that secretly benefit the Zhentarim..."</span>
+}</div>
+        </div>
+      </div>
+
+      <div class="trace-step" data-delay="1600">
+        <div class="trace-step-dot tool-dot"></div>
+        <div class="trace-step-card">
+          <div class="trace-step-header">
+            <span class="trace-step-icon">&#127961;&#65039;</span>
+            <span class="trace-step-agent">Vault Manager</span>
+            <span class="trace-step-phase">Write</span>
+          </div>
+          <div class="trace-step-desc">The NPC data is formatted as a markdown file with YAML frontmatter and saved to the vault at <code>02 - NPCs/Marta Valdris.md</code>. This NPC is now a permanent part of the campaign — every future agent call can see her.</div>
+          <div class="trace-data"><span class="data-label">File written to vault</span><span class="data-key">path:</span> <span class="data-str">campaign_vault/02 - NPCs/Marta Valdris.md</span>
+<span class="data-comment">// YAML frontmatter: name, race, class, faction, disposition, status, tags</span>
+<span class="data-comment">// Markdown body: Description, Personality, Secret, Connections, Plot Hooks</span>
+<span class="data-comment">// This file is human-readable and editable in Obsidian</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="trace-output" id="output-prep" style="opacity:0; transition: opacity 0.6s;">
+      <div class="trace-output-label">&#128172; What the DM sees in the War Room</div>
+      <div class="trace-output-text" style="font-style: normal;">
+        <strong>Marta Valdris</strong> created and saved to the vault!<br><br>
+        <strong>Race:</strong> Human | <strong>Class:</strong> Rogue (Spy)<br>
+        <strong>Location:</strong> The Skewered Dragon | <strong>Faction:</strong> Zhentarim<br>
+        <strong>Disposition:</strong> neutral<br><br>
+        A wiry woman in her 40s with calloused hands and a gap-toothed smile. She keeps her graying hair pulled back under a stained bandana...<br><br>
+        <strong>Secret:</strong> <span style="background:var(--text-dim);color:var(--text-dim);border-radius:3px;cursor:pointer;" onclick="this.style.background='transparent';this.style.color='var(--text)'">Reports smuggling routes to the Zhentarim via coded drink orders</span><br><br>
+        <strong>Connections:</strong> Knows Yagra Stonefist. Hides packages for the Dock Ward cell.
+      </div>
+    </div>
+
+    <div class="trace-silent" id="silent-prep" style="opacity:0; transition: opacity 0.6s;">
+      <div class="trace-silent-label">&#127760; What happens next</div>
+      <div class="trace-silent-text">
+        The next time any agent runs — Storyteller, Rules Lawyer, Campaign Planner — the Context Assembler will include Marta Valdris in its context. She'll appear in NPC lists, be available for narrative scenes, and can be referenced in session planning. The vault is the single source of truth, and it just grew.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTrace(id) {
+  document.querySelectorAll('.trace-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.trace-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('trace-' + id).classList.add('active');
+  // Find the matching tab
+  document.querySelectorAll('.trace-tab').forEach(t => {
+    if (
+      (id === 'fireball' && t.textContent.includes('Fireball')) ||
+      (id === 'casual' && t.textContent.includes('lol')) ||
+      (id === 'prep' && t.textContent.includes('tavern'))
+    ) {
+      t.classList.add('active');
+    }
+  });
+  // Reset the steps
+  const timeline = document.getElementById('timeline-' + id);
+  timeline.querySelectorAll('.trace-step').forEach(s => s.classList.remove('visible'));
+  // Reset outputs
+  const output = document.getElementById('output-' + id);
+  if (output) output.style.opacity = '0';
+  const silent = document.getElementById('silent-' + id);
+  if (silent) silent.style.opacity = '0';
+}
+
+function playTrace(id) {
+  const timeline = document.getElementById('timeline-' + id);
+  const steps = timeline.querySelectorAll('.trace-step');
+  const output = document.getElementById('output-' + id);
+  const silent = document.getElementById('silent-' + id);
+
+  // Reset
+  steps.forEach(s => s.classList.remove('visible'));
+  if (output) output.style.opacity = '0';
+  if (silent) silent.style.opacity = '0';
+
+  // Animate steps
+  steps.forEach((step, i) => {
+    const delay = parseInt(step.getAttribute('data-delay')) || i * 400;
+    setTimeout(() => {
+      step.classList.add('visible');
+      // Scroll the step into view smoothly
+      step.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, delay + 200);
+  });
+
+  // Show output after all steps
+  const lastDelay = Math.max(...Array.from(steps).map(s => parseInt(s.getAttribute('data-delay')) || 0));
+  setTimeout(() => {
+    if (output) {
+      output.style.opacity = '1';
+      output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, lastDelay + 800);
+
+  setTimeout(() => {
+    if (silent) {
+      silent.style.opacity = '1';
+    }
+  }, lastDelay + 1400);
+}
+</script>
+
+
+<!-- ==================== DATA FLOW SUMMARY ==================== -->
+<div class="big-picture" style="margin-top: 40px;">
+  <h3>The Feedback Loop</h3>
+  <p>The system's real power comes from its <strong>closed feedback loop</strong>. When a player acts, the pipeline processes it (Route → Rules → Narrate → Deliver). Then the Chronicler silently analyzes what happened and writes changes back to the vault. On the <em>next</em> turn, the Context Assembler reads those updated vault files and builds fresh context — so the AI's understanding of the world evolves turn by turn.</p>
+  <p>This means consequences planted 3 sessions ago can surface naturally, NPC dispositions shift based on player choices, and the AI never "forgets" that the party left a door unlocked in the Zhentarim warehouse. The weighted memory system ensures that pivotal moments stay in focus while mundane details gracefully fade.</p>
+</div>
+
+
+<footer>
+  D&D AI Dungeon Master Architecture — Built by Chase &nbsp;|&nbsp; Powered by Google Gemini, Discord, Foundry VTT, and Obsidian
+</footer>
+
+</body>
+</html>
