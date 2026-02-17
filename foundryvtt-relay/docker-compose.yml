@@ -1,0 +1,16 @@
+services:
+  relay:
+    image: threehats/foundryvtt-rest-api-relay:latest
+    container_name: foundryvtt-rest-api-relay
+    ports:
+      - "3010:3010"
+    environment:
+      - NODE_ENV=production
+      - PORT=3010
+      - DB_TYPE=sqlite
+      - WEBSOCKET_PING_INTERVAL_MS=20000
+      - CLIENT_CLEANUP_INTERVAL_MS=15000
+    volumes:
+      - ./data:/app/data
+    command: pnpm local:sqlite
+    restart: unless-stopped

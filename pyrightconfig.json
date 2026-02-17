@@ -1,0 +1,23 @@
+{
+    "include": [
+        "."
+    ],
+    "exclude": [
+        ".venv",
+        "**/__pycache__",
+        "knowledge"
+    ],
+    "executionEnvironments": [
+        {
+            "root": ".",
+            "extraPaths": [
+                "."
+            ]
+        }
+    ],
+    "venvPath": ".",
+    "venv": ".venv",
+    "pythonVersion": "3.14",
+    "reportMissingModuleSource": false,
+    "reportGeneralTypeIssues": false
+}

@@ -1,0 +1,29 @@
+# Secrets
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Generated maps (large binary files)
+generated_maps/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agent workspace
+.agent/
