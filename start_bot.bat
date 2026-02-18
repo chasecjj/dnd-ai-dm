@@ -74,7 +74,7 @@ echo Using venv: .venv\Scripts\python.exe
 echo.
 
 set PYTHONPATH=%cd%
-.venv\Scripts\python orchestration/bot.py
+.venv\Scripts\python orchestration/main.py
 
 echo.
 echo ============================================================
