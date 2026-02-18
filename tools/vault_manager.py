@@ -12,17 +12,18 @@ import json
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
-import msvcrt
 from contextlib import contextmanager
 if os.name == 'nt':
     try:
+        import msvcrt
         from msvcrt import LK_NBLCK, LK_UNLCK
     except ImportError:
-        # Define constants if not available in the module (e.g. some environments)
+        msvcrt = None  # type: ignore[assignment]
         LK_NBLCK = 2
         LK_UNLCK = 0
 else:
-    # Dummy constants for non-Windows (though code is for Windows)
+    msvcrt = None  # type: ignore[assignment]
+    # Dummy constants for non-Windows
     LK_NBLCK = 2
     LK_UNLCK = 0
 

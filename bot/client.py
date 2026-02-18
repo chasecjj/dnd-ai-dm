@@ -193,7 +193,7 @@ async def send_to_moderator_log(content: str):
             logger.error(content)
             return
         for i in range(0, len(content), 1900):
-            chunk = content[i : i + 1900]
+            chunk = str(content)[i : i + 1900]
             await channel.send(f"```\n{chunk}\n```")
     except Exception as e:
         logger.error(f"Failed to send to moderator log: {e}")
@@ -221,7 +221,7 @@ def _build_architect_request(scene_changes: dict, narrative: str) -> str:
     if not parts:
         return ""
     request = ". ".join(parts)
-    request += f"\n\nNarrative context: {narrative[:500]}"
+    request += f"\n\nNarrative context: {str(narrative)[:500]}"
     return request
 
 
@@ -313,7 +313,7 @@ async def _handle_game_table(message, user_input: str):
                 architect_request = _build_architect_request(scene_changes, narrative)
                 if architect_request:
                     asyncio.create_task(_run_architect_safe(architect_request, message.channel))
-                    logger.info(f"FoundryArchitect dispatched: {architect_request[:100]}...")
+                    logger.info(f"FoundryArchitect dispatched: {str(architect_request)[:100]}...")
             else:
                 logger.info("Scene change detected but Foundry not connected — skipping.")
 
@@ -356,11 +356,12 @@ async def _handle_war_room(message, user_input: str):
                 response = await world_architect.brainstorm(user_input)
 
         if response:
-            if len(response) > 2000:
-                for i in range(0, len(response), 2000):
-                    await message.channel.send(response[i : i + 2000])
+            text_response = str(response)
+            if len(text_response) > 2000:
+                for i in range(0, len(text_response), 2000):
+                    await message.channel.send(text_response[i : i + 2000])
             else:
-                await message.channel.send(response)
+                await message.channel.send(text_response)
 
     except Exception as e:
         logger.error(f"[War Room] Error: {e}", exc_info=True)
