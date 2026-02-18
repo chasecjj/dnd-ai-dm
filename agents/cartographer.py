@@ -146,8 +146,16 @@ class CartographerAgent:
 
             # Step 4: Create Foundry scene (if connected)
             if self.foundry and self.foundry.is_connected:
+                # Convert absolute path to Vault-relative path for Foundry
+                # Foundry's data directory now has a symposium link to campaign_vault
+                try:
+                    rel_path = str(image_path).replace(str(self.vault.vault_path), "campaign_vault").replace("\\", "/")
+                except Exception:
+                    # Fallback to absolute if path manipulation fails
+                    rel_path = str(image_path)
+                
                 scene_result = await self._create_foundry_scene(
-                    location_name, str(image_path), grid_size, lighting
+                    location_name, rel_path, grid_size, lighting
                 )
                 if scene_result:
                     logger.info(f"Foundry scene created: {scene_result}")

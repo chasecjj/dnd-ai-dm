@@ -72,3 +72,4 @@ tags: [session]
 | | Frognar exits the Yawning Portal and invites Kallisar to head to the market district. | 4 | |
 | | Frognar leaves the Yawning Portal and heads towards the market district, inviting Kallisar to join him. | 4 | |
 | | Frognar leaves the Yawning Portal and heads towards the market district, inviting Kallisar to join him. | 4 | |
+| | Frognar roleplays as the new party member, Borin Stonehand, expressing interest in Undermountain and adventure. | 4 | |

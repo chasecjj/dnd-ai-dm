@@ -1,0 +1,197 @@
+{
+  "main": {
+    "id": "9213948e8074ed77",
+    "type": "split",
+    "children": [
+      {
+        "id": "7144631d4ede1c90",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "8b8f2df6a5a226eb",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "03 - Locations/Yawning Portal.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Yawning Portal"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "93e19d0038d71aeb",
+    "type": "split",
+    "children": [
+      {
+        "id": "12ca01ecc27acfb8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7f5ed55a8346b494",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "59e53959911d8385",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "9d8e5562bf821dce",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "d9fc57f62739c4ee",
+    "type": "split",
+    "children": [
+      {
+        "id": "89b1100cbd0314f2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f00e2080a9f02a30",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "05 - Factions/Zhentarim.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Zhentarim"
+            }
+          },
+          {
+            "id": "965d6ed9d1bc4762",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "05 - Factions/Zhentarim.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Zhentarim"
+            }
+          },
+          {
+            "id": "1876dbf7fcb1bc08",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "8a5809a848d66256",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "5e43a9418c94ea54",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "05 - Factions/Zhentarim.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Zhentarim"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "8b8f2df6a5a226eb",
+  "lastOpenFiles": [
+    "03 - Locations/The Gilded Lily.md",
+    "03 - Locations/Hearthside Tavern.md",
+    "02 - NPCs/Krentz.md",
+    "_templates/location_template.md",
+    "01 - Party/Frognar Emberheart.md",
+    "00 - Session Log/Session 000.md",
+    "01 - Party/Kallisar Voidcaller.md",
+    "Campaign _Vault/Welcome.md"
+  ]
+}

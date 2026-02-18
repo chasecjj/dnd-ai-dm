@@ -12,6 +12,22 @@ import json
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
+import msvcrt
+from contextlib import contextmanager
+if os.name == 'nt':
+    try:
+        from msvcrt import LK_NBLCK, LK_UNLCK
+    except ImportError:
+        # Define constants if not available in the module (e.g. some environments)
+        LK_NBLCK = 2
+        LK_UNLCK = 0
+else:
+    # Dummy constants for non-Windows (though code is for Windows)
+    LK_NBLCK = 2
+    LK_UNLCK = 0
+
+from pydantic import ValidationError
+from tools.models import PartyMember, NPC, Quest, Location
 
 logger = logging.getLogger('VaultManager')
 
@@ -116,8 +132,24 @@ class VaultManager:
         try:
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
             content = build_frontmatter(frontmatter, body)
+            
+            # Write with exclusive lock to prevent partial writes/corruption
             with open(full_path, 'w', encoding='utf-8') as f:
-                f.write(content)
+                # Lock the file descriptor
+                # Lock the file descriptor
+                try:
+                    fd = f.fileno()
+                    # Use module constants or local fallback
+                    lock_mode = getattr(msvcrt, 'LK_NBLCK', LK_NBLCK)
+                    unlock_mode = getattr(msvcrt, 'LK_UNLCK', LK_UNLCK)
+                    msvcrt.locking(fd, lock_mode, 1)
+                    f.write(content)
+                    msvcrt.locking(fd, unlock_mode, 1)
+                except (OSError, IOError) as e:
+                    # Fallback if locking fails/not supported or file is locked by another
+                    logger.warning(f"Could not acquire lock for {full_path}, writing anyway.")
+                    f.write(content)
+                    
             logger.info(f"Wrote vault file: {relative_path}")
             return True
         except Exception as e:
@@ -187,8 +219,22 @@ class VaultManager:
         for fpath in self.list_files(self.PARTY):
             fm, body = self.read_file(fpath)
             if fm.get('name', '').lower() == name.lower():
-                fm.update(updates)
-                return self.write_file(fpath, fm, body)
+                try:
+                    # Merge and validate
+                    merged = {**fm, **updates}
+                    # Validate with Pydantic
+                    model = PartyMember(**merged)
+                    # Update with validated data
+                    # model_dump is V2, dict is V1. Using dict() for broader compatibility if V1
+                    if hasattr(model, 'model_dump'):
+                        fm.update(model.model_dump())
+                    else:
+                        fm.update(model.dict())
+                    
+                    return self.write_file(fpath, fm, body)
+                except ValidationError as e:
+                    logger.error(f"Validation failed for party member {name}: {e}")
+                    return False
         logger.warning(f"Party member not found: {name}")
         return False
     

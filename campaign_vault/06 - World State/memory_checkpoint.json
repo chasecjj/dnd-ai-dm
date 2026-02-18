@@ -2,10 +2,15 @@
   {
     "text": "The party asks Durnan about rumors surrounding Undermountain, receiving a cryptic warning.",
     "base_impact": 4,
-    "turns_ago": 3
+    "turns_ago": 4
   },
   {
     "text": "Frognar has a flashback to his religious upbringing, learning about Moradin and the Forgekeepers.",
+    "base_impact": 4,
+    "turns_ago": 3
+  },
+  {
+    "text": "Frognar leaves the Yawning Portal and heads towards the market district, inviting Kallisar to join him.",
     "base_impact": 4,
     "turns_ago": 2
   },
@@ -15,7 +20,7 @@
     "turns_ago": 1
   },
   {
-    "text": "Frognar leaves the Yawning Portal and heads towards the market district, inviting Kallisar to join him.",
+    "text": "Frognar roleplays as the new party member, Borin Stonehand, expressing interest in Undermountain and adventure.",
     "base_impact": 4,
     "turns_ago": 0
   }

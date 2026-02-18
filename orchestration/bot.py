@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from google import genai
 
 # Core utilities
+from tools.campaign_manager import CampaignManager
 from tools.vault_manager import VaultManager
 from tools.context_assembler import ContextAssembler
 from tools.reference_manager import ReferenceManager
@@ -89,6 +90,10 @@ MODEL_ID = "gemini-2.0-flash"
 # ---------------------------------------------------------------------------
 # Vault & Context (the new state backbone)
 # ---------------------------------------------------------------------------
+# Initialize Campaign Manager & Ensure Migration
+campaign_manager = CampaignManager(root_dir=".")
+campaign_manager.ensure_migration()
+
 vault = VaultManager(vault_path="campaign_vault")
 ref_manager = ReferenceManager()
 context_assembler = ContextAssembler(vault, reference_manager=ref_manager)
@@ -122,7 +127,7 @@ chronicler = ChroniclerAgent(client, vault, context_assembler, model_id=MODEL_ID
 world_architect = WorldArchitectAgent(client, vault, context_assembler, model_id=MODEL_ID)
 campaign_planner = CampaignPlannerAgent(client, vault, context_assembler, model_id=MODEL_ID)
 prep_router = PrepRouterAgent(client, context_assembler, model_id=MODEL_ID)
-cartographer_agent = CartographerAgent(client, foundry=foundry_client, vault=vault, model_id=MODEL_ID)
+cartographer_agent = CartographerAgent(client, foundry=foundry_client, vault=vault, model_id=MODEL_ID, output_dir=os.path.join(vault.vault_path, "Assets", "Maps"))
 
 # Set the starting location from the world clock / vault
 _world_clock = vault.read_world_clock()
@@ -181,6 +186,66 @@ async def on_ready():
 # ---------------------------------------------------------------------------
 # Commands
 # ---------------------------------------------------------------------------
+@bot.group(name='campaign', invoke_without_command=True)
+async def campaign_cmd(ctx):
+    """Manage campaigns.
+    Usage: !campaign list
+           !campaign new <name>
+           !campaign load <name>
+    """
+    await ctx.send("available subcommands: `list`, `new`, `load`")
+
+@campaign_cmd.command(name='list')
+async def campaign_list(ctx):
+    """List all available campaigns."""
+    campaigns = campaign_manager.list_campaigns()
+    active = campaign_manager.get_active_campaign()
+    
+    lines = ["**Available Campaigns:**"]
+    for c in campaigns:
+        icon = "🟢" if c == active else "⚪"
+        lines.append(f"{icon} {c}")
+    
+    await ctx.send('\n'.join(lines))
+
+@campaign_cmd.command(name='new')
+async def campaign_new(ctx, *, name: str):
+    """Create a new campaign."""
+    # Sanitize name slightly to prevent path issues
+    safe_name = "".join(c for c in name if c.isalnum() or c in " -_").strip()
+    if not safe_name:
+        await ctx.send("❌ Invalid campaign name.")
+        return
+
+    if campaign_manager.create_campaign(safe_name):
+        await ctx.send(f"✅ Created campaign **{safe_name}**. Use `!campaign load {safe_name}` to switch.")
+    else:
+        await ctx.send(f"❌ Failed to create campaign **{safe_name}**. It might already exist.")
+
+@campaign_cmd.command(name='load')
+async def campaign_load(ctx, *, name: str):
+    """Switch to a different campaign."""
+    if campaign_manager.set_campaign(name):
+        # We need to clear the in-memory caches of our agents
+        context_assembler.history.clear()
+        
+        # Reload world clock to check if it's a fresh campaign
+        clock = vault.read_world_clock()
+        loc = clock.get('current_location', 'Unknown')
+        storyteller.set_location(loc)
+        
+        await ctx.send(f"✅ **Loaded Campaign: {name}**\n📍 Location: {loc}\n📝 Memory cleared for new context.")
+    else:
+        await ctx.send(f"❌ Failed to load campaign **{name}**. Does it exist?")
+
+@bot.command(name='save')
+async def save_game(ctx):
+    """Confirm that the game state is saved."""
+    # Since we use a file-based vault, it is always saved. 
+    # This is mostly for player peace of mind or forcing a git commit if we added that later.
+    await ctx.send("💾 **Game Saved.** (Vault state is persistent)")
+
+
 @bot.command(name='reset')
 async def reset_game(ctx):
     """Resets agent state (conversation history). Vault data is preserved.
