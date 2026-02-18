@@ -1,9 +1,16 @@
 """
-ContextAssembler — Builds focused, dynamic prompts from the vault.
+ContextAssembler — Builds focused, dynamic prompts from the vault + StateManager.
 
 Replaces all hardcoded context. Uses weighted memory decay
 so important events persist longer in the AI's context window
 while flavor text fades naturally.
+
+Data source priority:
+  1. StateManager (MongoDB) — mechanical truth: HP, conditions, quests, consequences.
+  2. Vault (Obsidian markdown) — narrative prose: descriptions, lore, session logs.
+  3. Reference Manager — extracted source-book rules and lore excerpts.
+
+If StateManager is not connected, falls back silently to vault-only mode.
 """
 
 import json
@@ -14,6 +21,7 @@ from tools.vault_manager import VaultManager
 
 if TYPE_CHECKING:
     from tools.reference_manager import ReferenceManager
+    from tools.state_manager import StateManager
 
 logger = logging.getLogger('ContextAssembler')
 
@@ -134,9 +142,15 @@ class ContextAssembler:
       - Reference excerpts: ~1000 tokens (from Reference Manager, when available)
     """
     
-    def __init__(self, vault: VaultManager, reference_manager: Optional['ReferenceManager'] = None):
+    def __init__(
+        self,
+        vault: VaultManager,
+        reference_manager: Optional['ReferenceManager'] = None,
+        state_manager: Optional['StateManager'] = None,
+    ):
         self.vault = vault
         self.reference_manager = reference_manager
+        self.state_manager = state_manager  # Optional async MongoDB backend
         self.history = ConversationHistory()
         self.current_session = 0
         self._last_query: Optional[str] = None  # Tracks latest player action for reference search
@@ -425,6 +439,201 @@ class ContextAssembler:
         history_text = self.history.format_for_prompt()
         return f"## Recent Events (weighted by importance)\n{history_text}"
     
+    # ------------------------------------------------------------------
+    # Async Context Builders (StateManager-backed, vault fallback)
+    # ------------------------------------------------------------------
+
+    @property
+    def _has_db(self) -> bool:
+        """True if StateManager is connected and usable."""
+        return self.state_manager is not None and self.state_manager.is_connected
+
+    async def build_storyteller_context_async(self, current_location: Optional[str] = None, query: Optional[str] = None) -> str:
+        """Async version of build_storyteller_context — prefers StateManager for mechanical data."""
+        sections = []
+
+        # 1. Party State — prefer DB for HP/conditions accuracy
+        sections.append(await self._build_party_section_async())
+
+        # 2. Current Location + NPCs — vault for prose, DB for NPC status
+        if current_location:
+            sections.append(await self._build_location_section_async(current_location))
+
+        # 3. Active Quests — prefer DB
+        sections.append(await self._build_quest_section_async())
+
+        # 4. Due Consequences — prefer DB
+        consequences = await self._build_consequence_section_async()
+        if consequences:
+            sections.append(consequences)
+
+        # 5. World Clock
+        sections.append(self._build_clock_section())
+
+        # 6. Conversation History (weighted)
+        sections.append(self._build_history_section())
+
+        # 7. Reference excerpts
+        ref_query = query or self._last_query
+        if ref_query:
+            refs = self._build_reference_section(ref_query, mode='lore')
+            if refs:
+                sections.append(refs)
+
+        return "\n\n---\n\n".join(sections)
+
+    async def build_rules_lawyer_context_async(self, query: Optional[str] = None) -> str:
+        """Async version — DB-backed party for accurate stats."""
+        sections = []
+        sections.append(await self._build_party_section_async(detailed=True))
+        sections.append(self._build_history_section())
+
+        ref_query = query or self._last_query
+        if ref_query:
+            refs = self._build_reference_section(ref_query, mode='rules')
+            if refs:
+                sections.append(refs)
+
+        return "\n\n---\n\n".join(sections)
+
+    async def build_chronicler_context_async(self, player_action: str, rules_response: str,
+                                              story_response: str, current_location: str = None) -> str:
+        """Async chronicler context — DB-backed party and quests."""
+        sections = []
+        sections.append(await self._build_party_section_async())
+
+        if current_location:
+            sections.append(await self._build_location_section_async(current_location))
+
+        sections.append(f"## Player Action\n{player_action}")
+        sections.append(f"## Rules Ruling\n{rules_response}")
+        sections.append(f"## Storyteller Narrative\n{story_response}")
+        sections.append(await self._build_quest_section_async())
+        sections.append(self._build_history_section())
+
+        consequences = await self._build_consequence_section_async()
+        if consequences:
+            sections.append(consequences)
+
+        return "\n\n---\n\n".join(sections)
+
+    # ------------------------------------------------------------------
+    # Async Section Builders (StateManager → vault fallback)
+    # ------------------------------------------------------------------
+
+    async def _build_party_section_async(self, detailed: bool = False) -> str:
+        """Build party section. Uses StateManager if available, else vault."""
+        if not self._has_db:
+            return self._build_party_section(detailed)
+
+        try:
+            characters = await self.state_manager.get_all_characters()
+            if not characters:
+                return self._build_party_section(detailed)
+
+            lines = ["## Party"]
+            for char in characters:
+                name = char.get("name", "?")
+                char_class = char.get("class", char.get("char_class", "?"))
+                level = char.get("level", "?")
+                hp = char.get("hp", "?")
+                hp_max = char.get("hp_max", "?")
+                conditions = char.get("conditions", [])
+                cond_str = f" [{', '.join(conditions)}]" if conditions else ""
+                lines.append(f"- **{name}** (Lvl {level} {char_class}) — HP {hp}/{hp_max}{cond_str}")
+
+                if detailed:
+                    slots_used = char.get("spell_slots_used", 0)
+                    slots_max = char.get("spell_slots_max", 0)
+                    if slots_max > 0:
+                        lines.append(f"  Spell Slots: {slots_max - slots_used}/{slots_max} remaining")
+                    loh = char.get("lay_on_hands_pool")
+                    if loh is not None:
+                        lines.append(f"  Lay on Hands Pool: {loh}")
+                lines.append("")
+
+            return "\n".join(lines)
+        except Exception as e:
+            logger.warning(f"StateManager party fetch failed, falling back to vault: {e}")
+            return self._build_party_section(detailed)
+
+    async def _build_location_section_async(self, location_name: str) -> str:
+        """Build location section. Vault for prose, DB for NPC alive/disposition status."""
+        # Vault provides the rich prose description
+        base = self._build_location_section(location_name)
+
+        # If DB is available, override NPC statuses with authoritative data
+        if not self._has_db:
+            return base
+
+        try:
+            npcs = await self.state_manager.get_all_npcs()
+            npcs_here = [n for n in npcs if n.get("location", "").lower() == location_name.lower()]
+            if not npcs_here:
+                return base
+
+            # Replace the vault's NPC section with DB-accurate statuses
+            npc_lines = ["\n### NPCs Present (verified)"]
+            for npc in npcs_here:
+                name = npc.get("name", "?")
+                role = npc.get("role", "?")
+                alive = npc.get("alive", True)
+                disposition = npc.get("disposition", "unknown")
+                status = "DEAD" if not alive else disposition
+                npc_lines.append(f"- **{name}** ({role}) — {status}")
+
+            # If vault base already has an NPC section, replace it
+            if "### NPCs Present" in base:
+                idx = base.index("### NPCs Present")
+                base = base[:idx].rstrip()
+            return base + "\n" + "\n".join(npc_lines)
+        except Exception as e:
+            logger.warning(f"StateManager NPC fetch failed: {e}")
+            return base
+
+    async def _build_quest_section_async(self) -> str:
+        """Build active quests section. Uses StateManager if available."""
+        if not self._has_db:
+            return self._build_quest_section()
+
+        try:
+            quests = await self.state_manager.get_all_quests()
+            active = [q for q in quests if q.get("status") == "active"]
+            if not active:
+                return "## Active Quests\nNo active quests."
+
+            lines = ["## Active Quests"]
+            for q in active:
+                name = q.get("name", "?")
+                giver = q.get("quest_giver", "?")
+                status = q.get("status", "?")
+                lines.append(f"- **{name}** (from {giver}) — Status: {status}")
+            return "\n".join(lines)
+        except Exception as e:
+            logger.warning(f"StateManager quest fetch failed: {e}")
+            return self._build_quest_section()
+
+    async def _build_consequence_section_async(self) -> Optional[str]:
+        """Build due consequences section. Uses StateManager if available."""
+        if not self._has_db:
+            return self._build_consequence_section()
+
+        try:
+            consequences = await self.state_manager.get_pending_consequences()
+            due = [c for c in consequences if c.get("trigger_session", 999) <= self.current_session]
+            if not due:
+                return None
+
+            lines = ["## ⚠️ Due Consequences (weave these into the narrative)"]
+            for c in due:
+                lines.append(f"- **{c.get('event', '?')}** (impact: {c.get('impact', '?')})")
+                if c.get("notes"):
+                    lines.append(f"  _{c['notes']}_")
+            return "\n".join(lines)
+        except Exception as e:
+            logger.warning(f"StateManager consequence fetch failed: {e}")
+            return self._build_consequence_section()
+
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
