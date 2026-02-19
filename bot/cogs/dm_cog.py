@@ -17,16 +17,11 @@ class DMCog(commands.Cog, name="DM Commands"):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        # Import shared state from bot.client
-        from bot.client import (
-            campaign_manager, vault, context_assembler, storyteller,
-            ref_manager,
-        )
-        self.campaign_manager = campaign_manager
-        self.vault = vault
-        self.context_assembler = context_assembler
-        self.storyteller = storyteller
-        self.ref_manager = ref_manager
+        self.campaign_manager = bot.campaign_manager
+        self.vault = bot.vault
+        self.context_assembler = bot.context_assembler
+        self.storyteller = bot.storyteller
+        self.ref_manager = bot.ref_manager
 
     # ------------------------------------------------------------------
     # !campaign group

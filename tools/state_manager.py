@@ -14,6 +14,7 @@ Requires:
 """
 
 import os
+import re
 import logging
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
@@ -113,7 +114,7 @@ class StateManager:
         """Get a character by name (case-insensitive)."""
         self._require_connection()
         doc = await self._db.characters.find_one(
-            {"name": {"$regex": f"^{name}$", "$options": "i"}}
+            {"name": {"$regex": f"^{re.escape(name)}$", "$options": "i"}}
         )
         if doc:
             doc.pop("_id", None)
@@ -162,7 +163,7 @@ class StateManager:
     async def get_npc(self, name: str) -> Optional[Dict[str, Any]]:
         self._require_connection()
         doc = await self._db.npcs.find_one(
-            {"name": {"$regex": f"^{name}$", "$options": "i"}}
+            {"name": {"$regex": f"^{re.escape(name)}$", "$options": "i"}}
         )
         if doc:
             doc.pop("_id", None)
@@ -181,7 +182,7 @@ class StateManager:
     async def get_npcs_at_location(self, location: str) -> List[Dict[str, Any]]:
         self._require_connection()
         cursor = self._db.npcs.find(
-            {"location": {"$regex": location, "$options": "i"}, "alive": True}
+            {"location": {"$regex": re.escape(location), "$options": "i"}, "alive": True}
         )
         results = []
         async for doc in cursor:
@@ -249,7 +250,7 @@ class StateManager:
     async def get_location(self, name: str) -> Optional[Dict[str, Any]]:
         self._require_connection()
         doc = await self._db.locations.find_one(
-            {"name": {"$regex": f"^{name}$", "$options": "i"}}
+            {"name": {"$regex": f"^{re.escape(name)}$", "$options": "i"}}
         )
         if doc:
             doc.pop("_id", None)
@@ -339,7 +340,7 @@ class StateManager:
     async def resolve_consequence(self, event_text: str, session: int) -> bool:
         self._require_connection()
         result = await self._db.consequences.update_one(
-            {"event": {"$regex": event_text, "$options": "i"}, "status": "pending"},
+            {"event": {"$regex": re.escape(event_text), "$options": "i"}, "status": "pending"},
             {"$set": {"status": "resolved", "resolved_session": session}},
         )
         return result.modified_count > 0
@@ -434,13 +435,16 @@ class StateManager:
             updates = qu.model_dump(exclude_none=True, exclude={"name"})
             if updates:
                 existing_quests = await self._db.quests.find_one(
-                    {"name": {"$regex": f"^{qu.name}$", "$options": "i"}}
+                    {"name": {"$regex": f"^{re.escape(qu.name)}$", "$options": "i"}}
                 )
                 if existing_quests:
                     existing_quests.pop("_id", None)
                     merged = {**existing_quests, **updates}
-                    await self.upsert_quest(merged)
-                summary["quests"] += 1
+                    success = await self.upsert_quest(merged)
+                    if success:
+                        summary["quests"] += 1
+                else:
+                    logger.warning(f"Quest not found for update, skipping: {qu.name}")
 
         # 5. Patch locations
         for lu in output.location_updates:

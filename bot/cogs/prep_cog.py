@@ -17,22 +17,16 @@ class PrepCog(commands.Cog, name="Prep Commands"):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        from bot.client import (
-            vault, gemini_client, MODEL_ID, foundry_client,
-            world_architect, campaign_planner, foundry_architect,
-            cartographer_agent, send_to_moderator_log,
-            WAR_ROOM_CHANNEL_ID,
-        )
-        self.vault = vault
-        self.gemini_client = gemini_client
-        self.model_id = MODEL_ID
-        self.foundry_client = foundry_client
-        self.world_architect = world_architect
-        self.campaign_planner = campaign_planner
-        self.foundry_architect = foundry_architect
-        self.cartographer_agent = cartographer_agent
-        self.send_to_moderator_log = send_to_moderator_log
-        self.war_room_channel_id = WAR_ROOM_CHANNEL_ID
+        self.vault = bot.vault
+        self.gemini_client = bot.gemini_client
+        self.model_id = bot.model_id
+        self.foundry_client = bot.foundry_client
+        self.world_architect = bot.world_architect
+        self.campaign_planner = bot.campaign_planner
+        self.foundry_architect = bot.foundry_architect
+        self.cartographer_agent = bot.cartographer_agent
+        self.send_to_moderator_log = bot.send_to_moderator_log
+        self.war_room_channel_id = bot.war_room_channel_id
 
     # ------------------------------------------------------------------
     # !prep

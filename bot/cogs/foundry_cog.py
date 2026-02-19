@@ -81,15 +81,11 @@ class FoundryCog(commands.Cog, name="Foundry VTT Commands"):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        from bot.client import (
-            foundry_client, foundry_architect, gemini_client, MODEL_ID,
-            send_to_moderator_log,
-        )
-        self.foundry = foundry_client
-        self.foundry_architect = foundry_architect
-        self.gemini_client = gemini_client
-        self.model_id = MODEL_ID
-        self.send_to_moderator_log = send_to_moderator_log
+        self.foundry = bot.foundry_client
+        self.foundry_architect = bot.foundry_architect
+        self.gemini_client = bot.gemini_client
+        self.model_id = bot.model_id
+        self.send_to_moderator_log = bot.send_to_moderator_log
 
     # ------------------------------------------------------------------
     # !setup

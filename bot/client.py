@@ -201,6 +201,26 @@ async def send_to_moderator_log(content: str):
 
 
 # ---------------------------------------------------------------------------
+# Attach shared services to bot so cogs can access them via self.bot
+# ---------------------------------------------------------------------------
+bot.campaign_manager = campaign_manager
+bot.vault = vault
+bot.context_assembler = context_assembler
+bot.state_manager = state_manager
+bot.ref_manager = ref_manager
+bot.foundry_client = foundry_client
+bot.foundry_architect = foundry_architect
+bot.gemini_client = gemini_client
+bot.model_id = MODEL_ID
+bot.storyteller = storyteller
+bot.world_architect = world_architect
+bot.campaign_planner = campaign_planner
+bot.cartographer_agent = cartographer_agent
+bot.send_to_moderator_log = send_to_moderator_log
+bot.war_room_channel_id = WAR_ROOM_CHANNEL_ID
+
+
+# ---------------------------------------------------------------------------
 # Scene Sync Helpers
 # ---------------------------------------------------------------------------
 def _build_architect_request(scene_changes: dict, narrative: str) -> str:
