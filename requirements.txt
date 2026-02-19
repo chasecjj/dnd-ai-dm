@@ -5,3 +5,11 @@ google-genai
 pyyaml
 PyMuPDF
 pydantic
+
+# Phase 1 — Data Layer (MongoDB)
+motor
+pymongo
+
+# Phase 3 — LangGraph Pipeline
+langgraph
+langchain-core
