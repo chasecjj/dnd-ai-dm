@@ -71,6 +71,10 @@ After all rolls are captured, the DM resolves the turn and the AI narrates what 
 - `2d20kh1+5` — advantage (roll 2d20, keep highest, add modifier)
 - `2d20kl1+5` — disadvantage (roll 2d20, keep lowest, add modifier)
 
+> **If Foundry VTT is not connected:** The `!roll` command won't work. Your DM
+> can use an external dice roller and input results manually, or you can roll
+> physical dice and tell the DM your result in the Game Table.
+
 ### Information
 
 | Command | What it does |
@@ -126,6 +130,19 @@ When your action is in the queue, you'll see these status indicators if you chec
 | 🔍 | **Analyzing** — the AI is figuring out if you need to roll |
 | 🎲 | **Awaiting Roll** — you need to roll dice (check Game Table for the prompt) |
 | 🟢 | **Ready** — all set, waiting for DM to resolve the turn |
+
+### What if my action is stuck?
+
+If your action stays in **Pending** for a while, that's normal — it means the
+DM hasn't reviewed it yet. In Queue Mode, the DM clicks **Analyze** to review
+actions and **Resolve Turn** to trigger the AI narrative.
+
+If you're stuck on **Awaiting Roll**, check the Game Table channel — the bot
+should have posted a roll prompt for you (e.g., "Frognar, roll Perception:
+`!roll 1d20+3`"). Type the `!roll` command exactly as shown.
+
+If you're unsure about your action's state, click the **My Queue Status**
+button in your private thread.
 
 ---
 

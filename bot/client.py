@@ -177,7 +177,7 @@ logger.info("Memory checkpoint loaded.")
 # ---------------------------------------------------------------------------
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 
 # ---------------------------------------------------------------------------
@@ -579,6 +579,31 @@ async def on_ready():
         logger.error(f"Slash command sync failed: {e}")
 
     print("D&D AI System Online. Vault-backed state is active.")
+
+    # First-run guidance — detect empty campaign state
+    try:
+        party = vault.get_party_state()
+        if not party:
+            print(
+                "\n"
+                "============================================================\n"
+                "  FIRST-RUN SETUP NEEDED\n"
+                "============================================================\n"
+                "  No party members found in the vault.\n"
+                "\n"
+                "  To get started:\n"
+                "  1. Type /console in any Discord channel to open the\n"
+                "     DM Admin Console\n"
+                "  2. If Foundry VTT is connected, use the Register button\n"
+                "     (or !register <name>) to import characters\n"
+                "  3. Or manually create .md files in\n"
+                "     campaign_vault/01 - Party/\n"
+                "\n"
+                "  See docs/GETTING_STARTED.md for full instructions.\n"
+                "============================================================\n"
+            )
+    except Exception:
+        pass  # Don't let a guidance message break startup
 
 
 @bot.event

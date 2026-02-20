@@ -24,6 +24,59 @@ class DMCog(commands.Cog, name="DM Commands"):
         self.ref_manager = bot.ref_manager
 
     # ------------------------------------------------------------------
+    # !help
+    # ------------------------------------------------------------------
+    @commands.command(name="help")
+    async def help_cmd(self, ctx):
+        """Show available commands and how to get started."""
+        embed = discord.Embed(
+            title="D&D AI Dungeon Master — Commands",
+            color=discord.Color.blue(),
+        )
+        embed.add_field(
+            name="Getting Started",
+            value=(
+                "`/console` — Open the DM Admin Console (start here!)\n"
+                "`/whisper` — Open your private action thread (players)\n"
+                "`!status` — Show party HP, AC, conditions, quests"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="Foundry VTT",
+            value=(
+                "`!roll 1d20+5` — Roll dice\n"
+                "`!monster <name>` — Look up a monster\n"
+                "`!pc <name>` — Look up a character\n"
+                "`!build <description>` — Build an encounter\n"
+                "`!foundry` — Check Foundry connection"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="Campaign",
+            value=(
+                "`!campaign list/new/load` — Manage campaigns\n"
+                "`!register <name>` — Import character from Foundry\n"
+                "`!sync` — Pull latest stats from Foundry\n"
+                "`!recap [session#]` — Show session recap\n"
+                "`!reset` — Clear conversation memory"
+            ),
+            inline=False,
+        )
+        embed.add_field(
+            name="Session Prep (War Room)",
+            value=(
+                "`!prep <description>` — AI blind-preps a session\n"
+                "`!brainstorm <topic>` — Worldbuilding ideas\n"
+                "`!plan <notes>` — Plan a session"
+            ),
+            inline=False,
+        )
+        embed.set_footer(text="Full guide: docs/DM_GUIDE.md | Player guide: docs/PLAYER_GUIDE.md")
+        await ctx.send(embed=embed)
+
+    # ------------------------------------------------------------------
     # !campaign group
     # ------------------------------------------------------------------
     @commands.group(name="campaign", invoke_without_command=True)
@@ -72,7 +125,11 @@ class DMCog(commands.Cog, name="DM Commands"):
     @commands.command(name="save")
     async def save_game(self, ctx):
         """Confirm that the game state is saved."""
-        await ctx.send("💾 **Game Saved.** (Vault state is persistent)")
+        await ctx.send(
+            "The vault auto-saves after every turn. "
+            "Your campaign data is always persistent — there is nothing to manually save.\n"
+            "Use `!reset` if you need to clear conversation memory."
+        )
 
     # ------------------------------------------------------------------
     # !reset

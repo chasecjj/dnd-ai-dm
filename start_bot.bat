@@ -26,7 +26,11 @@ goto MENU
 
 :START_DOCKER
 echo Starting Docker Desktop...
-start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+if exist "C:\Program Files\Docker\Docker\Docker Desktop.exe" (
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+) else (
+    echo WARNING: Docker Desktop not found at expected path. Please start it manually.
+)
 goto START_BOT
 
 :START_FOUNDRY
@@ -36,7 +40,11 @@ goto START_BOT
 
 :START_ALL
 echo Starting Docker Desktop...
-start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+if exist "C:\Program Files\Docker\Docker\Docker Desktop.exe" (
+    start "" "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+) else (
+    echo WARNING: Docker Desktop not found at expected path. Please start it manually.
+)
 echo Waiting 10 seconds for Docker to initialize...
 timeout /t 10 /nobreak
 

@@ -68,7 +68,13 @@ pip install -r requirements.txt
 
 ### 4. Create the `.env` file
 
-Create a file called `.env` in the project root with these values:
+Copy the example environment file and fill in your values:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` with your tokens and channel IDs:
 
 ```env
 # === REQUIRED ===
@@ -94,6 +100,11 @@ MONGODB_URI=mongodb://localhost:27017/dnd_ai_dm
 
 ### 5. Set up character files in the vault
 
+> **Note:** The `campaign_vault/` directory is created automatically on first run.
+> It links to your active campaign under `campaigns/`. The bot creates a "Default"
+> campaign with the standard folder structure. You can manage campaigns later with
+> `!campaign list`, `!campaign new`, and `!campaign load`.
+
 For each player character, create a markdown file in `campaign_vault/01 - Party/`:
 
 **Example: `campaign_vault/01 - Party/Frognar.md`**
@@ -115,17 +126,34 @@ conditions: []
 A fierce half-orc barbarian from the northern wastes...
 ```
 
-### 6. Set up the world clock
+#### Alternative: Import from Foundry VTT
 
-Create `campaign_vault/06 - World State/World Clock.md`:
-```markdown
+If you have Foundry VTT running with your characters already created, you can
+import them instead of writing files by hand:
+
+```
+!register Frognar
+```
+
+This searches Foundry for an actor named "Frognar", pulls their full stat block,
+and creates the vault file automatically. You can also use the **Register** button
+in the DM Admin Console (`/console`).
+
+### 6. Edit the world clock
+
+The bot creates `campaign_vault/06 - World State/clock.md` automatically on first
+run. Open it and customize the starting date and location:
+
+```yaml
 ---
-session_number: 1
-current_date: "1st of Hammer, 1492 DR"
-time_of_day: morning
+current_date: 1492-01-01
+time_of_day: Morning
+session: 1
 current_location: The Yawning Portal
 ---
 ```
+
+The `current_location` field sets where the Storyteller starts narrating from.
 
 ### 7. Run the bot
 
@@ -142,6 +170,13 @@ You should see:
 ```
 D&D AI System Online. Vault-backed state is active.
 ```
+
+### 8. Open the DM Admin Console
+
+Type `/console` in any Discord channel. This creates a private thread with a
+dashboard showing party status, session info, and control buttons for managing
+the game. This is your primary interface — see [docs/DM_GUIDE.md](DM_GUIDE.md)
+for the full walkthrough.
 
 ---
 

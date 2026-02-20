@@ -24,7 +24,7 @@ pytest tests/test_vault_models.py -v
 pyright .
 ```
 
-No formal linter or formatter is configured. Python 3.14, Pydantic v2.
+No formal linter or formatter is configured. Python 3.12+ (developed on 3.14), Pydantic v2.
 
 ## Architecture
 
@@ -110,13 +110,9 @@ Default/
 └── Assets/              # Maps/, Tokens/
 ```
 
-## Key Reference: `gemini.md`
-
-`gemini.md` is the **project constitution**. All data schemas (Character, NPC, Quest, Location, WorldClock, Consequence, GameEvent, ChroniclerOutput), behavioral rules, and architectural invariants are defined there. When schemas change, `gemini.md` is updated first.
-
 ## Architectural Invariants
 
-These rules are from `gemini.md` and must be followed:
+These are the project's architectural invariants and must be followed:
 
 1. **Data-First Rule** — No tool writes to the database without passing through a Pydantic model. No raw dicts or JSON strings written directly.
 2. **Vault = Narrative, MongoDB = Mechanical** — Obsidian holds prose (session logs, lore, NPC backstories). MongoDB holds mechanical state (HP, conditions, quest status, world clock). Vault is never source of truth for mechanical data.

@@ -846,11 +846,20 @@ class AdminConsoleView(discord.ui.View):
     async def toggle_mode(self, interaction: discord.Interaction, button):
         """Toggle between queue mode and auto mode."""
         new_state = self.admin_cog.queue.toggle_queue_mode()
-        mode_str = "Queue Mode" if new_state else "Auto Mode"
+        if new_state:
+            mode_msg = (
+                "Switched to **Queue Mode** — Player messages are queued "
+                "with an hourglass reaction. You review, analyze, and "
+                "resolve turns manually. Best for combat and important scenes."
+            )
+        else:
+            mode_msg = (
+                "Switched to **Auto Mode** — Player messages trigger the "
+                "full AI pipeline immediately. Narrative posts within "
+                "seconds, no DM review. Best for exploration and casual RP."
+            )
         await self.admin_cog.refresh_console()
-        await interaction.response.send_message(
-            f"Switched to **{mode_str}**.", ephemeral=True
-        )
+        await interaction.response.send_message(mode_msg, ephemeral=True)
 
     # --- Row 4: Character Sync + Console Mode ---
 
@@ -917,8 +926,18 @@ class AdminConsoleView(discord.ui.View):
     async def toggle_ooc(self, interaction: discord.Interaction, button):
         """Toggle between Out-of-Character (system chat) and In-Character mode."""
         self.admin_cog._is_ooc = not self.admin_cog._is_ooc
-        mode = "OOC (System Chat)" if self.admin_cog._is_ooc else "IC (In-Character)"
+        if self.admin_cog._is_ooc:
+            mode_msg = (
+                "Console mode: **OOC (System Chat)**\n"
+                "Messages you type in this thread go to the AI as system "
+                "questions. Ask about game state, rules, or troubleshooting."
+            )
+        else:
+            mode_msg = (
+                "Console mode: **IC (In-Character)**\n"
+                "Messages you type in this thread are treated as your "
+                "character's actions — queued in Queue Mode or sent through "
+                "the pipeline in Auto Mode."
+            )
         await self.admin_cog.refresh_console()
-        await interaction.response.send_message(
-            f"Console mode: **{mode}**", ephemeral=True
-        )
+        await interaction.response.send_message(mode_msg, ephemeral=True)

@@ -82,7 +82,17 @@ class CampaignManager:
             
             for folder in subfolders:
                 (target / folder).mkdir(parents=True, exist_ok=True)
-                
+
+            # Copy templates from Default campaign (if available)
+            default_templates = self.campaigns_dir / "Default" / "_templates"
+            new_templates = target / "_templates"
+            if default_templates.exists() and name != "Default":
+                for tmpl in default_templates.glob("*.md"):
+                    dest = new_templates / tmpl.name
+                    if not dest.exists():
+                        shutil.copy2(str(tmpl), str(dest))
+                logger.info(f"Copied templates from Default to '{name}'")
+
             # Create default clock
             world_state = target / "06 - World State"
             with open(world_state / "clock.md", "w", encoding="utf-8") as f:

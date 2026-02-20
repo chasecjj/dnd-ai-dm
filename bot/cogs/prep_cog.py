@@ -38,7 +38,10 @@ class PrepCog(commands.Cog, name="Prep Commands"):
 
         logger.info(f"Blind prep from {ctx.author}: {description}")
         await ctx.send("🧙 **Blind Prep Started** — AI is preparing your session...")
-        await ctx.send("*Spoiler-free details will appear in the moderator log.*")
+        import os
+        mod_channel_id = os.getenv("MODERATOR_LOG_CHANNEL_ID")
+        mod_mention = f"<#{mod_channel_id}>" if mod_channel_id else "the Moderator Log channel"
+        await ctx.send(f"*Spoiler-free details will appear in {mod_mention}.*")
 
         try:
             async with ctx.typing():
@@ -77,7 +80,7 @@ class PrepCog(commands.Cog, name="Prep Commands"):
     async def brainstorm_cmd(self, ctx, *, topic: str):
         """Brainstorm worldbuilding ideas."""
         if self.war_room_channel_id and str(ctx.channel.id) != self.war_room_channel_id:
-            await ctx.send("🗺️ Brainstorming is only available in the War Room channel.")
+            await ctx.send(f"Brainstorming is only available in the War Room channel (<#{self.war_room_channel_id}>).")
             return
 
         logger.info(f"Brainstorm from {ctx.author}: {topic}")
@@ -101,7 +104,7 @@ class PrepCog(commands.Cog, name="Prep Commands"):
     async def plan_cmd(self, ctx, *, notes: str):
         """Plan a session."""
         if self.war_room_channel_id and str(ctx.channel.id) != self.war_room_channel_id:
-            await ctx.send("🗺️ Session planning is only available in the War Room channel.")
+            await ctx.send(f"Session planning is only available in the War Room channel (<#{self.war_room_channel_id}>).")
             return
 
         logger.info(f"Session plan from {ctx.author}: {notes}")
