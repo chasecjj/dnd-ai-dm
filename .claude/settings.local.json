@@ -10,7 +10,9 @@
       "Bash(.venv/Scripts/pip install:*)",
       "Bash(.venv/Scripts/python:*)",
       "Bash(\"/c/Users/chase/Documents/Antigravity Projects/.venv/Scripts/python.exe\" -m pip install --force-reinstall --no-deps langgraph langchain-core)",
-      "Bash(\"/c/Users/chase/Documents/Antigravity Projects/.venv/Scripts/python.exe\" -m pip install langgraph langchain-core)"
+      "Bash(\"/c/Users/chase/Documents/Antigravity Projects/.venv/Scripts/python.exe\" -m pip install langgraph langchain-core)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
