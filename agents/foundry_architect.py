@@ -57,8 +57,17 @@ class FoundryArchitectAgent:
         9. "end_encounter" — End the current combat encounter
            { "type": "end_encounter" }
 
-        10. "switch_scene" — Activate a different scene by name (searches for it first)
-            { "type": "switch_scene", "scene_name": "Forest Path" }
+        10. "activate_scene" — Activate a different scene by name
+            { "type": "activate_scene", "scene_name": "Forest Path" }
+
+        11. "execute_macro" — Run a Foundry macro (for Tagger, FXMaster, custom automation)
+            { "type": "execute_macro", "macro_name": "Rain Effect" }
+
+        12. "play_playlist" — Start playing a playlist by name
+            { "type": "play_playlist", "playlist_name": "Forest Ambience" }
+
+        13. "stop_playlist" — Stop all playing playlists
+            { "type": "stop_playlist" }
 
         JSON Output Format:
         {
@@ -71,7 +80,8 @@ class FoundryArchitectAgent:
         - Use descriptive names for new actors.
         - Always respond with ONLY the JSON object.
         - For lighting changes, ALWAYS use the set_darkness action.
-        - For scene changes, use switch_scene to find and activate the matching scene.
+        - For scene changes, use activate_scene to find and activate the matching scene.
+        - For ambient audio, use play_playlist with a descriptive name.
         """
 
     async def process_request(self, user_input: str) -> str:
@@ -81,8 +91,7 @@ class FoundryArchitectAgent:
         logger.info(f"Architect received request: {user_input}")
 
         if not self.foundry.is_connected:
-            # Try to connect
-            if not self.foundry.connect():
+            if not await self.foundry.connect():
                 return ("⚠️ **Foundry VTT is not connected.** "
                         "Make sure Foundry is running with the REST API module enabled.")
 
@@ -94,7 +103,7 @@ class FoundryArchitectAgent:
             prompt = f"""
             System Prompt: {self.system_prompt}
             User Request: {user_input}
-            
+
             Generate the JSON setup plan.
             """
 
@@ -134,8 +143,7 @@ class FoundryArchitectAgent:
             if action_type == "search":
                 query = action.get("query", "")
                 filter_type = action.get("filter")
-                result = self.foundry.search(query, filter_type=filter_type)
-                # Store search results in context for later use
+                result = await self.foundry.search(query, filter_type=filter_type)
                 context[f"search_{query}"] = result
                 return f"🔍 Searched for '{query}': found results"
 
@@ -148,8 +156,7 @@ class FoundryArchitectAgent:
                 if action.get("img"):
                     data["img"] = action["img"]
 
-                result = self.foundry.create_entity("Actor", data)
-                # Store the UUID for later reference
+                result = await self.foundry.create_entity("Actor", data)
                 if isinstance(result, dict):
                     uuid = result.get('uuid') or result.get('_id')
                     if uuid:
@@ -162,7 +169,7 @@ class FoundryArchitectAgent:
                     "name": name,
                     "type": action.get("item_type", "equipment"),
                 }
-                result = self.foundry.create_entity("Item", data)
+                await self.foundry.create_entity("Item", data)
                 return f"✅ Created Item '{name}'"
 
             elif action_type == "give_item":
@@ -170,13 +177,13 @@ class FoundryArchitectAgent:
                 item_name = action.get("item_name", "")
                 actor_uuid = context.get(f"actor_{actor_name}")
                 if actor_uuid:
-                    result = self.foundry.give_item(actor_uuid, item_name)
+                    await self.foundry.give_item(actor_uuid, item_name)
                     return f"🎒 Gave '{item_name}' to '{actor_name}'"
                 else:
                     return f"⚠️ Actor '{actor_name}' not found in context"
 
             elif action_type == "start_encounter":
-                result = self.foundry.start_encounter(
+                await self.foundry.start_encounter(
                     roll_npc=action.get("roll_npc", True),
                     start_with_players=action.get("start_with_players", False),
                 )
@@ -185,54 +192,50 @@ class FoundryArchitectAgent:
             elif action_type == "import_actor":
                 uuid = action.get("compendium_uuid", "")
                 name = action.get("name")
-                result = self.foundry.import_compendium_actor(uuid, name)
-                
-                # Update context
+                result = await self.foundry.import_compendium_actor(uuid, name)
+
                 if isinstance(result, dict):
                     new_uuid = result.get('uuid') or result.get('_id')
                     actor_name = result.get('name') or name or "Unknown"
                     if new_uuid:
                         context[f"actor_{actor_name}"] = new_uuid
-                        # Also map the compendium UUID to the new world UUID
                         context[uuid] = new_uuid
-                
+
                 return f"📥 Imported actor from {uuid}"
 
             elif action_type == "place_token":
                 actor_name = action.get("actor_name", "")
-                
-                # Resolve actor UUID from context or found results
+
+                # Resolve actor UUID from context or search results
                 actor_uuid = context.get(f"actor_{actor_name}")
                 if not actor_uuid:
-                    # Try to find in search results
                     for key, val in context.items():
                         if key.startswith("search_") and isinstance(val, list):
                             for item in val:
                                 if item.get('name') == actor_name:
                                     actor_uuid = item.get('uuid')
                                     break
-                
+
                 if not actor_uuid:
-                     return f"⚠️ Actor '{actor_name}' not found for placement"
+                    return f"⚠️ Actor '{actor_name}' not found for placement"
 
                 # Use active scene or specified scene
                 scene_uuid = action.get("scene_uuid")
                 if not scene_uuid:
-                    # Default to first active scene
-                    scenes = self.foundry.get_world_scenes()
+                    scenes = await self.foundry.get_world_scenes()
                     active = [s for s in scenes if s.get('active')]
                     if active:
                         scene_uuid = active[0]['uuid']
                     elif scenes:
                         scene_uuid = scenes[0]['uuid']
-                
+
                 if not scene_uuid:
                     return "⚠️ No active scene found for placement"
 
                 x = action.get("x", 1000)
                 y = action.get("y", 1000)
-                
-                self.foundry.place_token_on_scene(scene_uuid, actor_uuid, x, y)
+
+                await self.foundry.place_token_on_scene(scene_uuid, actor_uuid, x, y)
                 return f"📍 Placed '{actor_name}' at ({x}, {y})"
 
             elif action_type == "set_darkness":
@@ -242,32 +245,30 @@ class FoundryArchitectAgent:
                 except (TypeError, ValueError):
                     darkness = 0.0
 
-                # Apply to the active scene
-                scenes = self.foundry.get_world_scenes()
+                scenes = await self.foundry.get_world_scenes()
                 active = [s for s in scenes if s.get('active')]
                 if active:
                     scene_uuid = active[0]['uuid']
-                    self.foundry.update_scene_lighting(scene_uuid, darkness=darkness)
+                    await self.foundry.update_scene_lighting(scene_uuid, darkness=darkness)
                     return f"🌙 Set darkness to {darkness} on '{active[0].get('name', '?')}'"
                 elif scenes:
                     scene_uuid = scenes[0]['uuid']
-                    self.foundry.update_scene_lighting(scene_uuid, darkness=darkness)
+                    await self.foundry.update_scene_lighting(scene_uuid, darkness=darkness)
                     return f"🌙 Set darkness to {darkness} on '{scenes[0].get('name', '?')}'"
                 else:
                     return "⚠️ No scenes found to adjust lighting"
 
             elif action_type == "end_encounter":
                 encounter_id = action.get("encounter_id")
-                result = self.foundry.end_encounter(encounter_id=encounter_id)
+                await self.foundry.end_encounter(encounter_id=encounter_id)
                 return "🏳️ Combat encounter ended"
 
-            elif action_type == "switch_scene":
+            elif action_type == "activate_scene":
                 scene_name = action.get("scene_name", "")
                 if not scene_name:
                     return "⚠️ No scene name provided"
 
-                # Search for the scene by name
-                scenes = self.foundry.get_world_scenes()
+                scenes = await self.foundry.get_world_scenes()
                 match = None
                 for s in scenes:
                     if scene_name.lower() in s.get('name', '').lower():
@@ -275,12 +276,38 @@ class FoundryArchitectAgent:
                         break
 
                 if match:
-                    # Activate the scene
-                    self.foundry.update_entity(match['uuid'], {'active': True, 'navigation': True})
+                    await self.foundry.activate_scene(match['uuid'])
                     return f"🗺️ Switched to scene '{match.get('name', '?')}'"
                 else:
                     available = [s.get('name', '?') for s in scenes]
                     return f"⚠️ No scene matching '{scene_name}'. Available: {', '.join(available)}"
+
+            elif action_type == "execute_macro":
+                macro_name = action.get("macro_name", "")
+                args = action.get("args")
+                await self.foundry.execute_macro(macro_name, args)
+                return f"⚙️ Executed macro '{macro_name}'"
+
+            elif action_type == "play_playlist":
+                playlist_name = action.get("playlist_name", "")
+                playlists = await self.foundry.get_playlists()
+                match = next(
+                    (p for p in playlists
+                     if playlist_name.lower() in p.get('name', '').lower()),
+                    None
+                )
+                if match:
+                    await self.foundry.play_playlist(match.get('uuid', ''))
+                    return f"🎵 Playing playlist '{match.get('name', '?')}'"
+                return f"⚠️ Playlist '{playlist_name}' not found"
+
+            elif action_type == "stop_playlist":
+                await self.foundry.stop_all_playlists()
+                return "🔇 All playlists stopped"
+
+            # Legacy alias
+            elif action_type == "switch_scene":
+                return await self._execute_action("activate_scene", action, context)
 
             else:
                 return f"❓ Unknown action type: {action_type}"

@@ -5,8 +5,8 @@ region: Waterdeep
 district: Castle Ward
 owner: "[[Durnan]]"
 notable_npcs: ["[[Durnan]]", "[[Yagra Strongfist]]", "[[Krentz]]", "[[Volothamp Geddarm]]"]
-visited: true
-first_visited_session: 0
+visited: false
+first_visited_session: null
 tags: [location, tavern, key_location]
 ---
 # The Yawning Portal
@@ -15,23 +15,22 @@ tags: [location, tavern, key_location]
 A legendary tavern in Castle Ward, Waterdeep. Famous for the massive entry well in its center — a 140-foot shaft that leads down into the dungeon of Undermountain. The tavern is large, busy, and filled with adventurers, regulars, and the curious. Heavy oak tables, chandeliers overhead, a long bar. Smells of spilled ale, wood smoke, and excitement.
 
 ## Current State
-- **Post-Troll Attack:** The tavern is in disarray. Broken furniture, spilled drinks, dead Stirge remains on the floor. Patrons are emerging from under tables. A server was injured (unconscious but alive, being tended to by a regular).
-- The Troll has been **shoved back into the well** by [[Frognar Emberheart]].
-- [[Volothamp Geddarm]] has approached the party with a job offer.
-- [[Krentz]] was trying to sneak toward the exit.
+- A busy evening at the tavern. Patrons fill the tables, drinks are flowing, and the usual hum of adventurer gossip fills the room.
+- [[Durnan]] is behind the bar, keeping a watchful eye on the crowd.
+- The well sits in the center of the room, roped off with a simple barrier.
 
 ## Notable Features
-- **The Well:** A 140-ft shaft to Undermountain in the center of the room. Stone lip. The Troll climbed out of here and was shoved back in.
-- **Heavy Oak Tables:** Can be used as improvised weapons (Frognar proved this).
+- **The Well:** A 140-ft shaft to Undermountain in the center of the room. Stone lip, roped off.
+- **Heavy Oak Tables:** Sturdy tavern furniture throughout the common room.
 - **Chandeliers:** Could be used for environmental tactics.
-- **The Bar:** Long bar area where a server was attacked by a Stirge.
+- **The Bar:** Long bar area where servers move between patrons.
 
 ## NPCs Present
-- [[Durnan]] — Owner, bleeding from a claw swipe but standing strong.
-- [[Yagra Strongfist]] — Cheering the party after the fight.
-- [[Krentz]] — Trying to escape.
-- [[Volothamp Geddarm]] — Approaching the party with a quest.
-- Various patrons and one injured server.
+- [[Durnan]] — Owner, keeping watch from behind the bar.
+- [[Yagra Strongfist]] — Drinking at a corner table.
+- [[Krentz]] — Lurking near the entrance.
+- [[Volothamp Geddarm]] — Seated at a table, scribbling in a notebook.
+- Various patrons and servers.
 
 ## Connections
 - Located in **Castle Ward**, Waterdeep.

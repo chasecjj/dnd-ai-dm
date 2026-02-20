@@ -5,10 +5,10 @@ race: Half-Orc
 role: Zhentarim Agent
 location: "[[Yawning Portal]]"
 faction: "[[Zhentarim]]"
-disposition: friendly
+disposition: neutral
 alive: true
-first_seen_session: 0
-last_seen_session: 0
+first_seen_session: null
+last_seen_session: null
 tags: [npc, zhentarim]
 ---
 # Yagra Strongfist
@@ -17,18 +17,15 @@ tags: [npc, zhentarim]
 A tough, muscular half-orc woman. Carries a massive mace. Confident and aggressive in combat.
 
 ## Background
-An agent of the [[Zhentarim]]. Was involved in a fistfight with [[Krentz]] (Xanathar Guild) when the Troll emerged.
+An agent of the [[Zhentarim]]. Known to frequent the [[Yawning Portal]].
 
 ## Party Relationship
-- The party **watched** the Yagra vs. Krentz brawl rather than intervening — chose patience over impulse.
-- During the Troll fight, Yagra flanked the Troll opposite [[Durnan]]: *"I'll keep the big one busy! You lot handle the pests and find some gods-damned fire!"*
-- After the fight: Cheered the party, slammed her mace against her palm.
-- Currently **friendly** to the party.
+Not yet met.
 
 ## Known Information
 - Member of the [[Zhentarim]] (party may or may not know this yet).
-- Capable fighter — held her own against both Krentz and the Troll.
+- Capable fighter.
 
 ## DM Notes
 - Potential quest hook for Zhentarim storyline.
-- If the party had helped her during the brawl, she'd be even more loyal. Current disposition: appreciative but not deeply bonded.
+- Her disposition toward the party will depend on how they handle the brawl with [[Krentz]].

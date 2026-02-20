@@ -1,6 +1,7 @@
 discord.py
 python-dotenv
 requests
+aiohttp
 google-genai
 pyyaml
 PyMuPDF

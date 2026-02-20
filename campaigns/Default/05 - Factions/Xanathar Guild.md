@@ -16,7 +16,7 @@ A thieves' guild run by the beholder Xanathar from a hidden lair beneath Waterde
 ## Party Standing
 - **Disposition:** Unknown (the party hasn't directly interacted with the Guild)
 - **Reputation:** 0
-- However, [[Krentz]] witnessed the party's combat abilities. If he reports back, the Guild will be aware of them.
+
 
 ## Key Interests
 - Total control of Waterdeep's criminal underworld.

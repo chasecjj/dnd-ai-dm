@@ -11,7 +11,7 @@ hp_current: 10
 hp_max: 10
 ac: 14
 conditions: []
-spell_slots_used: 1
+spell_slots_used: 0
 spell_slots_max: 1
 pact_magic: true
 tags:
@@ -36,16 +36,16 @@ tags:
 - **Spell Attack Bonus:** +3
 
 ## Prepared Spells
-- **Eldritch Blast** (Cantrip) — Ranged spell attack, 1d10 force damage. _Added during Session 0._
-- **Hex** (1st level) — Bonus Action, extra 1d6 necrotic on hits + disadvantage on one ability. _Added during Session 0._
+- **Eldritch Blast** (Cantrip) — Ranged spell attack, 1d10 force damage.
+- **Hex** (1st level) — Bonus Action, extra 1d6 necrotic on hits + disadvantage on one ability.
 
 ## Inventory
 - Leather Armor (AC 11 + DEX)
 - Dagger (steel)
 - Pact Weapon (currently: Shortsword — can shift forms)
-- **Flask of Oil** — _Used during Troll fight (passed to Frognar)_
+- **Flask of Oil**
 - "Fun Toys" sack — _Contains miscellaneous useful items_
-- Bolt case (20 bolts, 1 used)
+- Bolt case (20 bolts)
 
 ## Personality
 - **Scholarly and tactical** — first instinct is to scan the room for advantages.
@@ -57,6 +57,3 @@ tags:
 - Investigator personality — drawn to mysteries and puzzles.
 - Interest in "cursed trinkets" shared with Frognar.
 - Close friendship with [[Frognar Emberheart]].
-
-## Session Notes
-- **Session 0:** Killed two Stirges in the [[Troll Attack]] — one with a dual-wield shortsword/dagger aerial combo, one by reverting crossbow to shortsword mid-melee. Passed oil to Frognar for the Troll-burning finishing move. Shouted at Frognar to use Lay on Hands.

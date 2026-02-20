@@ -25,7 +25,7 @@ from tools.context_assembler import ContextAssembler
 from tools.reference_manager import ReferenceManager
 from tools.rate_limiter import gemini_limiter
 from tools.state_manager import StateManager
-from agents.tools.foundry_tool import FoundryClient, format_stat_block_text
+from agents.tools.foundry_tool import FoundryClient
 
 # Agents — Live DM Team
 from agents.board_monitor import BoardMonitorAgent
@@ -34,7 +34,7 @@ from agents.storyteller import StorytellerAgent
 from agents.foundry_architect import FoundryArchitectAgent
 from agents.message_router import MessageRouterAgent
 from agents.chronicler import ChroniclerAgent
-from tools.blind_prep import run_blind_prep, BlindPrepResult
+
 
 # LangGraph pipeline
 from pipeline.graph import build_game_pipeline
@@ -106,16 +106,9 @@ context_assembler = ContextAssembler(vault, reference_manager=ref_manager, state
 logger.info(f"ReferenceManager: {ref_manager.get_stats()}")
 
 # ---------------------------------------------------------------------------
-# Foundry VTT Connection
+# Foundry VTT Connection (async connect happens in on_ready)
 # ---------------------------------------------------------------------------
 foundry_client = FoundryClient()
-if foundry_client.api_key:
-    if foundry_client.connect():
-        logger.info(f"Foundry VTT connected: client={foundry_client.client_id}")
-    else:
-        logger.warning("Foundry VTT connection failed — running without live board data.")
-else:
-    logger.info("Foundry VTT disabled (no API key set).")
 
 # ---------------------------------------------------------------------------
 # Agents — Live DM Team (Game Table channel)
@@ -386,6 +379,15 @@ async def on_ready():
     else:
         logger.warning("StateManager unavailable — running in vault-only mode.")
 
+    # Async-connect Foundry VTT — non-blocking, degrades gracefully
+    if foundry_client.api_key:
+        if await foundry_client.connect():
+            logger.info(f"Foundry VTT connected: client={foundry_client.client_id}")
+        else:
+            logger.warning("Foundry VTT connection failed — running without live board data.")
+    else:
+        logger.info("Foundry VTT disabled (no API key set).")
+
     print("D&D AI System Online. Vault-backed state is active.")
 
 
@@ -423,9 +425,12 @@ async def load_cogs():
 
 async def main():
     """Async entry point — load cogs then start the bot."""
-    async with bot:
-        await load_cogs()
-        await bot.start(DISCORD_TOKEN)
+    try:
+        async with bot:
+            await load_cogs()
+            await bot.start(DISCORD_TOKEN)
+    finally:
+        await foundry_client.close()
 
 
 def run():

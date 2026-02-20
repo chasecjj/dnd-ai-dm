@@ -1,6 +1,6 @@
 services:
   relay:
-    image: threehats/foundryvtt-rest-api-relay:latest
+    image: threehats/foundryvtt-rest-api-relay:2.1.0
     container_name: foundryvtt-rest-api-relay
     ports:
       - "3010:3010"
@@ -10,6 +10,8 @@ services:
       - DB_TYPE=sqlite
       - WEBSOCKET_PING_INTERVAL_MS=20000
       - CLIENT_CLEANUP_INTERVAL_MS=15000
+      - FREE_API_REQUESTS_LIMIT=999999999
+      - DAILY_REQUEST_LIMIT=999999999
     volumes:
       - ./data:/app/data
     command: pnpm local:sqlite

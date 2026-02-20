@@ -18,13 +18,6 @@ class BoardMonitorAgent:
         self.ai_client = client
         self.foundry = foundry or FoundryClient()
 
-        # Try to connect on init (non-fatal if Foundry is offline)
-        if self.foundry.api_key and not self.foundry.is_connected:
-            try:
-                self.foundry.connect()
-            except Exception as e:
-                logger.warning(f"Foundry connection failed on init: {e}")
-
     async def get_board_context(self, query: str = "") -> str:
         """
         Pull a snapshot of the current game state from Foundry.
@@ -37,25 +30,49 @@ class BoardMonitorAgent:
 
         # 1. Active encounters / combat state
         try:
-            encounters = self.foundry.get_encounters()
+            encounters = await self.foundry.get_encounters()
             if encounters:
                 parts.append(f"**Active Combat:** {_format_encounters(encounters)}")
         except Exception as e:
             logger.debug(f"Could not fetch encounters: {e}")
 
-        # 2. If the query mentions a character/NPC, try to look them up
+        # 2. Active scene info — name, dimensions, and tokens on the board
+        try:
+            scenes = await self.foundry.get_world_scenes()
+            active = [s for s in scenes if s.get('active')]
+            if active:
+                scene = active[0]
+                scene_uuid = scene.get('uuid')
+                scene_name = scene.get('name', 'Unknown')
+                parts.append(f"**Active Scene:** {scene_name}")
+
+                if scene_uuid:
+                    tokens = await self.foundry.get_scene_tokens(scene_uuid)
+                    if tokens:
+                        token_lines = []
+                        for t in tokens:
+                            name = t.get('name', '?')
+                            x, y = t.get('x', 0), t.get('y', 0)
+                            hidden = " (hidden)" if t.get('hidden') else ""
+                            token_lines.append(f"{name} at ({x},{y}){hidden}")
+                        parts.append(f"**Tokens on Scene:** {', '.join(token_lines)}")
+                    else:
+                        parts.append("**Tokens on Scene:** None")
+        except Exception as e:
+            logger.debug(f"Could not fetch scene info: {e}")
+
+        # 3. If the query mentions a character/NPC, try to look them up
         if query:
             try:
-                search_results = self.foundry.search(query, filter_type="Actor")
+                search_results = await self.foundry.search(query, filter_type="Actor")
                 if search_results:
                     actors = _extract_actors(search_results)
                     if actors:
-                        # Get detailed info for the first match
                         for actor in actors[:2]:  # Limit to 2 lookups
                             uuid = actor.get('uuid')
                             if uuid:
                                 try:
-                                    details = self.foundry.get_actor_details(uuid)
+                                    details = await self.foundry.get_actor_details(uuid)
                                     parts.append(
                                         f"**{actor.get('name', 'Unknown')}:** "
                                         f"{_format_actor_details(details)}"
@@ -65,10 +82,10 @@ class BoardMonitorAgent:
             except Exception as e:
                 logger.debug(f"Search failed for '{query}': {e}")
 
-        # 3. Quick world overview if we have nothing specific
+        # 4. Quick world overview if we have nothing specific
         if not parts:
             try:
-                structure = self.foundry.get_structure(
+                structure = await self.foundry.get_structure(
                     types=['Actor', 'Scene'],
                     include_data=False,
                 )
@@ -121,7 +138,6 @@ def _extract_actors(search_data) -> list:
     if isinstance(search_data, list):
         return [r for r in search_data if isinstance(r, dict)]
     if isinstance(search_data, dict):
-        # May be wrapped in a results key
         for key in ('results', 'data', 'items', 'entities'):
             if key in search_data and isinstance(search_data[key], list):
                 return search_data[key]
@@ -136,7 +152,6 @@ def _format_actor_details(data) -> str:
 
     parts = []
 
-    # Try to extract common D&D 5e fields
     attrs = data.get('attributes', data.get('system', {}).get('attributes', {}))
     if isinstance(attrs, dict):
         hp = attrs.get('hp', {})
@@ -191,7 +206,3 @@ def _count_types(node, counts):
     elif isinstance(node, list):
         for item in node:
             _count_types(item, counts)
-
-
-if __name__ == "__main__":
-    print("Board Monitor Agent initialized.")
