@@ -28,6 +28,7 @@ async def rules_node(state: GameState, *, rules_lawyer, context_assembler, **_kw
         ruling = await rules_lawyer.process_request(
             state["player_input"],
             state.get("board_context", ""),
+            dice_results=state.get("dice_results"),
         )
         logger.info(f"Rules ruling: {ruling}")
         return {"rules_ruling": ruling}

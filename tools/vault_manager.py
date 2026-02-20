@@ -386,6 +386,57 @@ class VaultManager:
             logger.error(f"Error appending to session log: {e}")
             return False
     
+    def update_session_summary(self, session_number: int, summary_text: str) -> bool:
+        """Replace the Summary section placeholder in a session log with generated text.
+
+        Also marks the session as 'complete' in the frontmatter.
+        """
+        filename = f"Session {session_number:03d}.md"
+        rel_path = os.path.join(self.SESSION_LOG, filename)
+        full_path = self._resolve(rel_path)
+
+        try:
+            if not os.path.exists(full_path):
+                logger.warning(f"Session log {filename} not found for summary update.")
+                return False
+
+            fm, body = self.read_file(rel_path)
+            fm['status'] = 'complete'
+
+            # Replace the Summary section placeholder
+            placeholder = "_One paragraph overview of what happened._"
+            if placeholder in body:
+                body = body.replace(placeholder, summary_text)
+            else:
+                # Try to insert after the ## Summary header
+                if "## Summary" in body:
+                    parts = body.split("## Summary", 1)
+                    # Find the next ## header after Summary
+                    after_header = parts[1]
+                    next_section = after_header.find("\n## ")
+                    if next_section > 0:
+                        body = parts[0] + "## Summary\n" + summary_text + "\n" + after_header[next_section:]
+                    else:
+                        body = parts[0] + "## Summary\n" + summary_text + after_header
+                else:
+                    body += f"\n## Summary\n{summary_text}\n"
+
+            return self.write_file(rel_path, fm, body)
+        except Exception as e:
+            logger.error(f"Error updating session summary: {e}")
+            return False
+
+    def increment_session(self) -> int:
+        """Increment the session number in the world clock. Returns the new number."""
+        clock = self.read_world_clock()
+        new_session = clock.get('session', 0) + 1
+        rel_path = os.path.join(self.WORLD_STATE, "clock.md")
+        fm, body = self.read_file(rel_path)
+        fm['session'] = new_session
+        self.write_file(rel_path, fm, body)
+        logger.info(f"Session number incremented to {new_session}")
+        return new_session
+
     # ------------------------------------------------------------------
     # World Clock
     # ------------------------------------------------------------------

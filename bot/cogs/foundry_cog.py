@@ -84,13 +84,14 @@ class FoundryCog(commands.Cog, name="Foundry VTT Commands"):
         self.bot = bot
         from bot.client import (
             foundry_client, foundry_architect, gemini_client, MODEL_ID,
-            send_to_moderator_log,
+            send_to_moderator_log, action_queue,
         )
         self.foundry = foundry_client
         self.foundry_architect = foundry_architect
         self.gemini_client = gemini_client
         self.model_id = MODEL_ID
         self.send_to_moderator_log = send_to_moderator_log
+        self.action_queue = action_queue
 
     # ------------------------------------------------------------------
     # !foundry — health check
@@ -200,6 +201,31 @@ class FoundryCog(commands.Cog, name="Foundry VTT Commands"):
                 response = f"`{formula}`{reason_str}: **{total}** {dice_str}"
 
             await ctx.send(response)
+
+            # Intercept: check if this roll fulfills a pending queue request
+            if self.action_queue.is_queue_mode:
+                detail = f"{formula}: {' '.join(dice_details)} = {total}" if dice_details else f"{formula} = {total}"
+                action, next_roll = await self.action_queue.update_roll_result(
+                    user_id=ctx.author.id,
+                    result=total,
+                    detail=detail,
+                )
+                if action:
+                    admin_cog = self.bot.get_cog("Admin Console")
+                    # If there's another roll in the sequence, prompt for it
+                    if next_roll:
+                        if admin_cog and admin_cog.is_dm_character(action):
+                            await admin_cog.send_dm_roll_prompt(
+                                action, next_roll.roll_type, next_roll.formula, next_roll.dc,
+                            )
+                        elif action.character_name:
+                            await ctx.send(
+                                f"**{action.character_name}**, now roll {next_roll.roll_type}: "
+                                f"`!roll {next_roll.formula}`"
+                            )
+                    if admin_cog:
+                        await admin_cog.refresh_console()
+
         except Exception as e:
             logger.error(f"Roll command failed: {e}", exc_info=True)
             await ctx.send(f"Roll failed: {e}")

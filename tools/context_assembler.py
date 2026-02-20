@@ -64,11 +64,28 @@ class ConversationHistory:
     def __init__(self):
         self.entries: List[MemoryEntry] = []
     
-    def add_event(self, text: str, impact: int = 5):
-        """Add a new event to history. All existing entries age by 1 turn."""
+    def add_event(self, text: str, impact: int = 5, age_existing: bool = True):
+        """Add a new event to history.
+
+        Args:
+            text: Event description.
+            impact: Base importance score (1-10).
+            age_existing: If True (default), all existing entries age by 1 turn.
+                Set to False in queue mode — use advance_turn() per resolve instead.
+        """
+        if age_existing:
+            for entry in self.entries:
+                entry.turns_ago += 1
+        self.entries.append(MemoryEntry(text=text, impact=impact, turns_ago=0))
+
+    def advance_turn(self):
+        """Age all entries by 1 turn without adding a new event.
+
+        Call this once per batch resolve in queue mode, instead of aging
+        on every add_event() call.
+        """
         for entry in self.entries:
             entry.turns_ago += 1
-        self.entries.append(MemoryEntry(text=text, impact=impact, turns_ago=0))
     
     def get_relevant_history(self, max_entries: int = 20) -> List[MemoryEntry]:
         """Get history entries that are still above the inclusion threshold,

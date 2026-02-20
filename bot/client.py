@@ -9,6 +9,7 @@ Replaces the old orchestration/bot.py god file.
 """
 
 import os
+import time
 import asyncio
 import logging
 import traceback
@@ -25,6 +26,7 @@ from tools.context_assembler import ContextAssembler
 from tools.reference_manager import ReferenceManager
 from tools.rate_limiter import gemini_limiter
 from tools.state_manager import StateManager
+from tools.action_queue import ActionQueue, QueuedAction
 from agents.tools.foundry_tool import FoundryClient
 
 # Agents — Live DM Team
@@ -109,6 +111,11 @@ logger.info(f"ReferenceManager: {ref_manager.get_stats()}")
 # Foundry VTT Connection (async connect happens in on_ready)
 # ---------------------------------------------------------------------------
 foundry_client = FoundryClient()
+
+# ---------------------------------------------------------------------------
+# Action Queue — DM Admin Console state
+# ---------------------------------------------------------------------------
+action_queue = ActionQueue()
 
 # ---------------------------------------------------------------------------
 # Agents — Live DM Team (Game Table channel)
@@ -324,6 +331,145 @@ async def _handle_game_table(message, user_input: str):
 
 
 # ---------------------------------------------------------------------------
+# Batch Resolve — Called by the DM Admin Console's Resolve Turn button
+# ---------------------------------------------------------------------------
+async def _send_chunked(channel, text: str):
+    """Send a long message in 2000-char chunks."""
+    if len(text) <= 2000:
+        await channel.send(text)
+    else:
+        for i in range(0, len(text), 2000):
+            await channel.send(text[i : i + 2000])
+
+
+async def handle_batch_resolve(actions, game_table_channel):
+    """Process a batch of curated actions through the pipeline.
+
+    Called by AdminConsoleView.resolve_turn(). Accepts a list of QueuedAction
+    objects that the DM has reviewed and approved.
+    """
+    from tools.action_queue import QueuedAction
+
+    # Build combined input — one line per action with all context
+    combined_parts = []
+    dice_results = {}
+    dm_context_parts = []
+
+    for action in actions:
+        prefix = f"[{action.character_name}]" if action.character_name else "[DM]"
+        line = f"{prefix}: {action.player_input}"
+        if action.resolved_rolls and action.character_name:
+            roll_strs = []
+            roll_data = []
+            for roll in action.resolved_rolls:
+                dc_str = f" vs DC {roll.dc}" if roll.dc else ""
+                roll_strs.append(f"{roll.roll_type} {roll.detail}{dc_str}")
+                roll_data.append({
+                    "type": roll.roll_type,
+                    "result": roll.result,
+                    "dc": roll.dc,
+                })
+            line += f" [Rolls: {'; '.join(roll_strs)}]"
+            dice_results[action.character_name] = {"rolls": roll_data}
+        if action.dm_annotation:
+            line += f" {{DM Note: {action.dm_annotation}}}"
+            dm_context_parts.append(action.dm_annotation)
+        combined_parts.append(line)
+
+    # Include monster/NPC rolls in the batch context
+    monster_rolls = await action_queue.flush_monster_rolls()
+    for mr in monster_rolls:
+        target_str = f" targeting {mr.target}" if mr.target else ""
+        combined_parts.append(
+            f"[{mr.monster_name}]: {mr.roll_type}{target_str} "
+            f"[Roll: {mr.roll_type} {mr.detail}]"
+        )
+        dice_results[mr.monster_name] = {
+            "rolls": [{"type": mr.roll_type, "result": mr.result, "dc": None}]
+        }
+
+    batched_input = "\n".join(combined_parts)
+    is_batched = len(actions) > 1 or len(monster_rolls) > 0
+
+    initial_state = {
+        "player_input": batched_input,
+        "character_name": actions[0].character_name if len(actions) == 1 and not monster_rolls else None,
+        "session": current_session,
+        "current_location": storyteller._current_location,
+        "dm_context": "\n".join(dm_context_parts) if dm_context_parts else None,
+        "dice_results": dice_results if dice_results else None,
+        "is_batched": is_batched,
+    }
+
+    try:
+        async with game_table_channel.typing():
+            result = await game_pipeline.ainvoke(initial_state)
+
+        logger.info(f"Batch resolve complete. Keys: {list(result.keys())}")
+
+        # Separate secret vs public actions
+        secret_actions = [a for a in actions if a.is_secret]
+        has_public = any(not a.is_secret for a in actions)
+
+        # Deliver narrative
+        narrative = result.get("narrative", "")
+        if narrative:
+            # Public narrative goes to game table
+            if has_public:
+                await _send_chunked(game_table_channel, narrative)
+
+            # Secret action results go to each player's private thread
+            for action in secret_actions:
+                if action.private_thread_id:
+                    try:
+                        guild = game_table_channel.guild
+                        thread = guild.get_thread(action.private_thread_id)
+                        if thread:
+                            secret_note = (
+                                f"**[Secret Result for {action.character_name}]**\n"
+                                f"_{action.player_input}_\n\n{narrative}"
+                            )
+                            await _send_chunked(thread, secret_note)
+                    except Exception as e:
+                        logger.error(f"Failed to send secret result: {e}")
+
+        # Direct reply fallback
+        if result.get("direct_reply"):
+            await _send_chunked(game_table_channel, result["direct_reply"])
+
+        # Scene sync (same as _handle_game_table)
+        scene_changes = result.get("scene_changes")
+        if scene_changes and scene_changes.get("foundry_actions_needed"):
+            if foundry_client.is_connected:
+                architect_request = _build_architect_request(scene_changes, narrative)
+                if architect_request:
+                    asyncio.create_task(_run_architect_safe(architect_request, game_table_channel))
+
+        if result.get("error"):
+            logger.error(f"Batch resolve pipeline error: {result['error']}")
+
+        # Advance conversation history decay once per resolve (not per message)
+        context_assembler.history.advance_turn()
+
+        # Pipeline succeeded — clear the backup so restore_batch() is a no-op
+        await action_queue.confirm_batch()
+
+    except Exception as e:
+        logger.error(f"Batch resolve error: {e}", exc_info=True)
+        await send_to_moderator_log(f"[batch_resolve] Error:\n{traceback.format_exc()}")
+        await game_table_channel.send(
+            "\u26a0\ufe0f Something went wrong resolving the turn. The DM has been notified."
+        )
+        # Restore flushed actions back to queue so the DM can retry
+        restored = await action_queue.restore_batch()
+        if restored:
+            logger.info(f"Restored {restored} actions to queue after pipeline failure")
+            admin_cog = bot.get_cog("Admin Console")
+            if admin_cog:
+                await admin_cog.refresh_console()
+
+
+# ---------------------------------------------------------------------------
 # War Room Pipeline
 # ---------------------------------------------------------------------------
 async def _handle_war_room(message, user_input: str):
@@ -388,6 +534,20 @@ async def on_ready():
     else:
         logger.info("Foundry VTT disabled (no API key set).")
 
+    # Register persistent views so admin console buttons survive restarts
+    from bot.views.admin_views import AdminConsoleView
+    admin_cog = bot.get_cog("Admin Console")
+    if admin_cog:
+        bot.add_view(AdminConsoleView(admin_cog))
+        logger.info("Admin console persistent view registered.")
+
+    # Sync slash commands (needed for /console)
+    try:
+        synced = await bot.tree.sync()
+        logger.info(f"Synced {len(synced)} slash command(s).")
+    except Exception as e:
+        logger.error(f"Slash command sync failed: {e}")
+
     print("D&D AI System Online. Vault-backed state is active.")
 
 
@@ -404,10 +564,39 @@ async def on_message(message):
     user_input = message.content
     channel_id = str(message.channel.id)
 
+    # Check if this message is in a player's private console thread
+    is_player_thread = (
+        isinstance(message.channel, discord.Thread)
+        and action_queue.is_player_thread(message.channel.id)
+    )
+
     if WAR_ROOM_CHANNEL_ID and channel_id == WAR_ROOM_CHANNEL_ID:
         await _handle_war_room(message, user_input)
-    elif GAME_TABLE_CHANNEL_ID and channel_id == GAME_TABLE_CHANNEL_ID:
-        await _handle_game_table(message, user_input)
+    elif is_player_thread or (GAME_TABLE_CHANNEL_ID and channel_id == GAME_TABLE_CHANNEL_ID):
+        # Queue mode: capture the action instead of running the pipeline
+        if action_queue.is_queue_mode:
+            discord_name = message.author.name.lower()
+            character_name = PLAYER_MAP.get(discord_name)
+            action = QueuedAction(
+                discord_user_id=message.author.id,
+                discord_message_id=message.id,
+                channel_id=message.channel.id,
+                character_name=character_name,
+                player_input=user_input,
+                is_secret=is_player_thread,
+                private_thread_id=message.channel.id if is_player_thread else None,
+            )
+            await action_queue.enqueue(action)
+            try:
+                await message.add_reaction("\u23f3")  # Hourglass — action received
+            except discord.HTTPException:
+                pass  # Reaction failed (permissions, deleted message) — non-critical
+            # Refresh admin console embed
+            admin_cog = bot.get_cog("Admin Console")
+            if admin_cog:
+                await admin_cog.refresh_console()
+        else:
+            await _handle_game_table(message, user_input)
     else:
         await _handle_game_table(message, user_input)
 
@@ -420,6 +609,8 @@ async def load_cogs():
     await bot.load_extension("bot.cogs.dm_cog")
     await bot.load_extension("bot.cogs.foundry_cog")
     await bot.load_extension("bot.cogs.prep_cog")
+    await bot.load_extension("bot.cogs.admin_cog")
+    await bot.load_extension("bot.cogs.player_cog")
     logger.info("All Cogs loaded.")
 
 
