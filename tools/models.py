@@ -19,7 +19,8 @@ class PartyMember(BaseModel):
     spell_slots_used: int = 0
     spell_slots_max: int = 0
     lay_on_hands_pool: Optional[int] = None
-    
+    foundry_uuid: Optional[str] = None
+
     # Allow extra fields for flexibility
     model_config = {"extra": "allow"}
 

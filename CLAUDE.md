@@ -49,13 +49,30 @@ router ──conditional──┬─→ board ──conditional──┬─→ r
 
 The router sets flags (`needs_board_monitor`, `needs_rules_lawyer`, `needs_storyteller`) that conditional edges read. After rules, the path is always linear: rules → storyteller → scene_sync → chronicler → END. Agents are bound to nodes via `functools.partial()` in `pipeline/graph.py`.
 
+### DM Admin Console (Queue Mode)
+
+The bot has two modes: **Auto Mode** (pipeline fires instantly on every message) and **Queue Mode** (actions queue for DM review). Toggle via the admin console or session start/end.
+
+**Key files:**
+- `tools/action_queue.py` — `ActionQueue`, `QueuedAction`, `RollRequest`, `MonsterRoll` models. Thread-safe via asyncio.Lock.
+- `bot/cogs/admin_cog.py` — `/console` slash command, dashboard embed builder, console refresh logic
+- `bot/views/admin_views.py` — 13 persistent buttons, modals (DMEvent, Annotate, RollRequest, MonsterRoll, PostToTable), ActionSelectView
+- `bot/cogs/player_cog.py` — `/whisper` slash command for player private threads, secret actions
+- `bot/client.py: handle_batch_resolve()` — processes curated action batches through the pipeline with two-phase commit (confirm_batch/restore_batch)
+
+**Queue Mode flow:** Player message → `QueuedAction` created → ⏳ reaction → DM reviews in console → Analyze (Rules Lawyer pre-pass) → Players roll dice → DM clicks Resolve → `handle_batch_resolve()` → narrative posted.
+
+**Dice flow:** `RollRequest` model supports multi-roll sequences (Attack → Damage). `update_roll_result()` returns `(action, next_roll)` tuple — next_roll is None when all rolls are done. Foundry cog intercepts `!roll` results when queue mode is active.
+
 ### Channel Routing
 
-Discord messages route by channel ID:
+Discord messages route by channel ID (see `on_message()` in `bot/client.py`):
 
 - **Game Table** (`GAME_TABLE_CHANNEL_ID`) → full LangGraph pipeline
 - **War Room** (`WAR_ROOM_CHANNEL_ID`) → prep agents (worldbuilding, campaign planning, map generation)
 - **Moderator Log** (`MODERATOR_LOG_CHANNEL_ID`) → receives rules details and debug output
+- **Player private threads** (created via `/whisper`) → queue as secret actions
+- **DM Console thread** (created via `/console`) → admin controls, DM's own character rolls
 
 ### GameState Fields
 
@@ -66,6 +83,7 @@ Discord messages route by channel ID:
 - `direct_response`, `needs_board_monitor`, `needs_rules_lawyer`, `needs_storyteller` — routing flags
 - `board_context`, `rules_ruling`, `narrative`, `scene_changes` — per-node outputs
 - `chronicler_done`, `session`, `current_location`, `error`, `direct_reply` — control/metadata
+- `dm_context`, `dice_results`, `is_batched` — queue mode fields (DM annotations, actual roll results, multi-action flag)
 
 ### Foundry VTT Integration
 
@@ -128,6 +146,8 @@ Configured in `.env`: `DISCORD_BOT_TOKEN`, `GEMINI_API_KEY`, `FOUNDRY_API_KEY`, 
 
 ## Development Notes
 
+- **Test baseline:** 14 pre-existing failures in `test_blind_prep` (7), `test_cartographer` (7), `test_scene_classifier` (1 error). These are mock/fixture issues unrelated to core game logic. The 20 passing tests (`test_vault_models`, `test_vault_concurrency`, `test_campaign_manager`, `test_blind_prep` imports, `test_cartographer` imports) are the real regression gate.
+- `docs/` contains player/DM documentation: `GETTING_STARTED.md`, `DM_GUIDE.md`, `PLAYER_GUIDE.md`, `SESSION_WALKTHROUGH.md`
 - `COMPLETION_PLAN.md` tracks the phased development roadmap and known TODOs
 - `docs/index.html` contains a generated architecture diagram
 - IDE type checkers will show false positives for `discord`, `google`, `aiohttp`, `bot.client` imports — these are from unconfigured search roots, not real errors

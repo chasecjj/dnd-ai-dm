@@ -49,3 +49,5 @@ class GameState(TypedDict, total=False):
     dm_context: Optional[str]
     dice_results: Optional[Dict[str, Dict[str, Any]]]
     is_batched: bool
+    # Sync fields — carries character sync results through the pipeline
+    sync_report: Optional[Dict[str, Any]]

@@ -84,7 +84,9 @@ def build_game_pipeline(agents: Dict[str, Any]):
 
     # Bind agents into node functions via partial application
     _router = partial(router_node, message_router=agents["message_router"])
-    _board = partial(board_monitor_node, board_monitor=agents["board_monitor"])
+    _board = partial(board_monitor_node, board_monitor=agents["board_monitor"],
+                     vault_manager=agents.get("vault_manager"),
+                     state_manager=agents.get("state_manager"))
     _rules = partial(rules_node, rules_lawyer=agents["rules_lawyer"], context_assembler=agents["context_assembler"])
     _story = partial(storyteller_node, storyteller=agents["storyteller"])
     _scene = partial(
@@ -98,6 +100,8 @@ def build_game_pipeline(agents: Dict[str, Any]):
         chronicler=agents["chronicler"],
         context_assembler=agents["context_assembler"],
         storyteller=agents["storyteller"],
+        vault_manager=agents.get("vault_manager"),
+        foundry_client=agents.get("foundry_client"),
     )
 
     # Build the graph

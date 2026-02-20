@@ -25,6 +25,7 @@ class Character(BaseModel):
     lay_on_hands_pool: Optional[int] = None
     inventory_notes: str = ""
     backstory_hooks: List[str] = []
+    foundry_uuid: Optional[str] = None
 
     model_config = {"extra": "allow", "populate_by_name": True}
 

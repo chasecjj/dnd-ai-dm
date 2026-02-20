@@ -50,6 +50,7 @@ class AdminCog(commands.Cog, name="Admin Console"):
         self._console_thread_id: int | None = None
         self._console_message_id: int | None = None
         self._dm_user_id: int | None = None  # Set when /console is first run
+        self._is_ooc: bool = True  # Console starts in OOC (system chat) mode
 
     # ------------------------------------------------------------------
     # Console Creation
@@ -115,6 +116,7 @@ class AdminCog(commands.Cog, name="Admin Console"):
 
         mode_str = "ON" if self.queue.is_queue_mode else "OFF"
         foundry_str = "Connected" if self.foundry.is_connected else "Disconnected"
+        ooc_str = "OOC" if self._is_ooc else "IC"
         session_num = self.context_assembler.current_session
 
         embed = discord.Embed(
@@ -126,7 +128,7 @@ class AdminCog(commands.Cog, name="Admin Console"):
         location = getattr(self.storyteller, '_current_location', 'Unknown')
         embed.description = (
             f"**Session {session_num}** | {location}\n"
-            f"Queue Mode: **{mode_str}** | Foundry: {foundry_str}\n"
+            f"Queue Mode: **{mode_str}** | Console: **{ooc_str}** | Foundry: {foundry_str}\n"
             f"\u2500" * 40
         )
 
@@ -198,18 +200,20 @@ class AdminCog(commands.Cog, name="Admin Console"):
     def _get_party_summary(self) -> str:
         """Build a compact party status string from the vault."""
         try:
-            characters = self.vault.list_characters()
-            if not characters:
+            party = self.vault.get_party_state()
+            if not party:
                 return "_No characters found._"
             lines = []
-            for char_data in characters:
-                name = char_data.get("name", "Unknown")
-                hp = char_data.get("hp_current", "?")
-                hp_max = char_data.get("hp_max", "?")
-                ac = char_data.get("ac", "?")
-                conditions = char_data.get("conditions", [])
+            for entry in party:
+                fm = entry.get("frontmatter", {})
+                name = fm.get("name", "Unknown")
+                hp = fm.get("hp_current", "?")
+                hp_max = fm.get("hp_max", "?")
+                ac = fm.get("ac", "?")
+                conditions = fm.get("conditions", [])
                 cond_str = f" | {', '.join(conditions)}" if conditions else ""
-                lines.append(f"  {name} \u2014 {hp}/{hp_max} HP | AC {ac}{cond_str}")
+                sync_icon = "\u2705" if fm.get("foundry_uuid") else "\u26a0\ufe0f"
+                lines.append(f"  {sync_icon} {name} \u2014 {hp}/{hp_max} HP | AC {ac}{cond_str}")
             return "\n".join(lines)
         except Exception as e:
             logger.error(f"Party summary error: {e}")
@@ -290,6 +294,73 @@ class AdminCog(commands.Cog, name="Admin Console"):
             if member:
                 return self.player_map.get(member.name.lower())
         return None
+
+    def is_console_thread(self, channel_id: int) -> bool:
+        """Check if a channel is the admin console thread."""
+        return self._console_thread_id is not None and channel_id == self._console_thread_id
+
+    async def post_sync_report(self, sync_report: dict):
+        """Post sync results to console thread after a pipeline run."""
+        thread = self.get_console_thread()
+        if not thread or not sync_report:
+            return
+
+        lines = []
+        pre = sync_report.get("pre_sync", [])
+        post = sync_report.get("post_sync", [])
+
+        if pre:
+            lines.append("**Pre-sync (Foundry\u2192Local):**")
+            for c in pre:
+                lines.append(f"  \u2197\ufe0f {c['name']}: {c['field']} {c['old']}\u2192{c['new']}")
+        if post:
+            lines.append("**Post-sync (Local\u2192Foundry):**")
+            for c in post:
+                if c.get("error"):
+                    lines.append(f"  \u274c {c['name']}: {c['error']}")
+                else:
+                    lines.append(f"  \u2197\ufe0f {c['name']}: {c['field']} \u2192 {c['value']} (pushed)")
+
+        if lines:
+            await thread.send("\U0001f4ca **Sync Report:**\n" + "\n".join(lines))
+
+    async def handle_ooc_message(self, message):
+        """Handle an OOC message in the console thread — direct system chat."""
+        from tools.rate_limiter import gemini_limiter
+
+        # Assemble context for the system assistant
+        party_summary = self._get_party_summary()
+        foundry_status = "Connected" if self.foundry.is_connected else "Disconnected"
+        session_num = self.context_assembler.current_session
+        location = getattr(self.storyteller, '_current_location', 'Unknown')
+        recent_history = self.context_assembler.build_storyteller_context(
+            current_location=location
+        )
+
+        system_prompt = (
+            "You are a D&D 5e game system assistant for the Dungeon Master. "
+            "You have full access to the campaign state. Answer questions about game state, "
+            "help troubleshoot issues, explain rules, and assist with development/testing. "
+            "Be concise and direct. You are NOT narrating — you are helping the DM.\n\n"
+            f"**Session:** {session_num} | **Location:** {location} | "
+            f"**Foundry VTT:** {foundry_status}\n\n"
+            f"**Party State:**\n{party_summary}\n\n"
+            f"**Recent Context:**\n{recent_history[:2000]}"
+        )
+
+        await gemini_limiter.acquire()
+        response = await self.bot.gemini_client.aio.models.generate_content(
+            model=self.bot.model_id,
+            contents=[
+                {"role": "user", "parts": [{"text": system_prompt}]},
+                {"role": "user", "parts": [{"text": message.content}]},
+            ],
+        )
+        reply = response.text if response.text else "_No response generated._"
+
+        # Send reply to console thread (chunked if needed)
+        from bot.client import _send_chunked
+        await _send_chunked(message.channel, reply)
 
     async def send_dm_roll_prompt(self, action, roll_type: str, formula: str, dc: int | None):
         """Send an inline roll button to the console thread for the DM's character.

@@ -7,6 +7,7 @@ Contains:
   - DMEventModal: Modal for DM-injected narrative events
   - AnnotateModal: Modal for adding private DM context to an action
   - RollRequestModal: Modal for manually specifying a roll request
+  - RegisterCharacterModal: Modal for importing a Foundry VTT actor
   - ActionSelectView: Dynamic select for choosing which queued action to operate on
 """
 
@@ -265,6 +266,57 @@ class MonsterRollModal(discord.ui.Modal, title="Monster / NPC Roll"):
                 "Foundry not connected. Enter result manually with `!roll` in Game Table.",
                 ephemeral=True,
             )
+
+
+# ======================================================================
+# Register Character — Import Foundry Actor into vault + DB
+# ======================================================================
+
+class RegisterCharacterModal(discord.ui.Modal, title="Register Character"):
+    """Modal for importing a Foundry VTT actor into the vault and MongoDB."""
+
+    character_name = discord.ui.TextInput(
+        label="Character Name",
+        placeholder="Frognar Emberheart",
+        max_length=100,
+    )
+    player_name = discord.ui.TextInput(
+        label="Player Discord Name (optional)",
+        required=False,
+        placeholder="ember0100",
+        max_length=50,
+    )
+
+    def __init__(self, admin_cog):
+        super().__init__()
+        self.admin_cog = admin_cog
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        from tools.character_sync import register_character
+
+        result = await register_character(
+            name=self.character_name.value,
+            foundry_client=self.admin_cog.foundry,
+            vault_manager=self.admin_cog.vault,
+            state_manager=self.admin_cog.bot.state_manager,
+            player_discord_name=self.player_name.value or None,
+        )
+
+        # Post result to console thread
+        thread = self.admin_cog.get_console_thread()
+        if thread and result["success"]:
+            data = result["data"]
+            await thread.send(
+                f"\u2705 **Registered {data['name']}** \u2014 {data['class']} | "
+                f"HP {data['hp_current']}/{data['hp_max']} | AC {data['ac']} | "
+                f"UUID: `{data['foundry_uuid'][:20]}...`"
+            )
+        elif thread:
+            await thread.send(f"\u274c Registration failed: {result['message']}")
+
+        await self.admin_cog.refresh_console()
+        await interaction.followup.send(result["message"], ephemeral=True)
 
 
 # ======================================================================
@@ -798,4 +850,75 @@ class AdminConsoleView(discord.ui.View):
         await self.admin_cog.refresh_console()
         await interaction.response.send_message(
             f"Switched to **{mode_str}**.", ephemeral=True
+        )
+
+    # --- Row 4: Character Sync + Console Mode ---
+
+    @discord.ui.button(
+        label="Register",
+        custom_id="admin:register",
+        style=ButtonStyle.primary,
+        emoji="\U0001f4e5",
+        row=3,
+    )
+    async def register_character(self, interaction: discord.Interaction, button):
+        """Import a Foundry VTT actor into the vault and MongoDB."""
+        if not self.admin_cog.foundry.is_connected:
+            await interaction.response.send_message(
+                "Foundry VTT not connected.", ephemeral=True
+            )
+            return
+        await interaction.response.send_modal(RegisterCharacterModal(self.admin_cog))
+
+    @discord.ui.button(
+        label="Sync",
+        custom_id="admin:sync",
+        style=ButtonStyle.secondary,
+        emoji="\U0001f504",
+        row=3,
+    )
+    async def sync_characters(self, interaction: discord.Interaction, button):
+        """Pull latest HP/conditions from Foundry for all linked characters."""
+        if not self.admin_cog.foundry.is_connected:
+            await interaction.response.send_message(
+                "Foundry VTT not connected.", ephemeral=True
+            )
+            return
+        await interaction.response.defer(ephemeral=True)
+
+        from tools.character_sync import sync_foundry_to_local
+
+        changes = await sync_foundry_to_local(
+            self.admin_cog.foundry,
+            self.admin_cog.vault,
+            self.admin_cog.bot.state_manager,
+        )
+
+        # Post results to console thread
+        thread = self.admin_cog.get_console_thread()
+        if thread:
+            if changes:
+                lines = [f"  \u2197\ufe0f {c['name']}: {c['field']} {c['old']}\u2192{c['new']}" for c in changes]
+                await thread.send("\U0001f504 **Character sync complete:**\n" + "\n".join(lines))
+            else:
+                await thread.send("\U0001f504 Character sync: all characters up to date.")
+
+        await self.admin_cog.refresh_console()
+        msg = f"Synced {len(changes)} change(s)." if changes else "All characters up to date."
+        await interaction.followup.send(msg, ephemeral=True)
+
+    @discord.ui.button(
+        label="OOC/IC",
+        custom_id="admin:ooc_toggle",
+        style=ButtonStyle.secondary,
+        emoji="\U0001f3ad",
+        row=3,
+    )
+    async def toggle_ooc(self, interaction: discord.Interaction, button):
+        """Toggle between Out-of-Character (system chat) and In-Character mode."""
+        self.admin_cog._is_ooc = not self.admin_cog._is_ooc
+        mode = "OOC (System Chat)" if self.admin_cog._is_ooc else "IC (In-Character)"
+        await self.admin_cog.refresh_console()
+        await interaction.response.send_message(
+            f"Console mode: **{mode}**", ephemeral=True
         )

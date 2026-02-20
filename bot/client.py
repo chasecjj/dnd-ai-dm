@@ -159,6 +159,9 @@ game_pipeline = build_game_pipeline({
     "context_assembler": context_assembler,
     "gemini_client": gemini_client,
     "model_id": MODEL_ID,
+    "vault_manager": vault,
+    "state_manager": state_manager,
+    "foundry_client": foundry_client,
 })
 logger.info("LangGraph game pipeline built and compiled.")
 
@@ -474,6 +477,13 @@ async def handle_batch_resolve(actions, game_table_channel):
         # Pipeline succeeded — clear the backup so restore_batch() is a no-op
         await action_queue.confirm_batch()
 
+        # Post sync report to DM console
+        sync_report = result.get("sync_report")
+        if sync_report:
+            admin_cog = bot.get_cog("Admin Console")
+            if admin_cog:
+                await admin_cog.post_sync_report(sync_report)
+
     except Exception as e:
         logger.error(f"Batch resolve error: {e}", exc_info=True)
         await send_to_moderator_log(f"[batch_resolve] Error:\n{traceback.format_exc()}")
@@ -584,6 +594,39 @@ async def on_message(message):
     user_input = message.content
     channel_id = str(message.channel.id)
 
+    # Check if this message is in the admin console thread
+    admin_cog = bot.get_cog("Admin Console")
+    is_console_thread = (
+        isinstance(message.channel, discord.Thread)
+        and admin_cog
+        and admin_cog.is_console_thread(message.channel.id)
+    )
+
+    if is_console_thread:
+        if admin_cog._is_ooc:
+            await admin_cog.handle_ooc_message(message)
+        else:
+            # IC mode: treat as DM's action (queue or pipeline)
+            discord_name = message.author.name.lower()
+            character_name = PLAYER_MAP.get(discord_name)
+            if action_queue.is_queue_mode:
+                action = QueuedAction(
+                    discord_user_id=message.author.id,
+                    discord_message_id=message.id,
+                    channel_id=message.channel.id,
+                    character_name=character_name,
+                    player_input=user_input,
+                )
+                await action_queue.enqueue(action)
+                try:
+                    await message.add_reaction("\u23f3")
+                except discord.HTTPException:
+                    pass
+                await admin_cog.refresh_console()
+            else:
+                await _handle_game_table(message, user_input)
+        return  # Don't fall through to other handlers
+
     # Check if this message is in a player's private console thread
     is_player_thread = (
         isinstance(message.channel, discord.Thread)
@@ -631,6 +674,7 @@ async def load_cogs():
     await bot.load_extension("bot.cogs.prep_cog")
     await bot.load_extension("bot.cogs.admin_cog")
     await bot.load_extension("bot.cogs.player_cog")
+    await bot.load_extension("bot.cogs.sync_cog")
     logger.info("All Cogs loaded.")
 
 
