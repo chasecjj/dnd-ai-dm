@@ -1,23 +1,24 @@
 ---
 type: quest
 name: Volo's Quest
-status: offered
+status: planned
 quest_giver: "[[Volothamp Geddarm]]"
 location: "[[Yawning Portal]]"
 started_session: null
 completed_session: null
 reward: unknown
-tags: [quest, main_quest, pending]
+tags: [quest, main_quest]
 ---
 # Volo's Quest
 
 ## Objective
-_Not yet revealed — Volo has offered a job but the party has not accepted yet._
+_Not yet revealed — Volo has not yet approached the party._
 
 ## Background
-After witnessing the party's bravery during the [[Troll Attack]], [[Volothamp Geddarm]] approached them with *"a matter of some urgency."* He offered to buy them a round and discuss the job.
+[[Volothamp Geddarm]] has a matter of some urgency. He is looking for capable adventurers to help him.
 
 ## Progress
+- [ ] Meet Volo at the Yawning Portal
 - [ ] Accept or decline Volo's offer
 - [ ] Learn the details of the quest
 

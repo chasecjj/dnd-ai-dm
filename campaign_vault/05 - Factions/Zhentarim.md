@@ -17,7 +17,7 @@ A shadowy network of merchants, mercenaries, and criminals. They operate through
 ## Party Standing
 - **Disposition:** Neutral
 - **Reputation:** 0
-- The party observed the Yagra vs Krentz brawl without intervening. Neither earned favor nor enmity.
+
 
 ## Key Interests
 - Control of Waterdeep's underground economy.

@@ -24,6 +24,17 @@ async def router_node(state: GameState, *, message_router, **_kwargs) -> dict:
     """
     user_input = state["player_input"]
 
+    # Fast path: DM-curated batch skips classification entirely
+    if state.get("is_batched"):
+        logger.info("Batched resolve — skipping router classification, enabling full pipeline")
+        return {
+            "message_type": "game_action",
+            "direct_response": False,
+            "needs_board_monitor": True,
+            "needs_rules_lawyer": True,
+            "needs_storyteller": True,
+        }
+
     try:
         await gemini_limiter.acquire()
         route = await message_router.route(user_input)

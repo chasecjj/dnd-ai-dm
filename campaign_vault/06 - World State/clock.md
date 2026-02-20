@@ -10,14 +10,13 @@ tags: [meta, world_state]
 
 ## Current Time
 - **In-Game Date:** 1st of Ches (early spring)
-- **Time of Day:** Evening (night of the brawl)
+- **Time of Day:** Evening
 - **Weather:** Not yet established
 - **Moon Phase:** Not yet established
 
 ## Timeline
 | Session | In-Game Date | Key Event |
 |---------|-------------|-----------|
-| 0 | 1st of Ches, evening | [[Troll Attack]] at the [[Yawning Portal]]. [[Volothamp Geddarm]] approaches party. |
 
 ## Notes
 - Waterdeep: Dragon Heist takes place over Levels 1-5.

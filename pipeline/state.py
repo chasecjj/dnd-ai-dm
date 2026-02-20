@@ -45,3 +45,7 @@ class GameState(TypedDict, total=False):
     current_location: str
     error: Optional[str]
     direct_reply: Optional[str]
+    # Admin console fields — populated during batch resolve
+    dm_context: Optional[str]
+    dice_results: Optional[Dict[str, Dict[str, Any]]]
+    is_batched: bool

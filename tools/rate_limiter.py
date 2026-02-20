@@ -66,3 +66,4 @@ class RateLimiter:
 # Pre-configured limiters for common use
 gemini_limiter = RateLimiter(max_tokens=15, refill_rate=0.25, name="gemini")
 discord_limiter = RateLimiter(max_tokens=5, refill_rate=1.0, name="discord")
+foundry_limiter = RateLimiter(max_tokens=10, refill_rate=2.0, name="foundry")

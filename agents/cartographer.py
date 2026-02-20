@@ -287,11 +287,13 @@ Include specific terrain features, objects, and environmental details."""
                 "width": grid_w * 140,       # ~140px per grid square (standard)
                 "height": grid_h * 140,
                 "grid": {"size": 140, "type": 1},  # type 1 = square grid
-                "darkness": darkness,
-                "img": image_path,           # Foundry needs to be able to access this
+                "background": {"src": image_path},  # V11+ schema
+                "environment": {"darknessLevel": darkness},  # V11+ schema
+                "tokenVision": True,
+                "fog": {"exploration": True},
             }
 
-            result = self.foundry.create_entity("Scene", scene_data)
+            result = await self.foundry.create_entity("Scene", scene_data)
             logger.info(f"Foundry scene created: {result}")
             return result
 
