@@ -2,61 +2,86 @@
   {
     "text": "Victor's inappropriate action alerts a creature in the passage.",
     "base_impact": 5,
-    "turns_ago": 14
+    "turns_ago": 22
   },
   {
     "text": "Sigfried Pye's desperate offer to lick elbows alerts a creature in the passage.",
     "base_impact": 5,
-    "turns_ago": 13
+    "turns_ago": 21
   },
   {
     "text": "Victor's inappropriate action alerts a creature in the passage.",
     "base_impact": 5,
-    "turns_ago": 12
+    "turns_ago": 20
   },
   {
     "text": "Victor attempts to tie up Kallisar, leading to a confrontation and alerting a creature in the passage.",
     "base_impact": 6,
-    "turns_ago": 11
+    "turns_ago": 19
   },
   {
     "text": "An unseen creature in the mildew-stenched passage is alerted by the party's actions.",
     "base_impact": 6,
-    "turns_ago": 10
+    "turns_ago": 18
   },
   {
     "text": "Victor removes his armor and flexes to intimidate the unseen creature, resulting in a strange gurgling sound.",
     "base_impact": 4,
-    "turns_ago": 9
+    "turns_ago": 17
   },
   {
     "text": "Hadrian slaps Victor's hand and makes a comment, alerting a creature in the passage.",
     "base_impact": 4,
-    "turns_ago": 8
+    "turns_ago": 16
   },
   {
     "text": "Victor Saltzpyre utters a racial slur towards Kallisar Voidcaller, causing a disturbance in the tavern and alerting something in the mildew-stenched passage.",
     "base_impact": 8,
-    "turns_ago": 7
+    "turns_ago": 15
   },
   {
     "text": "Sigfried Pye's comment about Victor causes a reaction from the well, including a growl, a thunk, and a foul stench.",
     "base_impact": 6,
-    "turns_ago": 5
+    "turns_ago": 13
   },
   {
     "text": "Victor throws two javelins at an approaching woman, narrowly missing her. Sigfried charges the woman with a bucket on his head.",
     "base_impact": 5,
-    "turns_ago": 4
+    "turns_ago": 12
   },
   {
     "text": "The Storyteller describes the various patrons in the Yawning Portal.",
     "base_impact": 2,
-    "turns_ago": 2
+    "turns_ago": 10
   },
   {
     "text": "Hadrian speaks, prompting a response from the well in the form of a growl, a thunk, and a foul stench, causing the ropes around the well to shake.",
     "base_impact": 6,
+    "turns_ago": 8
+  },
+  {
+    "text": "A troll emerges from the well in the Yawning Portal, initiating combat.",
+    "base_impact": 10,
+    "turns_ago": 6
+  },
+  {
+    "text": "Hadrian, Sigfried, and Balthur grab Kallisar's groin, causing a stir in the Yawning Portal.",
+    "base_impact": 4,
+    "turns_ago": 4
+  },
+  {
+    "text": "Kallisar ends their illusion spell, causing discomfort to fade in the tavern, but drawing the ire of Yagra Strongfist.",
+    "base_impact": 4,
+    "turns_ago": 2
+  },
+  {
+    "text": "Victor attempts an inappropriate action, leading to a confrontation with Yagra Strongfist.",
+    "base_impact": 6,
+    "turns_ago": 1
+  },
+  {
+    "text": "Kallisar's backstory is added to his character sheet, and he is confronted by Yagra Strongfist for making her spill her drink.",
+    "base_impact": 4,
     "turns_ago": 0
   }
 ]

@@ -67,3 +67,12 @@ Unimpressed by Victor's actions.
 
 ### Session 2 Update
 Keeping a watchful eye on the crowd.
+
+### Session 2 Update
+Eyes narrowed, hand moving beneath the counter.
+
+### Session 2 Update
+Durnan is watching the situation closely.
+
+### Session 2 Update
+Observed Kallisar with an unreadable expression.

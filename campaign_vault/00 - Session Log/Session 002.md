@@ -41,3 +41,9 @@ _What worked, what to improve, setup for next session._
 | | Victor throws two javelins at an approaching woman, narrowly missing her. Sigfried charges the woman with a bucket on his head. | 5 | |
 | | The Storyteller describes the various patrons in the Yawning Portal. | 2 | |
 | | Hadrian speaks, prompting a response from the well in the form of a growl, a thunk, and a foul stench, causing the ropes around the well to shake. | 6 | |
+| | A troll emerges from the well in the Yawning Portal, initiating combat. | 10 | |
+| | Hadrian, Sigfried, and Balthur grab Kallisar's groin, causing a stir in the Yawning Portal. | 4 | |
+| | Kallisar ends their illusion spell, causing discomfort to fade in the tavern, but drawing the ire of Yagra Strongfist. | 4 | |
+| | Victor attempts an inappropriate action, leading to a confrontation with Yagra Strongfist. | 6 | |
+| | Kallisar's backstory is added to his character sheet, and he is confronted by Yagra Strongfist for making her spill her drink. | 4 | |
+| | Session started | 1 | |

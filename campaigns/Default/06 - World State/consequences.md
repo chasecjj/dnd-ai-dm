@@ -11,25 +11,10 @@ Consequences are ripple effects from party decisions. The Chronicler agent write
 ## Pending
 
 
-- **trigger:** session >= 2
-  **event:** A creature emerges from the well, initiating combat.
-  **caused_by:** "The tremor and the ascending creature"
-  **impact:** 10
-  **notes:** Prepare for combat encounter.
 
 
-- **trigger:** session >= 2
-  **event:** The party must face whatever is emerging from the well.
-  **caused_by:** "Something ascending from the well."
-  **impact:** 10
-  **notes:** Prepare for combat encounter.
 
 
-- **trigger:** session >= 2
-  **event:** The troll attacks the party and other patrons in the Yawning Portal.
-  **caused_by:** "The troll emerging from the well."
-  **impact:** 10
-  **notes:** Combat encounter begins.
 
 
 - **trigger:** session >= 2
@@ -123,25 +108,10 @@ Consequences are ripple effects from party decisions. The Chronicler agent write
 
 
 
-- **trigger:** session >= 2
-  **event:** A creature emerges from the well, initiating combat.
-  **caused_by:** "Sigfried Pye's comment about Victor."
-  **impact:** 10
-  **notes:** Prepare for combat encounter.
 
 
-- **trigger:** session >= 2
-  **event:** The party must face whatever is emerging from the well.
-  **caused_by:** "Sigfried Pye's comment about Victor."
-  **impact:** 10
-  **notes:** Prepare for combat encounter.
 
 
-- **trigger:** session >= 2
-  **event:** The troll attacks the party and other patrons in the Yawning Portal.
-  **caused_by:** "Sigfried Pye's comment about Victor."
-  **impact:** 10
-  **notes:** Combat encounter begins.
 
 
 - **trigger:** session >= 2
@@ -151,27 +121,98 @@ Consequences are ripple effects from party decisions. The Chronicler agent write
   **notes:** DM should consider the woman's strength and potential allies in the tavern.
 
 
-- **trigger:** session >= 2
-  **event:** A creature emerges from the well, initiating combat.
-  **caused_by:** "Hadrian speaking into the well."
-  **impact:** 10
-  **notes:** Prepare for combat encounter.
+
+
+
+
 
 
 - **trigger:** session >= 2
-  **event:** The party must face whatever is emerging from the well.
-  **caused_by:** "Hadrian speaking into the well."
+  **event:** Kallisar will react to Victor's threat, potentially leading to conflict or a change in their relationship.
+  **caused_by:** "Victor's inappropriate action"
+  **impact:** 6
+  **notes:** DM should consider Kallisar's personality and motivations when determining their response.
+
+
+- **trigger:** session >= 2
+  **event:** Durnan retaliates against Victor for the threat.
+  **caused_by:** "Victor's inappropriate action"
+  **impact:** 8
+  **notes:** Durnan is a powerful character and will not take kindly to threats.
+
+
+- **trigger:** session >= 2
+  **event:** The strong woman tavern patron retaliates against Victor for his threat.
+  **caused_by:** "Victor's inappropriate action"
+  **impact:** 6
+  **notes:** DM should consider the woman's strength and potential allies in the tavern.
+
+
+- **trigger:** session >= 2
+  **event:** The strong woman tavern patron retaliates against Victor for his threat.
+  **caused_by:** "Victor's inappropriate action"
+  **impact:** 6
+  **notes:** DM should consider the woman's strength and potential allies in the tavern.
+
+
+- **trigger:** session >= 2
+  **event:** The strong woman tavern patron retaliates against Victor for his threat.
+  **caused_by:** "Victor's inappropriate action"
+  **impact:** 6
+  **notes:** DM should consider the woman's strength and potential allies in the tavern.
+
+## Resolved
+- **trigger:** session >= 2
+  **event:** The troll attacks the party and other patrons in the Yawning Portal.
+  **caused_by:** "The troll emerging from the well."
   **impact:** 10
-  **notes:** Prepare for combat encounter.
-
-
+  **notes:** Combat encounter begins.
+- **trigger:** session >= 2
+  **event:** The troll attacks the party and other patrons in the Yawning Portal.
+  **caused_by:** "Sigfried Pye's comment about Victor."
+  **impact:** 10
+  **notes:** Combat encounter begins.
 - **trigger:** session >= 2
   **event:** The troll attacks the party and other patrons in the Yawning Portal.
   **caused_by:** "Hadrian speaking into the well."
   **impact:** 10
   **notes:** Combat encounter begins.
+  **resolved_session:** 2
 
-## Resolved
+- **trigger:** session >= 2
+  **event:** The party must face whatever is emerging from the well.
+  **caused_by:** "Something ascending from the well."
+  **impact:** 10
+  **notes:** Prepare for combat encounter.
+- **trigger:** session >= 2
+  **event:** The party must face whatever is emerging from the well.
+  **caused_by:** "Sigfried Pye's comment about Victor."
+  **impact:** 10
+  **notes:** Prepare for combat encounter.
+- **trigger:** session >= 2
+  **event:** The party must face whatever is emerging from the well.
+  **caused_by:** "Hadrian speaking into the well."
+  **impact:** 10
+  **notes:** Prepare for combat encounter.
+  **resolved_session:** 2
+
+- **trigger:** session >= 2
+  **event:** A creature emerges from the well, initiating combat.
+  **caused_by:** "The tremor and the ascending creature"
+  **impact:** 10
+  **notes:** Prepare for combat encounter.
+- **trigger:** session >= 2
+  **event:** A creature emerges from the well, initiating combat.
+  **caused_by:** "Sigfried Pye's comment about Victor."
+  **impact:** 10
+  **notes:** Prepare for combat encounter.
+- **trigger:** session >= 2
+  **event:** A creature emerges from the well, initiating combat.
+  **caused_by:** "Hadrian speaking into the well."
+  **impact:** 10
+  **notes:** Prepare for combat encounter.
+  **resolved_session:** 2
+
 - **trigger:** session >= 2
   **event:** The creature alerted by the party's actions attacks.
   **caused_by:** "The party making noise in the passage."

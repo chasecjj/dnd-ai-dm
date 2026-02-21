@@ -3,13 +3,15 @@ type: npc
 name: Yagra Strongfist
 race: Half-Orc
 role: Zhentarim Agent
-location: "[[Yawning Portal]]"
-faction: "[[Zhentarim]]"
-disposition: neutral
+location: '[[Yawning Portal]]'
+faction: '[[Zhentarim]]'
+disposition: -3
 alive: true
 first_seen_session: null
-last_seen_session: null
-tags: [npc, zhentarim]
+last_seen_session: 2
+tags:
+- npc
+- zhentarim
 ---
 # Yagra Strongfist
 
@@ -29,3 +31,12 @@ Not yet met.
 ## DM Notes
 - Potential quest hook for Zhentarim storyline.
 - Her disposition toward the party will depend on how they handle the brawl with [[Krentz]].
+
+### Session 2 Update
+Is now hostile towards Kallisar.
+
+### Session 2 Update
+Yagra is angered by Victor's actions and threatens him.
+
+### Session 2 Update
+Annoyed with Kallisar for spilling her drink.
