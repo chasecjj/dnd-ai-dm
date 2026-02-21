@@ -11,12 +11,11 @@ ac: 16
 conditions: []
 spell_slots_used: 0
 spell_slots_max: 2
-lay_on_handspool: 5
+lay_on_hands_pool: 5
 tags:
 - party
 char_class: Paladin
 pronouns: ''
-lay_on_hands_pool: null
 foundry_uuid: null
 ---
 Victor Saltzpyre

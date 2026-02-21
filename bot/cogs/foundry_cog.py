@@ -170,12 +170,17 @@ class FoundryCog(commands.Cog, name="Foundry VTT Commands"):
         formula = parts[0]
         reason = parts[1] if len(parts) > 1 else ""
 
-        if not self.foundry.is_connected:
-            await ctx.send("Foundry VTT not connected. Cannot roll dice remotely.")
-            return
-
         try:
-            result = await self.foundry.roll_dice(formula)
+            if self.foundry.is_connected:
+                try:
+                    result = await self.foundry.roll_dice(formula)
+                except Exception as e:
+                    logger.warning(f"Foundry roll failed, using local dice: {e}")
+                    from tools.dice_roller import parse_and_roll
+                    result = parse_and_roll(formula)
+            else:
+                from tools.dice_roller import parse_and_roll
+                result = parse_and_roll(formula)
             total = result["total"]
             is_crit = result.get("isCritical", False)
             is_fumble = result.get("isFumble", False)

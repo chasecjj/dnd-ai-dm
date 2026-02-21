@@ -10,14 +10,17 @@ import json
 import logging
 from typing import Dict, Any, List, Optional
 from google import genai
+from pydantic import ValidationError
 
+from models.chronicler_output import ChroniclerOutput
 from tools.vault_manager import VaultManager
 from tools.context_assembler import ContextAssembler
 
 logger = logging.getLogger('Chronicler')
 
 
-# The Chronicler's extraction schema — tells Gemini exactly what to output
+# The Chronicler's extraction schema — tells Gemini exactly what to output.
+# Field names MUST match the ChroniclerOutput Pydantic model in models/chronicler_output.py.
 CHRONICLER_SCHEMA = """
 You must respond with ONLY valid JSON matching this exact schema. No markdown, no explanation.
 
@@ -29,33 +32,31 @@ You must respond with ONLY valid JSON matching this exact schema. No markdown, n
       "type": "combat|npc_interaction|discovery|movement|flavor|decision"
     }
   ],
-  "party_updates": [
+  "character_updates": [
     {
-      "character": "Character Name",
-      "updates": {
-        "hp_current": null,
-        "conditions": [],
-        "spell_slots_used": null,
-        "lay_on_hands_pool": null
-      }
+      "name": "Character Name",
+      "hp_current": null,
+      "conditions": [],
+      "spell_slots_used": null,
+      "lay_on_hands_pool": null
     }
   ],
   "npc_updates": [
     {
       "name": "NPC Name",
-      "disposition_change": null,
+      "disposition": null,
       "alive": true,
       "notes": ""
     }
   ],
   "quest_updates": [
     {
-      "quest_name": "Quest Name",
+      "name": "Quest Name",
       "progress_note": "",
-      "status_change": null
+      "status": null
     }
   ],
-  "consequences": [
+  "new_consequences": [
     {
       "trigger_session": 2,
       "event": "What will happen",
@@ -67,8 +68,8 @@ You must respond with ONLY valid JSON matching this exact schema. No markdown, n
   "resolved_consequences": [
     "Event text of a due consequence that was addressed in this exchange"
   ],
-  "location_state_change": null,
-  "clock_advance": null
+  "location_updates": [],
+  "world_clock": null
 }
 
 IMPACT SCALE:
@@ -77,6 +78,8 @@ IMPACT SCALE:
    6 = Important discovery, moderate consequence, quest progress
    4 = Movement to new area, exploration, minor interaction
    2 = Flavor, ambient description, casual chat
+
+DISPOSITION VALUES: "friendly", "neutral", "hostile", "unknown" (always use strings, never numbers).
 
 Only include sections where something actually changed. Use null for unchanged fields.
 """
@@ -151,14 +154,22 @@ Respond with ONLY the JSON extraction. No other text."""
                 raw_text = raw_text.split('\n', 1)[1]  # Remove first line
                 raw_text = raw_text.rsplit('```', 1)[0]  # Remove last fence
             
-            changes = json.loads(raw_text)
-            logger.info(f"Chronicler extracted changes: {list(changes.keys())}")
-            
-            # Apply changes to the vault
+            # Validate through ChroniclerOutput Pydantic model — the gate
+            # between LLM output and vault writes. Invalid JSON is rejected entirely.
+            changes = ChroniclerOutput.model_validate_json(raw_text)
+            logger.info(f"Chronicler validated output: {len(changes.events)} events, "
+                        f"{len(changes.character_updates)} char updates, "
+                        f"{len(changes.new_consequences)} consequences")
+
+            # Apply validated changes to the vault
             await self._apply_changes(changes, session_number)
-            
-            return changes
-            
+
+            return changes.model_dump()
+
+        except ValidationError as e:
+            logger.error(f"Chronicler output failed validation (nothing written): {e}")
+            logger.debug(f"Raw response: {raw_text[:500]}")
+            return {}
         except json.JSONDecodeError as e:
             logger.error(f"Chronicler JSON parse error: {e}")
             logger.debug(f"Raw response: {raw_text[:500]}")
@@ -167,99 +178,127 @@ Respond with ONLY the JSON extraction. No other text."""
             logger.error(f"Chronicler error: {e}")
             return {}
     
-    async def _apply_changes(self, changes: Dict[str, Any], session_number: int):
-        """Apply extracted changes to the vault files."""
-        
+    async def _apply_changes(self, changes: ChroniclerOutput, session_number: int):
+        """Apply validated ChroniclerOutput to the vault files.
+
+        Args:
+            changes: A validated ChroniclerOutput instance (never a raw dict).
+            session_number: Current session number.
+        """
+
         # 1. Record events in conversation history
-        events = changes.get('events', [])
-        for event in events:
-            desc = event.get('description', '')
-            impact = event.get('impact', 5)
-            if desc:
-                self.context_assembler.record_event(desc, impact)
-                # Also append to session log
+        for event in changes.events:
+            if event.description:
+                self.context_assembler.record_event(event.description, event.impact)
                 self.vault.append_to_session_log(
                     session_number,
-                    f"| | {desc} | {impact} | |"
+                    f"| | {event.description} | {event.impact} | |"
                 )
-        
-        # 2. Update party members
-        party_updates = changes.get('party_updates', [])
-        for update in party_updates:
-            character = update.get('character', '')
-            updates = update.get('updates', {})
-            # Filter out null values
-            filtered = {k: v for k, v in updates.items() if v is not None}
-            if character and filtered:
-                self.vault.update_party_member(character, filtered)
-                logger.info(f"Updated party member {character}: {filtered}")
-        
-        # 3. Update NPCs
-        npc_updates = changes.get('npc_updates', [])
-        for update in npc_updates:
-            name = update.get('name', '')
-            if not name:
+
+        # 2. Update party members (flat fields from CharacterUpdate)
+        for update in changes.character_updates:
+            # Build dict of non-None fields (excluding 'name')
+            update_dict = update.model_dump(exclude={"name"}, exclude_none=True)
+            if update.name and update_dict:
+                self.vault.update_party_member(update.name, update_dict)
+                logger.info(f"Updated party member {update.name}: {update_dict}")
+
+        # 3. Update NPCs (uses string dispositions enforced by Pydantic)
+        for update in changes.npc_updates:
+            if not update.name:
                 continue
-            result = self.vault.get_npc(name)
+            result = self.vault.get_npc(update.name)
             if result:
                 fm, body = result
-                if update.get('disposition_change'):
-                    fm['disposition'] = update['disposition_change']
-                if 'alive' in update:
-                    fm['alive'] = update['alive']
+                if update.disposition:
+                    fm['disposition'] = update.disposition
+                if update.alive is not None:
+                    fm['alive'] = update.alive
                 fm['last_seen_session'] = session_number
-                # Find the file path and write back
                 for fpath in self.vault.list_files(self.vault.NPCS):
                     npc_fm, _ = self.vault.read_file(fpath)
-                    if npc_fm.get('name', '').lower() == name.lower():
-                        notes = update.get('notes', '')
-                        if notes:
-                            body += f"\n\n### Session {session_number} Update\n{notes}"
+                    if npc_fm.get('name', '').lower() == update.name.lower():
+                        if update.notes:
+                            body += f"\n\n### Session {session_number} Update\n{update.notes}"
                         self.vault.write_file(fpath, fm, body)
                         break
-        
+
         # 4. Update quests
-        quest_updates = changes.get('quest_updates', [])
-        for update in quest_updates:
-            quest_name = update.get('quest_name', '')
-            status_change = update.get('status_change')
-            if quest_name and status_change == 'completed':
-                self.vault.complete_quest(quest_name, session_number)
-        
-        # 5. Add new consequences
-        new_consequences = changes.get('consequences', [])
-        if new_consequences:
+        for update in changes.quest_updates:
+            if update.name and update.status == 'completed':
+                self.vault.complete_quest(update.name, session_number)
+
+        # 5. Add new consequences (with deduplication)
+        if changes.new_consequences:
             fm, body = self.vault.read_consequences()
-            for c in new_consequences:
+            body_lower = body.lower()
+
+            for c in changes.new_consequences:
+                # Deduplication: skip if a very similar consequence already exists
+                event_normalized = c.event.strip().lower()
+                if event_normalized and self._is_duplicate_consequence(event_normalized, body_lower):
+                    logger.info(f"Skipping duplicate consequence: {c.event[:60]}")
+                    continue
+
                 entry = f"""
-- **trigger:** session >= {c.get('trigger_session', session_number + 1)}
-  **event:** {c.get('event', '')}
-  **caused_by:** "{c.get('caused_by', '')}"
-  **impact:** {c.get('impact', 5)}
-  **notes:** {c.get('notes', '')}
+- **trigger:** session >= {c.trigger_session}
+  **event:** {c.event}
+  **caused_by:** "{c.caused_by}"
+  **impact:** {c.impact}
+  **notes:** {c.notes}
 """
-                # Insert before the "## Resolved" section
                 body = body.replace('## Resolved', f"{entry}\n## Resolved")
-            
+                # Update body_lower so subsequent checks in this batch see the new entry
+                body_lower = body.lower()
+
             self.vault.write_file(
                 f"{self.vault.WORLD_STATE}/consequences.md", fm, body
             )
-        
+
         # 6. Resolve fired consequences
-        resolved = changes.get('resolved_consequences', [])
-        for event_text in resolved:
-            if event_text and isinstance(event_text, str):
+        for event_text in changes.resolved_consequences:
+            if event_text:
                 success = self.vault.resolve_consequence(event_text, session_number)
                 if success:
                     logger.info(f"Resolved consequence: {event_text[:60]}")
 
         # 7. Advance clock if needed
-        clock_advance = changes.get('clock_advance')
-        if clock_advance:
+        if changes.world_clock:
             self.vault.advance_clock(
-                new_date=clock_advance.get('date', ''),
-                time_of_day=clock_advance.get('time', ''),
+                new_date=changes.world_clock.current_date or '',
+                time_of_day=changes.world_clock.time_of_day or '',
                 session=session_number
             )
-        
+
         logger.info(f"Chronicler applied all changes for session {session_number}")
+
+    @staticmethod
+    def _is_duplicate_consequence(new_event: str, existing_body: str) -> bool:
+        """Check if a consequence already exists in the body text.
+
+        Uses substring matching and word-overlap heuristic to catch near-duplicates
+        like 'The thieves guild notices the party' vs 'Thieves guild takes notice of party'.
+        """
+        # Exact substring match
+        if new_event in existing_body:
+            return True
+
+        # Word-overlap heuristic: if 60%+ of significant words match an existing entry,
+        # it's likely a duplicate
+        new_words = set(w for w in new_event.split() if len(w) > 3)
+        if not new_words:
+            return False
+
+        # Extract existing consequence events from the body
+        for line in existing_body.split('\n'):
+            line = line.strip()
+            if line.startswith('**event:**'):
+                existing_event = line.replace('**event:**', '').strip().lower()
+                existing_words = set(w for w in existing_event.split() if len(w) > 3)
+                if existing_words and new_words:
+                    overlap = len(new_words & existing_words)
+                    ratio = overlap / min(len(new_words), len(existing_words))
+                    if ratio >= 0.6:
+                        return True
+
+        return False

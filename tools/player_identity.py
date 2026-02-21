@@ -36,13 +36,24 @@ def resolve_character_name(*name_candidates: Optional[str]) -> Optional[str]:
     Returns:
         Character name if found, None if no match.
     """
+    # Pass 1: exact match (highest priority)
     for name in name_candidates:
         if name is None:
             continue
         key = name.strip().lower()
         if key in _player_map:
-            logger.debug(f"Resolved '{key}' -> '{_player_map[key]}'")
+            logger.debug(f"Resolved '{key}' -> '{_player_map[key]}' (exact)")
             return _player_map[key]
+
+    # Pass 2: prefix match fallback (handles ember vs ember0100)
+    for name in name_candidates:
+        if name is None:
+            continue
+        key = name.strip().lower()
+        for map_key, char_name in _player_map.items():
+            if key.startswith(map_key) or map_key.startswith(key):
+                logger.info(f"Resolved '{key}' -> '{char_name}' (prefix match on '{map_key}')")
+                return char_name
     return None
 
 

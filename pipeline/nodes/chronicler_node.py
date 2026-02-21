@@ -41,9 +41,15 @@ async def chronicler_node(
 
     try:
         rules_text = str(state.get("rules_ruling")) if state.get("rules_ruling") else "N/A"
+        character_name = state.get("character_name")
+        player_input = state["player_input"]
+        # Prefix with character name so the Chronicler attributes events correctly
+        if character_name:
+            player_input = f"[{character_name}]: {player_input}"
+
         await gemini_limiter.acquire()
         changes = await chronicler.process_exchange(
-            player_action=state["player_input"],
+            player_action=player_input,
             rules_response=rules_text,
             story_response=state.get("narrative", ""),
             session_number=state.get("session", 0),
@@ -54,13 +60,14 @@ async def chronicler_node(
         # Post-sync: push character HP changes to Foundry
         post_sync_results = []
         if foundry_client and foundry_client.is_connected and changes and vault_manager:
-            party_updates = changes.get("party_updates", [])
-            if party_updates:
+            char_updates = changes.get("character_updates", [])
+            if char_updates:
                 from tools.character_sync import push_changes_to_foundry
                 try:
                     update_dicts = [
-                        {"name": u.get("character", ""), **u.get("updates", {})}
-                        for u in party_updates if u.get("character")
+                        {"name": u.get("name", ""), **{k: v for k, v in u.items()
+                         if k != "name" and v is not None}}
+                        for u in char_updates if u.get("name")
                     ]
                     post_sync_results = await push_changes_to_foundry(
                         update_dicts, vault_manager, foundry_client

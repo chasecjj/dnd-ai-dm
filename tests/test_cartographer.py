@@ -173,7 +173,7 @@ class TestCartographerPromptCrafting(unittest.TestCase):
     """Test image prompt generation."""
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     @patch('agents.cartographer.gemini_limiter')
     def test_craft_prompt_returns_string(self, mock_limiter):
@@ -231,7 +231,7 @@ class TestCartographerImageGeneration(unittest.TestCase):
     """Test image generation."""
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     @patch('agents.cartographer.gemini_limiter')
     def test_generate_image_returns_bytes(self, mock_limiter):
@@ -283,7 +283,7 @@ class TestCartographerFullPipeline(unittest.TestCase):
     """Test the full generate_scene pipeline."""
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     @patch('agents.cartographer.gemini_limiter')
     def test_generate_scene_success(self, mock_limiter):

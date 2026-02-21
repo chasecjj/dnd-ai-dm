@@ -5,7 +5,7 @@ race: Human
 role: Retired Adventurer, Owner of the Yawning Portal
 location: '[[Yawning Portal]]'
 faction: none
-disposition: -3
+disposition: hostile
 alive: true
 first_seen_session: null
 last_seen_session: 2

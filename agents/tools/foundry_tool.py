@@ -227,10 +227,37 @@ class FoundryClient:
             'GET', '/clients', timeout=10, inject_client_id=False,
         )
 
+    def _extract_client_id(self, clients) -> Optional[str]:
+        """Extract a client ID from the /clients response."""
+        if isinstance(clients, list) and len(clients) > 0:
+            return clients[0].get('clientId') or clients[0].get('id')
+        elif isinstance(clients, dict):
+            for key, val in clients.items():
+                if isinstance(val, list) and len(val) > 0:
+                    return val[0].get('clientId') or val[0].get('id')
+        return None
+
+    def _is_client_id_active(self, clients, client_id: str) -> bool:
+        """Check if a client ID is in the active clients list."""
+        if isinstance(clients, list):
+            for c in clients:
+                cid = c.get('clientId') or c.get('id')
+                if cid == client_id:
+                    return True
+        elif isinstance(clients, dict):
+            for key, val in clients.items():
+                if isinstance(val, list):
+                    for c in val:
+                        cid = c.get('clientId') or c.get('id')
+                        if cid == client_id:
+                            return True
+        return False
+
     async def connect(self) -> bool:
         """
         Validate the connection and auto-discover clientId if not set.
         Creates the aiohttp session if needed.
+        If the pre-set clientId is stale (not in active list), auto-discovers a new one.
         Returns True if a Foundry world is reachable.
         """
         if not self.api_key:
@@ -247,16 +274,22 @@ class FoundryClient:
                 logger.warning("No Foundry worlds connected to the relay.")
                 return False
 
-            # Auto-discover clientId if not set
-            if not self.client_id:
-                if isinstance(clients, list) and len(clients) > 0:
-                    self.client_id = clients[0].get('clientId') or clients[0].get('id')
-                elif isinstance(clients, dict):
-                    for key, val in clients.items():
-                        if isinstance(val, list) and len(val) > 0:
-                            self.client_id = val[0].get('clientId') or val[0].get('id')
-                            break
-
+            # Validate existing client ID or auto-discover
+            if self.client_id:
+                if not self._is_client_id_active(clients, self.client_id):
+                    logger.warning(
+                        f"Stale Foundry clientId '{self.client_id}' not in active clients. "
+                        f"Attempting auto-discovery..."
+                    )
+                    new_id = self._extract_client_id(clients)
+                    if new_id:
+                        logger.info(f"Re-discovered Foundry clientId: {new_id} (was: {self.client_id})")
+                        self.client_id = new_id
+                    else:
+                        logger.error("Could not re-discover clientId from active clients.")
+                        return False
+            else:
+                self.client_id = self._extract_client_id(clients)
                 if self.client_id:
                     logger.info(f"Auto-discovered Foundry clientId: {self.client_id}")
                 else:

@@ -203,7 +203,7 @@ class TestBlindPrepPipeline(unittest.TestCase):
 
     def _run(self, coro):
         """Helper to run async tests."""
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     @patch('tools.blind_prep.gemini_limiter')
     def test_pipeline_with_valid_scenarios(self, mock_limiter):
@@ -469,7 +469,7 @@ class TestBlindPrepDeduplication(unittest.TestCase):
     """Test that duplicate locations/NPCs across scenarios are handled."""
 
     def _run(self, coro):
-        return asyncio.get_event_loop().run_until_complete(coro)
+        return asyncio.run(coro)
 
     @patch('tools.blind_prep.gemini_limiter')
     def test_duplicate_locations_across_scenarios(self, mock_limiter):

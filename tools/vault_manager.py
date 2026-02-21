@@ -352,8 +352,24 @@ class VaultManager:
             if os.path.exists(full_path):
                 with open(full_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                # Append to the Key Events section
-                content += f"\n{event_entry}"
+                # Insert into the Key Events table (before the next ## section)
+                if "## Key Events" in content and "## Combat Encounters" in content:
+                    # Find the insertion point: just before ## Combat Encounters
+                    insert_idx = content.index("## Combat Encounters")
+                    content = content[:insert_idx] + f"{event_entry}\n\n" + content[insert_idx:]
+                elif "## Key Events" in content:
+                    # Find the next ## after Key Events
+                    key_events_idx = content.index("## Key Events")
+                    rest = content[key_events_idx + len("## Key Events"):]
+                    next_section = rest.find("\n## ")
+                    if next_section > 0:
+                        abs_idx = key_events_idx + len("## Key Events") + next_section
+                        content = content[:abs_idx] + f"\n{event_entry}" + content[abs_idx:]
+                    else:
+                        content += f"\n{event_entry}"
+                else:
+                    # Fallback: append to end
+                    content += f"\n{event_entry}"
                 with open(full_path, 'w', encoding='utf-8') as f:
                     f.write(content)
             else:

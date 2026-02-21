@@ -224,48 +224,52 @@ class MonsterRollModal(discord.ui.Modal, title="Monster / NPC Roll"):
             target=self.target.value or None,
         )
 
-        # Fire the dice via Foundry
-        if self.admin_cog.foundry.is_connected:
-            await interaction.response.defer(ephemeral=True)
-            try:
-                result = await self.admin_cog.foundry.roll_dice(self.formula.value)
-                total = result["total"]
-                is_crit = result.get("isCritical", False)
-                is_fumble = result.get("isFumble", False)
+        # Fire the dice via Foundry or local fallback
+        await interaction.response.defer(ephemeral=True)
+        try:
+            if self.admin_cog.foundry.is_connected:
+                try:
+                    result = await self.admin_cog.foundry.roll_dice(self.formula.value)
+                except Exception as e:
+                    logger.warning(f"Foundry monster roll failed, using local dice: {e}")
+                    from tools.dice_roller import parse_and_roll
+                    result = parse_and_roll(self.formula.value)
+            else:
+                from tools.dice_roller import parse_and_roll
+                result = parse_and_roll(self.formula.value)
 
-                dice_details = []
-                for die_group in result.get("dice", []):
-                    faces = die_group.get("faces", "?")
-                    rolls = [r.get("result", "?") for r in die_group.get("results", [])]
-                    dice_details.append(f"d{faces}: [{', '.join(str(r) for r in rolls)}]")
-                detail_str = f"{self.formula.value}: {' '.join(dice_details)} = {total}"
+            total = result["total"]
+            is_crit = result.get("isCritical", False)
+            is_fumble = result.get("isFumble", False)
 
-                await self.admin_cog.queue.resolve_monster_roll(roll.id, total, detail_str)
+            dice_details = []
+            for die_group in result.get("dice", []):
+                faces = die_group.get("faces", "?")
+                rolls = [r.get("result", "?") for r in die_group.get("results", [])]
+                dice_details.append(f"d{faces}: [{', '.join(str(r) for r in rolls)}]")
+            detail_str = f"{self.formula.value}: {' '.join(dice_details)} = {total}"
 
-                # Post result to console thread
-                target_str = f" vs **{self.target.value}**" if self.target.value else ""
-                crit_str = " **NAT 20!**" if is_crit else (" **NAT 1!**" if is_fumble else "")
-                thread = self.admin_cog.get_console_thread()
-                if thread:
-                    await thread.send(
-                        f"\U0001f9cc **{self.monster_name.value}** rolls "
-                        f"{self.roll_type.value}{target_str}: "
-                        f"`{self.formula.value}` = **{total}**{crit_str} "
-                        f"{' '.join(dice_details)}"
-                    )
-                await self.admin_cog.refresh_console()
-                await interaction.followup.send(
-                    f"Monster roll: {self.monster_name.value} {self.roll_type.value} = {total}",
-                    ephemeral=True,
+            await self.admin_cog.queue.resolve_monster_roll(roll.id, total, detail_str)
+
+            # Post result to console thread
+            target_str = f" vs **{self.target.value}**" if self.target.value else ""
+            crit_str = " **NAT 20!**" if is_crit else (" **NAT 1!**" if is_fumble else "")
+            thread = self.admin_cog.get_console_thread()
+            if thread:
+                await thread.send(
+                    f"\U0001f9cc **{self.monster_name.value}** rolls "
+                    f"{self.roll_type.value}{target_str}: "
+                    f"`{self.formula.value}` = **{total}**{crit_str} "
+                    f"{' '.join(dice_details)}"
                 )
-            except Exception as e:
-                logger.error(f"Monster roll error: {e}", exc_info=True)
-                await interaction.followup.send(f"Roll failed: {e}", ephemeral=True)
-        else:
-            await interaction.response.send_message(
-                "Foundry not connected. Enter result manually with `!roll` in Game Table.",
+            await self.admin_cog.refresh_console()
+            await interaction.followup.send(
+                f"Monster roll: {self.monster_name.value} {self.roll_type.value} = {total}",
                 ephemeral=True,
             )
+        except Exception as e:
+            logger.error(f"Monster roll error: {e}", exc_info=True)
+            await interaction.followup.send(f"Roll failed: {e}", ephemeral=True)
 
 
 # ======================================================================
@@ -346,18 +350,20 @@ class InlineRollView(discord.ui.View):
         emoji="\U0001f3b2",
     )
     async def roll_button(self, interaction: discord.Interaction, button):
-        """Fire the dice roll via Foundry and capture the result."""
-        if not self.admin_cog.foundry.is_connected:
-            await interaction.response.send_message(
-                "Foundry not connected — roll manually with `!roll` in Game Table.",
-                ephemeral=True,
-            )
-            return
-
+        """Fire the dice roll via Foundry (or local fallback) and capture the result."""
         await interaction.response.defer()
 
         try:
-            result = await self.admin_cog.foundry.roll_dice(self.formula)
+            if self.admin_cog.foundry.is_connected:
+                try:
+                    result = await self.admin_cog.foundry.roll_dice(self.formula)
+                except Exception as e:
+                    logger.warning(f"Foundry inline roll failed, using local dice: {e}")
+                    from tools.dice_roller import parse_and_roll
+                    result = parse_and_roll(self.formula)
+            else:
+                from tools.dice_roller import parse_and_roll
+                result = parse_and_roll(self.formula)
             total = result["total"]
             is_crit = result.get("isCritical", False)
             is_fumble = result.get("isFumble", False)
@@ -412,6 +418,35 @@ class InlineRollView(discord.ui.View):
 # Action Select — used by Annotate, Skip, and Roll buttons
 # ======================================================================
 
+class SkipConfirmView(discord.ui.View):
+    """Ephemeral confirmation before removing a queued action."""
+
+    def __init__(self, admin_cog, action_id: str, action_text: str, timeout: float = 30):
+        super().__init__(timeout=timeout)
+        self.admin_cog = admin_cog
+        self.action_id = action_id
+        self.action_text = action_text
+
+    @discord.ui.button(label="Confirm Skip", style=ButtonStyle.danger, emoji="\u2705")
+    async def confirm(self, interaction: discord.Interaction, button):
+        removed = await self.admin_cog.queue.remove(self.action_id)
+        if removed:
+            await self.admin_cog.refresh_console()
+            await interaction.response.edit_message(
+                content=f"Skipped: {self.action_text[:60]}", view=None
+            )
+        else:
+            await interaction.response.edit_message(
+                content="Action already removed.", view=None
+            )
+        self.stop()
+
+    @discord.ui.button(label="Cancel", style=ButtonStyle.secondary)
+    async def cancel(self, interaction: discord.Interaction, button):
+        await interaction.response.edit_message(content="Skip cancelled.", view=None)
+        self.stop()
+
+
 class ActionSelectView(discord.ui.View):
     """Dynamic select menu for choosing which queued action to operate on."""
 
@@ -452,11 +487,14 @@ class ActionSelectView(discord.ui.View):
                 AnnotateModal(self.admin_cog, action_id)
             )
         elif self.operation == "skip":
-            removed = await self.admin_cog.queue.remove(action_id)
-            if removed:
-                await self.admin_cog.refresh_console()
+            action = await self.admin_cog.queue.get_by_id(action_id)
+            if action:
+                confirm_view = SkipConfirmView(self.admin_cog, action_id, action.player_input)
+                name_tag = action.character_name or "Unknown"
                 await interaction.response.send_message(
-                    f"Skipped: {removed.player_input[:60]}", ephemeral=True
+                    f"Remove **[{name_tag}]** action: *{action.player_input[:80]}*?",
+                    view=confirm_view,
+                    ephemeral=True,
                 )
             else:
                 await interaction.response.send_message(

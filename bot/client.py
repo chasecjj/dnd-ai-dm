@@ -13,6 +13,7 @@ import time
 import asyncio
 import logging
 import traceback
+from collections import deque
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -30,6 +31,7 @@ from tools.action_queue import ActionQueue, QueuedAction
 from tools.player_identity import init_player_map, resolve_from_message_author, get_player_map
 from tools.turn_collector import TurnCollector, PendingMessage
 from tools.dice_roller import parse_and_roll, format_roll_detail
+from tools.content_filter import filter_content
 from agents.tools.foundry_tool import FoundryClient
 
 # Agents — Live DM Team
@@ -63,6 +65,8 @@ WAR_ROOM_CHANNEL_ID = os.getenv("WAR_ROOM_CHANNEL_ID")
 GAME_TABLE_CHANNEL_ID = os.getenv("GAME_TABLE_CHANNEL_ID")
 
 # Player-to-Character mapping
+DM_DISCORD_USER_ID = os.getenv("DM_DISCORD_USER_ID")
+
 PLAYER_MAP = {}
 raw_map = os.getenv("PLAYER_MAP", "")
 if raw_map:
@@ -193,6 +197,12 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
+# ---------------------------------------------------------------------------
+# Reliability: Message deduplication & pipeline serialization
+# ---------------------------------------------------------------------------
+_seen_messages: deque = deque(maxlen=1000)  # Bounded deque of recent message IDs
+_pipeline_semaphore = asyncio.Semaphore(1)  # Serialize pipeline invocations
+
 
 # ---------------------------------------------------------------------------
 # Moderator Log Helper
@@ -300,6 +310,14 @@ async def _handle_game_table(message, user_input: str):
     """
     logger.info(f"[Game Table] {message.author}: {user_input}")
 
+    # Content filter — blocklist check before pipeline entry
+    user_input, was_filtered = filter_content(user_input)
+    if was_filtered:
+        await send_to_moderator_log(
+            f"[Content Filter] Filtered input from {message.author}:\n"
+            f"Original: {message.content[:200]}"
+        )
+
     # Resolve player identity (tries username, global_name, display_name, nick)
     character_name = resolve_from_message_author(message.author)
     if character_name:
@@ -325,8 +343,9 @@ async def _handle_game_table(message, user_input: str):
             "dice_results": dice_results,
         }
 
-        async with message.channel.typing():
-            result = await game_pipeline.ainvoke(initial_state)
+        async with _pipeline_semaphore:
+            async with message.channel.typing():
+                result = await game_pipeline.ainvoke(initial_state)
 
         logger.info(f"Pipeline complete. Keys returned: {list(result.keys())}")
 
@@ -349,6 +368,10 @@ async def _handle_game_table(message, user_input: str):
 
         # Narrative delivery
         narrative = result.get("narrative", "")
+        if not narrative and not result.get("direct_reply") and result.get("message_type") != "casual_chat":
+            narrative = "*The threads of fate tangle momentarily... (The DM fumbles with their notes. Try again!)*"
+            logger.warning(f"Empty narrative returned for input: {user_input[:100]}")
+
         if narrative:
             if len(narrative) > 2000:
                 for i in range(0, len(narrative), 2000):
@@ -530,8 +553,9 @@ async def handle_batch_resolve(actions, game_table_channel):
     }
 
     try:
-        async with game_table_channel.typing():
-            result = await game_pipeline.ainvoke(initial_state)
+        async with _pipeline_semaphore:
+            async with game_table_channel.typing():
+                result = await game_pipeline.ainvoke(initial_state)
 
         logger.info(f"Batch resolve complete. Keys: {list(result.keys())}")
 
@@ -679,8 +703,9 @@ async def _resolve_auto_batch(pending_messages: list):
     }
 
     try:
-        async with game_table_channel.typing():
-            result = await game_pipeline.ainvoke(initial_state)
+        async with _pipeline_semaphore:
+            async with game_table_channel.typing():
+                result = await game_pipeline.ainvoke(initial_state)
 
         logger.info(f"Auto-batch resolve complete. Keys: {list(result.keys())}")
 
@@ -829,6 +854,15 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
+    # Bot filter — ignore messages from other bots (MEE6, etc.)
+    if message.author.bot:
+        return
+
+    # Message deduplication — Discord can re-deliver on gateway reconnections
+    if message.id in _seen_messages:
+        return
+    _seen_messages.append(message.id)
+
     # Let commands go through the normal handler
     if message.content.startswith("!"):
         await bot.process_commands(message)
@@ -836,6 +870,13 @@ async def on_message(message):
 
     user_input = message.content
     channel_id = str(message.channel.id)
+
+    # Content filter — apply to all non-command messages
+    user_input, was_filtered = filter_content(user_input)
+    if was_filtered:
+        await send_to_moderator_log(
+            f"[Content Filter] Filtered input from {message.author.name}: {message.content[:200]}"
+        )
 
     # Check if this message is in the admin console thread
     admin_cog = bot.get_cog("Admin Console")
@@ -874,6 +915,9 @@ async def on_message(message):
         isinstance(message.channel, discord.Thread)
         and action_queue.is_player_thread(message.channel.id)
     )
+
+    # DM channel separation: DM messages in Game Table are forced in-character
+    is_dm_user = DM_DISCORD_USER_ID and str(message.author.id) == str(DM_DISCORD_USER_ID)
 
     if WAR_ROOM_CHANNEL_ID and channel_id == WAR_ROOM_CHANNEL_ID:
         await _handle_war_room(message, user_input)

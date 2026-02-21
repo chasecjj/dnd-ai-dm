@@ -108,9 +108,11 @@ class AdminCog(commands.Cog, name="Admin Console"):
     # Embed Builder
     # ------------------------------------------------------------------
     def build_dashboard_embed(self) -> discord.Embed:
-        """Build the main dashboard embed showing queue, party, and game state."""
-        import asyncio
+        """Build the main dashboard embed showing queue, party, and game state.
 
+        Guards against exceeding Discord's embed limits (6000 total, 1024 per field).
+        Caps queue display at 5 actions with overflow count.
+        """
         # Get queue contents via sync-safe snapshot property
         actions = self.queue.actions_snapshot
 
@@ -132,15 +134,16 @@ class AdminCog(commands.Cog, name="Admin Console"):
             f"\u2500" * 40
         )
 
-        # Queue section
+        # Queue section — cap at 5 displayed actions to prevent embed overflow
+        max_display = 5
         if actions:
             queue_lines = []
-            for i, action in enumerate(actions, 1):
+            for i, action in enumerate(actions[:max_display], 1):
                 emoji = STATUS_EMOJI.get(action.status, "\u26aa")
                 name_tag = f"[{action.character_name}]" if action.character_name else "[DM]"
-                line = f"{i}. {emoji} {name_tag} \"{action.player_input[:60]}\""
-                # Add roll info if present
-                for roll in action.rolls:
+                line = f"{i}. {emoji} {name_tag} \"{action.player_input[:50]}\""
+                # Add roll info if present (limit to 2 rolls displayed)
+                for roll in action.rolls[:2]:
                     if roll.resolved:
                         dc_str = f" DC {roll.dc}" if roll.dc else ""
                         passed = ""
@@ -151,14 +154,15 @@ class AdminCog(commands.Cog, name="Admin Console"):
                         line += f"\n   \U0001f3b2 {roll.roll_type}{dc_str}: **{roll.result}**{passed}"
                     elif roll == action.current_pending_roll:
                         line += f"\n   \u23f3 Waiting: {roll.roll_type} `{roll.formula}`"
-                    else:
-                        line += f"\n   \u23f3 Queued: {roll.roll_type} `{roll.formula}`"
                 if action.dm_annotation:
-                    line += f"\n   \U0001f4dd _{action.dm_annotation[:40]}_"
+                    line += f"\n   \U0001f4dd _{action.dm_annotation[:30]}_"
                 queue_lines.append(line)
+            if len(actions) > max_display:
+                queue_lines.append(f"_...and {len(actions) - max_display} more_")
+            queue_text = "\n".join(queue_lines)[:1000]
             embed.add_field(
                 name=f"Queued Actions ({len(actions)})",
-                value="\n".join(queue_lines)[:1024],
+                value=queue_text,
                 inline=False,
             )
         else:
@@ -168,32 +172,46 @@ class AdminCog(commands.Cog, name="Admin Console"):
                 inline=False,
             )
 
-        # Monster rolls section
+        # Monster rolls section — cap at 3
         monster_rolls = self.queue.monster_rolls_snapshot
         if monster_rolls:
             roll_lines = []
-            for mr in monster_rolls:
+            for mr in monster_rolls[:3]:
                 target_str = f" vs {mr.target}" if mr.target else ""
                 if mr.result is not None:
                     roll_lines.append(
-                        f"\U0001f9cc {mr.monster_name} {mr.roll_type}{target_str}: **{mr.result}** ({mr.detail})"
+                        f"\U0001f9cc {mr.monster_name} {mr.roll_type}{target_str}: **{mr.result}**"
                     )
                 else:
                     roll_lines.append(
                         f"\U0001f9cc {mr.monster_name} {mr.roll_type}{target_str}: _pending..._"
                     )
+            if len(monster_rolls) > 3:
+                roll_lines.append(f"_...and {len(monster_rolls) - 3} more_")
             embed.add_field(
                 name=f"Monster Rolls ({len(monster_rolls)})",
-                value="\n".join(roll_lines)[:1024],
+                value="\n".join(roll_lines)[:1000],
                 inline=False,
             )
 
         # Party section
         party_info = self._get_party_summary()
         if party_info:
-            embed.add_field(name="Party", value=party_info[:1024], inline=False)
+            embed.add_field(name="Party", value=party_info[:1000], inline=False)
 
-        # Footer
+        # Total size guard — if embed exceeds safe limit, rebuild minimal
+        total_chars = len(embed.description or "")
+        for field in embed.fields:
+            total_chars += len(field.name or "") + len(field.value or "")
+        if total_chars > 5800:
+            logger.warning(f"Dashboard embed too large ({total_chars} chars), rebuilding minimal")
+            embed.clear_fields()
+            embed.add_field(
+                name=f"Queued Actions ({len(actions)})",
+                value=f"{len(actions)} action(s) queued. Use Resolve to process.",
+                inline=False,
+            )
+
         embed.set_footer(text="Use buttons below to manage the game.")
         return embed
 
@@ -240,6 +258,17 @@ class AdminCog(commands.Cog, name="Admin Console"):
             logger.warning("Console message not found — thread may have been deleted.")
             self._console_thread_id = None
             self._console_message_id = None
+        except discord.HTTPException as e:
+            logger.error(f"Console refresh HTTP error (status={e.status}): {e}")
+            # If 400, the embed is likely too large — try a minimal rebuild
+            if e.status == 400:
+                try:
+                    minimal = discord.Embed(title="DM Console", color=discord.Color.gold())
+                    actions = self.queue.actions_snapshot
+                    minimal.description = f"Queue: {len(actions)} action(s) | Refresh to update"
+                    await msg.edit(embed=minimal)
+                except Exception:
+                    pass
         except Exception as e:
             logger.error(f"Console refresh error: {e}")
 

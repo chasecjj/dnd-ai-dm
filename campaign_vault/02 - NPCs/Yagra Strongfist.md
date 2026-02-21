@@ -5,7 +5,7 @@ race: Half-Orc
 role: Zhentarim Agent
 location: '[[Yawning Portal]]'
 faction: '[[Zhentarim]]'
-disposition: -3
+disposition: hostile
 alive: true
 first_seen_session: null
 last_seen_session: 2

@@ -108,6 +108,7 @@ class ConsequenceEntry(BaseModel):
 
     trigger_session: int = Field(ge=0)
     event: str
+    caused_by: str = ""
     impact: int = Field(default=5, ge=1, le=10)
     notes: str = ""
 
@@ -126,3 +127,4 @@ class ChroniclerOutput(BaseModel):
     location_updates: List[LocationUpdate] = []
     world_clock: Optional[ClockUpdate] = None
     new_consequences: List[ConsequenceEntry] = []
+    resolved_consequences: List[str] = []
