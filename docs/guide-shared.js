@@ -15,6 +15,8 @@
   async function loadSpriteSheet() {
     const container = document.getElementById('svg-sprite-container');
     if (!container) return;
+    // Skip fetch if sprite is already inlined in the HTML
+    if (container.querySelector('svg')) return;
     try {
       const resp = await fetch(base + 'guide-icons.svg');
       if (!resp.ok) throw new Error(`SVG sprite: ${resp.status}`);
