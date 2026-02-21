@@ -206,7 +206,7 @@ class MonsterRollModal(discord.ui.Modal, title="Monster / NPC Roll"):
     )
     target = discord.ui.TextInput(
         label="Target (optional)",
-        placeholder="Frognar, Kallisar...",
+        placeholder="Character name...",
         required=False,
         max_length=50,
     )
@@ -277,13 +277,13 @@ class RegisterCharacterModal(discord.ui.Modal, title="Register Character"):
 
     character_name = discord.ui.TextInput(
         label="Character Name",
-        placeholder="Frognar Emberheart",
+        placeholder="Character Name",
         max_length=100,
     )
     player_name = discord.ui.TextInput(
         label="Player Discord Name (optional)",
         required=False,
-        placeholder="ember0100",
+        placeholder="discord_username",
         max_length=50,
     )
 

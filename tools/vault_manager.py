@@ -104,7 +104,7 @@ class VaultManager:
         """Read a vault file and return (frontmatter, body).
         
         Args:
-            relative_path: Path relative to vault root (e.g., '01 - Party/Frognar Emberheart.md')
+            relative_path: Path relative to vault root (e.g., '01 - Party/Character Name.md')
         """
         full_path = self._resolve(relative_path)
         try:

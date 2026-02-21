@@ -65,7 +65,7 @@ Categories:
   request that should produce immersive narrative prose (even if phrased as a request to the DM).
   Examples: "I swing my sword at the goblin", "I cast Fireball", "I search the chest",
   "Tell me about my character's past", "I want to learn about my religion",
-  "Can we do a flashback to how I met Kallisar?", "I pray to my god",
+  "Can we do a flashback to how I met my companion?", "I pray to my god",
   "Describe the scene where I first took my oath".
 - "game_question": The player is asking about the current game state or spatial information.
   Examples: "Where is the goblin?", "Can I see the door?", "How far am I from the troll?"

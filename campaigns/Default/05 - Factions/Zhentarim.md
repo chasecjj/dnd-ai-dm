@@ -24,5 +24,5 @@ A shadowy network of merchants, mercenaries, and criminals. They operate through
 - In conflict with the [[Xanathar Guild]].
 
 ## DM Notes
-- Frognar's gambling debt could be tied to the Zhentarim — creating an interesting conflict if the party also allies with them later.
+- A party member's personal debt could be tied to the Zhentarim — creating an interesting conflict if the party also allies with them later.
 - Yagra could become a recurring contact if the party seeks out the Zhentarim.

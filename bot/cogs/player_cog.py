@@ -93,7 +93,7 @@ class CharacterImportModal(discord.ui.Modal, title="Import Character Sheet"):
     sheet = discord.ui.TextInput(
         label="Paste your character sheet here",
         style=discord.TextStyle.long,
-        placeholder="---\nname: Frognar Emberheart\nrace: Dwarf\nclass: Paladin\n...",
+        placeholder="---\nname: Character Name\nrace: Race\nclass: Class\n...",
         max_length=4000,
         required=True,
     )
