@@ -1,0 +1,111 @@
+<div class="section-header">
+    <h2>The Session Lifecycle</h2>
+    <p>From preparation to the final curtain</p>
+</div>
+<div class="section-divider"></div>
+
+<h3>Before the Session</h3>
+<p>Session prep is optional but powerful. Use the War Room channel to plan ahead.</p>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Command</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>!prep</code></td>
+            <td>Generate a prep outline for your next session based on campaign state</td>
+        </tr>
+        <tr>
+            <td><code>!brainstorm</code></td>
+            <td>Collaborative AI brainstorming for encounters, NPCs, or plot hooks</td>
+        </tr>
+        <tr>
+            <td><code>!plan</code></td>
+            <td>Create a structured session plan with objectives and contingencies</td>
+        </tr>
+        <tr>
+            <td><code>!build</code></td>
+            <td>Generate a Foundry VTT scene with tokens and lighting</td>
+        </tr>
+        <tr>
+            <td><code>!scene</code></td>
+            <td>Set up or switch the active Foundry scene</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Starting the Session</h3>
+<ol>
+    <li>Open the console: <code>/console</code></li>
+    <li>Click <strong>&#x25b6; Start Session</strong></li>
+    <li>Queue mode auto-enables, session log created, &ldquo;Previously on...&rdquo; recap posted</li>
+</ol>
+
+<h3>The Turn Cycle</h3>
+<div class="flow-diagram">
+    <div class="flow-node">Players Type Actions</div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">Queue Fills Up</div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">DM Reviews</div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">Resolve</div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">Narrative Posted</div>
+</div>
+
+<h3>Step-by-Step Turn Cycle</h3>
+<ol>
+    <li>Players type actions in Game Table (each gets &#x23f3;)</li>
+    <li>DM clicks <strong>&#x1f50d; Analyze</strong> (Rules Lawyer checks what rolls are needed)</li>
+    <li>Players roll dice when prompted</li>
+    <li>DM manages queue (Annotate, Monster Roll, DM Event)</li>
+    <li>DM clicks <strong>&#x25b6; Resolve Turn</strong> (AI narrates the round)</li>
+    <li>Repeat</li>
+</ol>
+
+<h3>Two Modes</h3>
+<div class="cards-grid cols-2">
+    <div class="card accent-blue">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-shield"></use></svg>
+            </div>
+            <div class="card-title">Queue Mode</div>
+        </div>
+        <div class="card-summary">
+            <ul>
+                <li>Player messages queue up with &#x23f3;</li>
+                <li>Nothing happens until DM reviews</li>
+                <li>Full control over turn order and narrative</li>
+                <li><strong>Best for:</strong> Combat, important story beats</li>
+            </ul>
+        </div>
+    </div>
+    <div class="card accent-orange">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-lightning"></use></svg>
+            </div>
+            <div class="card-title">Auto Mode</div>
+        </div>
+        <div class="card-summary">
+            <ul>
+                <li>Player messages immediately trigger AI</li>
+                <li>Narrative posted within seconds</li>
+                <li>No DM review</li>
+                <li><strong>Best for:</strong> Free exploration, casual RP</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<h3>Ending the Session</h3>
+<ol>
+    <li>Click <strong>&#x23f9; End Session</strong></li>
+    <li>AI generates session summary, saves to vault</li>
+    <li>Session number incremented, queue disabled</li>
+</ol>

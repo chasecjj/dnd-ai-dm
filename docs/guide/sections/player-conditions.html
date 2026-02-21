@@ -1,0 +1,121 @@
+<div class="section-header">
+    <h2>Curses and Afflictions</h2>
+    <p>Status conditions that can affect your character in combat</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="condition-grid">
+    <!-- Harmful -->
+    <div class="condition-badge cat-harmful">
+        <svg><use href="#icon-cond-blinded"></use></svg>
+        <span>Blinded</span>
+    </div>
+    <div class="condition-badge cat-harmful">
+        <svg><use href="#icon-cond-frightened"></use></svg>
+        <span>Frightened</span>
+    </div>
+    <div class="condition-badge cat-harmful">
+        <svg><use href="#icon-cond-poisoned"></use></svg>
+        <span>Poisoned</span>
+    </div>
+
+    <!-- Control -->
+    <div class="condition-badge cat-control">
+        <svg><use href="#icon-cond-grappled"></use></svg>
+        <span>Grappled</span>
+    </div>
+    <div class="condition-badge cat-control">
+        <svg><use href="#icon-cond-prone"></use></svg>
+        <span>Prone</span>
+    </div>
+    <div class="condition-badge cat-control">
+        <svg><use href="#icon-cond-restrained"></use></svg>
+        <span>Restrained</span>
+    </div>
+    <div class="condition-badge cat-control">
+        <svg><use href="#icon-cond-stunned"></use></svg>
+        <span>Stunned</span>
+    </div>
+
+    <!-- Magic -->
+    <div class="condition-badge cat-magic">
+        <svg><use href="#icon-cond-charmed"></use></svg>
+        <span>Charmed</span>
+    </div>
+    <div class="condition-badge cat-magic">
+        <svg><use href="#icon-cond-invisible"></use></svg>
+        <span>Invisible</span>
+    </div>
+    <div class="condition-badge cat-magic">
+        <svg><use href="#icon-cond-paralyzed"></use></svg>
+        <span>Paralyzed</span>
+    </div>
+    <div class="condition-badge cat-magic">
+        <svg><use href="#icon-cond-petrified"></use></svg>
+        <span>Petrified</span>
+    </div>
+
+    <!-- Status -->
+    <div class="condition-badge cat-status">
+        <svg><use href="#icon-cond-deafened"></use></svg>
+        <span>Deafened</span>
+    </div>
+    <div class="condition-badge cat-status">
+        <svg><use href="#icon-cond-incapacitated"></use></svg>
+        <span>Incapacitated</span>
+    </div>
+    <div class="condition-badge cat-status">
+        <svg><use href="#icon-cond-unconscious"></use></svg>
+        <span>Unconscious</span>
+    </div>
+</div>
+
+<div id="condition-details" style="margin-top: 2rem;">
+    <details>
+        <summary style="cursor: pointer; font-weight: bold; color: #c8a96e; margin-bottom: 1rem;">Show Condition Details</summary>
+        <ul style="list-style: none; padding: 0;">
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #e74c3c;">Blinded</strong> &mdash; Can't see. Auto-fail sight checks. Attacks have disadvantage.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #e74c3c;">Frightened</strong> &mdash; Disadvantage on checks/attacks while the source is in sight. Can't willingly move closer.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #e74c3c;">Poisoned</strong> &mdash; Disadvantage on attack rolls and ability checks.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #3498db;">Grappled</strong> &mdash; Speed becomes 0. Ends if grappler is incapacitated or you're moved out of reach.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #3498db;">Prone</strong> &mdash; Melee attacks against you have advantage. Ranged attacks have disadvantage. Must spend movement to stand.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #3498db;">Restrained</strong> &mdash; Speed 0. Attacks against you have advantage. Your attacks and DEX saves have disadvantage.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #3498db;">Stunned</strong> &mdash; Incapacitated. Can't move. Auto-fail STR/DEX saves. Attacks against you have advantage.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #9b59b6;">Charmed</strong> &mdash; Can't attack the charmer. The charmer has advantage on social checks against you.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #9b59b6;">Invisible</strong> &mdash; Can't be seen without magic/special sense. Attacks against you have disadvantage, yours have advantage.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #9b59b6;">Paralyzed</strong> &mdash; Incapacitated and can't move or speak. Auto-fail STR/DEX saves. Hits within 5 ft are auto-crits.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #9b59b6;">Petrified</strong> &mdash; Turned to stone. Incapacitated, unaware. Resistant to all damage. Immune to poison and disease.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #e67e22;">Deafened</strong> &mdash; Can't hear. Auto-fail hearing checks.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #e67e22;">Incapacitated</strong> &mdash; Can't take actions or reactions.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: #e67e22;">Unconscious</strong> &mdash; Incapacitated, prone, unaware. Attacks have advantage. Hits within 5 ft are crits.
+            </li>
+        </ul>
+    </details>
+</div>

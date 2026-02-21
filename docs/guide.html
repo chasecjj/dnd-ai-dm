@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="guide-base" content="">
+<title>Adventurer's Compendium — D&D AI Dungeon Master Guide</title>
+<link rel="stylesheet" href="guide-shared.css">
+<link rel="stylesheet" href="guide.css">
+</head>
+<body data-page="home">
+
+<!-- ===== SVG SPRITE (hidden, loaded inline for <use> refs) ===== -->
+<div id="svg-sprite-container" style="display:none" aria-hidden="true"></div>
+
+<!-- ===== STICKY NAV ===== -->
+<nav class="guide-nav">
+  <div class="nav-inner">
+    <a href="guide.html" class="nav-brand">Adventurer's Compendium</a>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="guide/character-creation.html" data-page="character-creation">Character Creation</a>
+      <a href="guide/rules.html" data-page="rules">Rules</a>
+      <a href="guide/reference.html" data-page="reference">Reference</a>
+      <a href="guide/dm-setup.html" data-page="dm-setup">DM Setup</a>
+      <a href="guide/dm-running.html" data-page="dm-running">Running Sessions</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO SECTION ===== -->
+<header class="hero" id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-d20">
+    <svg viewBox="0 0 120 120" class="d20-hero-svg" aria-label="D20 die">
+      <use href="#icon-d20-hero"></use>
+    </svg>
+  </div>
+  <h1>Adventurer's Compendium</h1>
+  <p class="hero-subtitle">Your guide to the AI-powered Dungeons & Dragons experience</p>
+  <div class="subtitle-line"></div>
+
+  <!-- Role Selector -->
+  <div class="role-selector" id="role-selector">
+    <button class="role-btn player-btn" id="btn-player" data-role="player">
+      <svg class="role-icon" viewBox="0 0 24 24"><use href="#icon-sword-shield"></use></svg>
+      I Am A Player
+    </button>
+    <button class="role-btn dm-btn" id="btn-dm" data-role="dm">
+      <svg class="role-icon" viewBox="0 0 24 24"><use href="#icon-crown"></use></svg>
+      I Am The Dungeon Master
+    </button>
+  </div>
+</header>
+
+<!-- ===== WELCOME INTRO ===== -->
+<section class="welcome-section" id="welcome">
+  <div class="welcome-intro">
+    <p>
+      You stand at the threshold of an epic journey. This is an <strong>AI-powered Dungeon Master</strong> for
+      <strong>Dungeons &amp; Dragons 5th Edition</strong>, running entirely within Discord. There are no complicated
+      interfaces or confusing menus — just type what your character does in plain language, and watch the story unfold.
+    </p>
+  </div>
+  <div class="flow-diagram">
+    <svg viewBox="0 0 900 120" xmlns="http://www.w3.org/2000/svg" style="width: 100%; max-width: 900px; height: auto;">
+      <rect x="10" y="25" width="180" height="70" rx="12" ry="12" fill="#1a1a2e" stroke="#c8a96e" stroke-width="2"/>
+      <text x="100" y="55" text-anchor="middle" fill="#c8a96e" font-size="13" font-weight="bold">Player Types</text>
+      <text x="100" y="75" text-anchor="middle" fill="#e0d6c2" font-size="12">Action</text>
+      <line x1="195" y1="60" x2="240" y2="60" stroke="#c8a96e" stroke-width="2" marker-end="url(#arrowhead-welcome)"/>
+      <rect x="245" y="25" width="180" height="70" rx="12" ry="12" fill="#1a1a2e" stroke="#c8a96e" stroke-width="2"/>
+      <text x="335" y="55" text-anchor="middle" fill="#c8a96e" font-size="13" font-weight="bold">DM Reviews</text>
+      <text x="335" y="75" text-anchor="middle" fill="#e0d6c2" font-size="12">the Action</text>
+      <line x1="430" y1="60" x2="475" y2="60" stroke="#c8a96e" stroke-width="2" marker-end="url(#arrowhead-welcome)"/>
+      <rect x="480" y="25" width="180" height="70" rx="12" ry="12" fill="#1a1a2e" stroke="#c8a96e" stroke-width="2"/>
+      <text x="570" y="55" text-anchor="middle" fill="#c8a96e" font-size="13" font-weight="bold">AI Narrates</text>
+      <text x="570" y="75" text-anchor="middle" fill="#e0d6c2" font-size="12">the Result</text>
+      <line x1="665" y1="60" x2="710" y2="60" stroke="#c8a96e" stroke-width="2" marker-end="url(#arrowhead-welcome)"/>
+      <rect x="715" y="25" width="180" height="70" rx="12" ry="12" fill="#1a1a2e" stroke="#c8a96e" stroke-width="2"/>
+      <text x="805" y="55" text-anchor="middle" fill="#c8a96e" font-size="13" font-weight="bold">Story Continues</text>
+      <text x="805" y="75" text-anchor="middle" fill="#e0d6c2" font-size="12">&#8635; Loop</text>
+      <defs>
+        <marker id="arrowhead-welcome" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#c8a96e"/>
+        </marker>
+      </defs>
+    </svg>
+  </div>
+</section>
+
+<!-- ===== FEATURE CARDS ===== -->
+<section class="feature-cards-section">
+
+  <!-- Player Feature Cards -->
+  <div class="feature-cards player-cards" id="player-cards">
+    <a href="guide/character-creation.html" class="feature-card">
+      <div class="feature-card-accent"></div>
+      <div class="feature-card-icon">
+        <svg class="icon-xl"><use href="#icon-class-fighter"></use></svg>
+      </div>
+      <h3>Character Creation</h3>
+      <p>Choose your class, race, and abilities. Build the hero you want to play.</p>
+    </a>
+    <a href="guide/rules.html" class="feature-card">
+      <div class="feature-card-accent"></div>
+      <div class="feature-card-icon">
+        <svg class="icon-xl"><use href="#icon-d20"></use></svg>
+      </div>
+      <h3>Rules</h3>
+      <p>Dice, combat, spellcasting, and conditions — everything you need to play.</p>
+    </a>
+    <a href="guide/reference.html" class="feature-card">
+      <div class="feature-card-accent"></div>
+      <div class="feature-card-icon">
+        <svg class="icon-xl"><use href="#icon-scroll"></use></svg>
+      </div>
+      <h3>Reference</h3>
+      <p>Commands, tips, secret actions, and how the AI Dungeon Master works.</p>
+    </a>
+  </div>
+
+  <!-- DM Feature Cards -->
+  <div class="feature-cards dm-cards" id="dm-cards">
+    <a href="guide/dm-setup.html" class="feature-card">
+      <div class="feature-card-accent"></div>
+      <div class="feature-card-icon">
+        <svg class="icon-xl"><use href="#icon-campfire"></use></svg>
+      </div>
+      <h3>DM Setup</h3>
+      <p>Prerequisites, installation, Discord setup, and the 13-button Admin Console.</p>
+    </a>
+    <a href="guide/dm-running.html" class="feature-card">
+      <div class="feature-card-accent"></div>
+      <div class="feature-card-icon">
+        <svg class="icon-xl"><use href="#icon-crown"></use></svg>
+      </div>
+      <h3>Running Sessions</h3>
+      <p>Session lifecycle, turn cycles, commands, and expert DM tips.</p>
+    </a>
+  </div>
+
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="guide-footer">
+  <div class="footer-divider"></div>
+  <p>Adventurer's Compendium &mdash; <a href="index.html">System Architecture</a></p>
+  <p class="footer-dim">Built for the AI Dungeon Master project</p>
+</footer>
+
+<script src="guide-shared.js"></script>
+<script src="guide.js"></script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="guide-base" content="../">
+<title>Reference — Adventurer's Compendium</title>
+<link rel="stylesheet" href="../guide-shared.css">
+</head>
+<body data-page="reference">
+<div id="svg-sprite-container" style="display:none" aria-hidden="true"></div>
+
+<nav class="guide-nav">
+  <div class="nav-inner">
+    <a href="../guide.html" class="nav-brand">Adventurer's Compendium</a>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="character-creation.html" data-page="character-creation">Character Creation</a>
+      <a href="rules.html" data-page="rules">Rules</a>
+      <a href="reference.html" data-page="reference">Reference</a>
+      <a href="dm-setup.html" data-page="dm-setup">DM Setup</a>
+      <a href="dm-running.html" data-page="dm-running">Running Sessions</a>
+    </div>
+  </div>
+</nav>
+
+<div class="breadcrumbs">
+  <a href="../guide.html">Home</a>
+  <span class="separator">&rsaquo;</span>
+  <span class="current">Reference</span>
+</div>
+
+<main class="page-content section-glow">
+
+<!-- ===== HOW TO PLAY ===== -->
+<section id="how-to-play">
+<div class="section-header">
+    <h2>Begin Your Quest</h2>
+    <p>How to take actions and interact with the AI Dungeon Master</p>
+</div>
+<div class="section-divider"></div>
+
+<p>Playing is simple: <strong>type what your character does</strong> in natural language in the Game Table Discord channel. The AI Dungeon Master reads your action, applies the rules, and narrates the outcome. No memorizing commands — just describe your intent.</p>
+
+<h3>Example Actions</h3>
+<div class="code-block">I search the room for hidden doors</div>
+<div class="code-block">I approach the merchant and ask about the rumors</div>
+<div class="code-block">I cast Fireball at the group of goblins</div>
+<div class="code-block">I try to persuade the guard to let us through</div>
+
+<h3>How Your Action Is Processed</h3>
+<p>When you send a message, you'll see an <strong>&#x23f3; hourglass reaction</strong> appear on it. This means your action was received and is waiting in the queue.</p>
+
+<p><strong>Queue Mode:</strong> Actions from all players queue up together. The DM reviews the batch, determines what rolls are needed, and the AI narrates the results for everyone before moving on. This keeps the game flowing smoothly even with multiple players.</p>
+
+<div class="flow-diagram">
+    <div class="flow-node">You Type</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">&#x23f3; Queued</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">DM Reviews</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">AI Narrates</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">Your Turn Again</div>
+</div>
+
+<blockquote>
+    <strong>One action per message.</strong> If you want to do multiple things, send multiple messages. Each message is one discrete action your character takes.
+</blockquote>
+</section>
+
+<!-- ===== COMMANDS ===== -->
+<section id="player-commands">
+<div class="section-header">
+    <h2>Your Spellbook of Commands</h2>
+    <p>Every command at your disposal</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="filter-bar">
+    <input type="text" class="filter-input" placeholder="Search commands..." data-filter-target="player-cmd-table">
+</div>
+
+<table class="guide-table" id="player-cmd-table">
+    <thead>
+        <tr>
+            <th>Command</th>
+            <th>Example</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>!roll &lt;formula&gt;</code></td>
+            <td><code>!roll 1d20+5</code></td>
+            <td>Roll dice through Foundry VTT</td>
+        </tr>
+        <tr>
+            <td><code>!roll &lt;formula&gt; &lt;reason&gt;</code></td>
+            <td><code>!roll 1d20+5 Perception</code></td>
+            <td>Roll with a label</td>
+        </tr>
+        <tr>
+            <td><code>!status</code></td>
+            <td><code>!status</code></td>
+            <td>Shows party HP, AC, conditions, and active quests</td>
+        </tr>
+        <tr>
+            <td><code>!recap</code></td>
+            <td><code>!recap</code></td>
+            <td>Shows the latest session recap</td>
+        </tr>
+        <tr>
+            <td><code>!recap &lt;number&gt;</code></td>
+            <td><code>!recap 3</code></td>
+            <td>Shows the recap from session 3</td>
+        </tr>
+        <tr>
+            <td><code>!pc &lt;name&gt;</code></td>
+            <td><code>!pc Frognar</code></td>
+            <td>Look up a character's stats</td>
+        </tr>
+        <tr>
+            <td><code>/whisper</code></td>
+            <td><code>/whisper</code></td>
+            <td>Opens a private thread for secret actions</td>
+        </tr>
+    </tbody>
+</table>
+</section>
+
+<!-- ===== SECRETS ===== -->
+<section id="secrets">
+<div class="section-header">
+    <h2>Whispers in the Dark</h2>
+    <p>Secret actions only you and the DM will know about</p>
+</div>
+<div class="section-divider"></div>
+
+<div style="max-width: 800px; margin: 0 auto 2rem;">
+    <h3>How It Works</h3>
+    <ol>
+        <li>Type <code>/whisper</code> in any text channel</li>
+        <li>The bot creates a private thread &mdash; only you and the DM can see it</li>
+        <li>Type your secret action in that thread</li>
+    </ol>
+
+    <blockquote>
+        "I secretly pocket the gemstone before the others notice"
+    </blockquote>
+
+    <p>
+        Your action joins the DM's queue tagged as <code>[SECRET]</code>. When the DM resolves it,
+        the results appear <strong>in your private thread</strong>, not the Game Table.
+    </p>
+</div>
+
+<div style="max-width: 800px; margin: 0 auto 2rem;">
+    <h3>The Private Console</h3>
+    <p>Your private thread has two buttons:</p>
+    <table class="guide-table">
+        <thead>
+            <tr>
+                <th>Button</th>
+                <th>What It Does</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>My Queue Status</strong></td>
+                <td>Shows your pending actions and their status</td>
+            </tr>
+            <tr>
+                <td><strong>Help</strong></td>
+                <td>Shows a quick help summary</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div style="max-width: 800px; margin: 0 auto 2rem;">
+    <h3>When to Use Which Channel</h3>
+    <table class="guide-table">
+        <thead>
+            <tr>
+                <th>Use Game Table For</th>
+                <th>Use Private Thread For</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Normal actions the party should see</td>
+                <td>Stealing from NPCs or party members</td>
+            </tr>
+            <tr>
+                <td>Combat actions</td>
+                <td>Sending a secret message</td>
+            </tr>
+            <tr>
+                <td>Group decisions</td>
+                <td>Investigating something alone</td>
+            </tr>
+            <tr>
+                <td>Casual RP</td>
+                <td>Anything you want hidden from other players</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</section>
+
+<!-- ===== TIPS ===== -->
+<section id="player-tips">
+<div class="section-header">
+    <h2>Wisdom of the Ancients</h2>
+    <p>Six tips to make the most of your adventure</p>
+</div>
+<div class="section-divider"></div>
+
+<ul class="tips-list">
+    <li>
+        <strong>Be descriptive.</strong> "I search the desk" is fine, but "I carefully check the desk drawers for hidden compartments or false bottoms" gives the AI more to work with.
+    </li>
+    <li>
+        <strong>Wait for the prompt before rolling.</strong> Don't pre-roll dice &mdash; the DM and AI decide what rolls are needed.
+    </li>
+    <li>
+        <strong>One action at a time.</strong> Send one action per message. If you want to do multiple things, send multiple messages.
+    </li>
+    <li>
+        <strong>NAT 20 / NAT 1</strong> are called out automatically when you roll through Foundry.
+    </li>
+    <li>
+        <strong>Don't worry about rules.</strong> The AI Rules Lawyer handles D&amp;D 5e mechanics. Just describe what you want to do in plain English.
+    </li>
+    <li>
+        <strong>The &#9203; hourglass</strong> means your action was received. Sit tight &mdash; the DM will process it.
+    </li>
+</ul>
+</section>
+
+</main>
+
+<footer class="guide-footer">
+  <div class="footer-divider"></div>
+  <p>Adventurer's Compendium &mdash; <a href="../index.html">System Architecture</a></p>
+  <p class="footer-dim">Built for the AI Dungeon Master project</p>
+</footer>
+
+<script src="../guide-shared.js"></script>
+</body>
+</html>

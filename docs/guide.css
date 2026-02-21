@@ -1,0 +1,204 @@
+/* ================================================================
+   Adventurer's Compendium — Home Page Only
+   Hero, role selector, feature cards, welcome section
+   (Shared styles are in guide-shared.css)
+   ================================================================ */
+
+/* ===== HERO ===== */
+.hero {
+  text-align: center;
+  padding: 80px 20px 50px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at center, rgba(212,165,68,0.06) 0%, transparent 60%);
+  animation: heroGlow 8s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes heroGlow {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(3%, 2%) scale(1.05); }
+}
+.hero-d20 {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 24px;
+  position: relative;
+}
+.d20-hero-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 20px rgba(212,165,68,0.3));
+  animation: d20Float 4s ease-in-out infinite;
+}
+@keyframes d20Float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(3deg); }
+}
+.hero h1 {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  color: var(--gold);
+  /* Trend #7: tighter tracking on display headings */
+  letter-spacing: 1px;
+  position: relative;
+  text-shadow: 0 0 30px rgba(212,165,68,0.3);
+}
+.hero-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-dim);
+  margin-top: 12px;
+  position: relative;
+}
+.subtitle-line {
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 20px auto;
+}
+
+/* ===== ROLE SELECTOR ===== */
+.role-selector {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 8px;
+  position: relative;
+  flex-wrap: wrap;
+}
+.role-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  color: var(--text);
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.role-btn:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+.role-btn.active.player-btn {
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: 0 0 20px rgba(39,174,96,0.15);
+}
+.role-btn.active.dm-btn {
+  border-color: var(--purple);
+  color: var(--purple);
+  box-shadow: 0 0 20px rgba(142,68,173,0.15);
+}
+.role-icon {
+  width: 22px;
+  height: 22px;
+}
+.role-btn.active.player-btn .role-icon { color: var(--green); }
+.role-btn.active.dm-btn .role-icon { color: var(--purple); }
+
+/* ===== WELCOME SECTION ===== */
+.welcome-section {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+.welcome-intro {
+  max-width: 800px;
+  margin: 0 auto 2rem;
+  text-align: center;
+}
+
+/* ===== TREND #10: FEATURE CARDS ===== */
+.feature-cards-section {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 20px 64px;
+}
+
+.feature-cards {
+  display: none;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+.feature-cards.visible {
+  display: grid;
+  animation: fadeIn 0.4s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.feature-card {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  padding: 32px 24px;
+  text-decoration: none;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  /* Trend #3: micro-animation card hover */
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.feature-card-accent {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--gold);
+  opacity: 0.7;
+  transition: opacity 0.3s;
+}
+.feature-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  border-color: rgba(212,165,68,0.2);
+}
+.feature-card:hover .feature-card-accent {
+  opacity: 1;
+}
+.feature-card-icon {
+  margin-bottom: 16px;
+}
+.feature-card-icon svg {
+  color: var(--gold);
+  filter: drop-shadow(0 0 8px rgba(212,165,68,0.2));
+}
+.feature-card h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.15rem;
+  color: var(--gold);
+  margin: 0 0 8px;
+}
+.feature-card p {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .hero { padding: 60px 16px 40px; }
+  .hero-d20 { width: 72px; height: 72px; }
+  .role-btn { padding: 12px 20px; font-size: 0.9rem; }
+  .feature-cards { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .role-selector { flex-direction: column; align-items: center; }
+}

@@ -1,0 +1,166 @@
+<div class="section-header">
+    <h2>The Dungeon Master's Grimoire</h2>
+    <p>Every command at your disposal</p>
+</div>
+
+<div class="section-divider"></div>
+
+<div class="filter-bar">
+    <input type="text" class="filter-input" placeholder="Search commands..." data-filter-target="dm-cmd-table">
+</div>
+
+<table class="guide-table" id="dm-cmd-table">
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Command</th>
+            <th>Example / Notes</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Slash Commands -->
+        <tr>
+            <td>Slash Commands</td>
+            <td><code>/console</code></td>
+            <td>Any text channel</td>
+            <td>Opens your private DM Admin Console thread</td>
+        </tr>
+        <tr>
+            <td>Slash Commands</td>
+            <td><code>/whisper</code></td>
+            <td>Any text channel (players use this)</td>
+            <td>Creates a player's private action thread</td>
+        </tr>
+
+        <!-- Dice & Lookup -->
+        <tr>
+            <td>Dice &amp; Lookup</td>
+            <td><code>!roll</code></td>
+            <td><code>!roll 1d20+5</code></td>
+            <td>Roll dice via Foundry VTT</td>
+        </tr>
+        <tr>
+            <td>Dice &amp; Lookup</td>
+            <td><code>!roll</code></td>
+            <td><code>!roll 1d20+5 Perception</code></td>
+            <td>Roll with a reason label</td>
+        </tr>
+        <tr>
+            <td>Dice &amp; Lookup</td>
+            <td><code>!monster</code></td>
+            <td><code>!monster goblin</code></td>
+            <td>Look up a monster stat block</td>
+        </tr>
+        <tr>
+            <td>Dice &amp; Lookup</td>
+            <td><code>!pc</code></td>
+            <td><code>!pc Frognar</code></td>
+            <td>Look up a player character's stats</td>
+        </tr>
+
+        <!-- Foundry VTT -->
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!scene</code></td>
+            <td><code>!scene tavern</code></td>
+            <td>Search Foundry for battle maps</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!build</code></td>
+            <td><code>!build 4 goblins ambush in a forest</code></td>
+            <td>AI builds a full encounter (finds map, places tokens)</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!daytime</code></td>
+            <td></td>
+            <td>Set active Foundry scene to bright</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!nighttime</code></td>
+            <td></td>
+            <td>Set active Foundry scene to dark</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!foundry</code></td>
+            <td></td>
+            <td>Check Foundry VTT connection status</td>
+        </tr>
+
+        <!-- Information -->
+        <tr>
+            <td>Information</td>
+            <td><code>!status</code></td>
+            <td></td>
+            <td>Show party HP, AC, conditions, active quests</td>
+        </tr>
+        <tr>
+            <td>Information</td>
+            <td><code>!recap</code></td>
+            <td><code>!recap</code></td>
+            <td>Show latest session recap</td>
+        </tr>
+        <tr>
+            <td>Information</td>
+            <td><code>!recap</code></td>
+            <td><code>!recap 3</code></td>
+            <td>Show recap for session 3</td>
+        </tr>
+
+        <!-- Campaign Management -->
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!campaign</code></td>
+            <td><code>!campaign list</code></td>
+            <td>List all campaigns</td>
+        </tr>
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!campaign</code></td>
+            <td><code>!campaign new Dragon Heist</code></td>
+            <td>Create a new campaign</td>
+        </tr>
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!campaign</code></td>
+            <td><code>!campaign load Dragon Heist</code></td>
+            <td>Switch to a different campaign</td>
+        </tr>
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!save</code></td>
+            <td></td>
+            <td>Confirms game state is saved (vault is always persistent)</td>
+        </tr>
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!reset</code></td>
+            <td></td>
+            <td>Clear conversation memory (vault files untouched)</td>
+        </tr>
+
+        <!-- War Room Only -->
+        <tr>
+            <td>War Room Only</td>
+            <td><code>!prep</code></td>
+            <td><code>!prep &lt;description&gt;</code></td>
+            <td>AI blind-preps a session</td>
+        </tr>
+        <tr>
+            <td>War Room Only</td>
+            <td><code>!brainstorm</code></td>
+            <td><code>!brainstorm &lt;topic&gt;</code></td>
+            <td>Worldbuilding brainstorm</td>
+        </tr>
+        <tr>
+            <td>War Room Only</td>
+            <td><code>!plan</code></td>
+            <td><code>!plan &lt;notes&gt;</code></td>
+            <td>AI helps plan a session</td>
+        </tr>
+    </tbody>
+</table>

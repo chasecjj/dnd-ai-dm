@@ -1,0 +1,56 @@
+<div class="section-header">
+    <h2>Welcome to the Realm</h2>
+    <p>Your adventure begins here</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="welcome-intro" style="max-width: 800px; margin: 0 auto 2rem;">
+    <p>
+        You stand at the threshold of an epic journey. This is an <strong>AI-powered Dungeon Master</strong> for
+        <strong>Dungeons &amp; Dragons 5th Edition</strong>, running entirely within Discord. There are no complicated
+        interfaces or confusing menus — just type what your character does in plain language, and watch the story unfold.
+        Your Dungeon Master reviews each action, the AI narrates the outcome with vivid detail, and the adventure
+        continues with every message you send. Whether you're a seasoned adventurer or picking up a d20 for the first
+        time, you're in the right place.
+    </p>
+</div>
+
+<div class="flow-diagram">
+    <svg viewBox="0 0 900 120" xmlns="http://www.w3.org/2000/svg" style="width: 100%; max-width: 900px; height: auto;">
+        <!-- Node 1: Player Types Action -->
+        <rect x="10" y="25" width="180" height="70" rx="12" ry="12" fill="#1a1a2e" stroke="#c8a96e" stroke-width="2"/>
+        <text x="100" y="55" text-anchor="middle" fill="#c8a96e" font-size="13" font-weight="bold">Player Types</text>
+        <text x="100" y="75" text-anchor="middle" fill="#e0d6c2" font-size="12">Action</text>
+
+        <!-- Arrow 1 -->
+        <line x1="195" y1="60" x2="240" y2="60" stroke="#c8a96e" stroke-width="2" marker-end="url(#arrowhead-welcome)"/>
+
+        <!-- Node 2: DM Reviews -->
+        <rect x="245" y="25" width="180" height="70" rx="12" ry="12" fill="#1a1a2e" stroke="#c8a96e" stroke-width="2"/>
+        <text x="335" y="55" text-anchor="middle" fill="#c8a96e" font-size="13" font-weight="bold">DM Reviews</text>
+        <text x="335" y="75" text-anchor="middle" fill="#e0d6c2" font-size="12">the Action</text>
+
+        <!-- Arrow 2 -->
+        <line x1="430" y1="60" x2="475" y2="60" stroke="#c8a96e" stroke-width="2" marker-end="url(#arrowhead-welcome)"/>
+
+        <!-- Node 3: AI Narrates -->
+        <rect x="480" y="25" width="180" height="70" rx="12" ry="12" fill="#1a1a2e" stroke="#c8a96e" stroke-width="2"/>
+        <text x="570" y="55" text-anchor="middle" fill="#c8a96e" font-size="13" font-weight="bold">AI Narrates</text>
+        <text x="570" y="75" text-anchor="middle" fill="#e0d6c2" font-size="12">the Result</text>
+
+        <!-- Arrow 3 -->
+        <line x1="665" y1="60" x2="710" y2="60" stroke="#c8a96e" stroke-width="2" marker-end="url(#arrowhead-welcome)"/>
+
+        <!-- Node 4: Story Continues -->
+        <rect x="715" y="25" width="180" height="70" rx="12" ry="12" fill="#1a1a2e" stroke="#c8a96e" stroke-width="2"/>
+        <text x="805" y="55" text-anchor="middle" fill="#c8a96e" font-size="13" font-weight="bold">Story Continues</text>
+        <text x="805" y="75" text-anchor="middle" fill="#e0d6c2" font-size="12">&#8635; Loop</text>
+
+        <!-- Arrowhead marker -->
+        <defs>
+            <marker id="arrowhead-welcome" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#c8a96e"/>
+            </marker>
+        </defs>
+    </svg>
+</div>

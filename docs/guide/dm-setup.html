@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="guide-base" content="../">
+<title>DM Setup — Adventurer's Compendium</title>
+<link rel="stylesheet" href="../guide-shared.css">
+</head>
+<body data-page="dm-setup">
+<div id="svg-sprite-container" style="display:none" aria-hidden="true"></div>
+
+<nav class="guide-nav">
+  <div class="nav-inner">
+    <a href="../guide.html" class="nav-brand">Adventurer's Compendium</a>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="character-creation.html" data-page="character-creation">Character Creation</a>
+      <a href="rules.html" data-page="rules">Rules</a>
+      <a href="reference.html" data-page="reference">Reference</a>
+      <a href="dm-setup.html" data-page="dm-setup">DM Setup</a>
+      <a href="dm-running.html" data-page="dm-running">Running Sessions</a>
+    </div>
+  </div>
+</nav>
+
+<div class="breadcrumbs">
+  <a href="../guide.html">Home</a>
+  <span class="separator">&rsaquo;</span>
+  <span class="current">DM Setup</span>
+</div>
+
+<main class="page-content section-glow">
+
+<!-- ===== GETTING STARTED ===== -->
+<section id="dm-getting-started">
+<div class="section-header">
+    <h2>Preparing the Realm</h2>
+    <p>Prerequisites, installation, and setup for Dungeon Masters</p>
+</div>
+<div class="section-divider"></div>
+
+<h3>Accounts &amp; API Keys</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Where to Get It</th>
+            <th>Cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Discord Bot Token</td>
+            <td>Discord Developer Portal</td>
+            <td>Free</td>
+        </tr>
+        <tr>
+            <td>Google Gemini API Key</td>
+            <td>Google AI Studio</td>
+            <td>Free tier available</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT (optional)</td>
+            <td>foundryvtt.com</td>
+            <td>$50 one-time</td>
+        </tr>
+        <tr>
+            <td>MongoDB (optional)</td>
+            <td>MongoDB Atlas</td>
+            <td>Free tier available</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Software Requirements</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Version</th>
+            <th>Note</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Python</td>
+            <td><code>3.12+</code></td>
+            <td>Required</td>
+        </tr>
+        <tr>
+            <td>Git</td>
+            <td>Any recent</td>
+            <td>Required</td>
+        </tr>
+        <tr>
+            <td>Docker (optional)</td>
+            <td>Latest</td>
+            <td>For Foundry relay only</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Discord Server Setup</h3>
+<p>Your Discord server needs three dedicated channels. Each serves a distinct purpose in the game loop.</p>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Channel</th>
+            <th>Purpose</th>
+            <th>Who Uses It</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Game Table</strong></td>
+            <td>Where the game happens. Players type actions, AI posts narrative.</td>
+            <td>Everyone</td>
+        </tr>
+        <tr>
+            <td><strong>War Room</strong></td>
+            <td>Session prep, worldbuilding, brainstorming. No players during sessions.</td>
+            <td>DM only</td>
+        </tr>
+        <tr>
+            <td><strong>Moderator Log</strong></td>
+            <td>Error messages, Rules Lawyer details, debug output.</td>
+            <td>DM only (bot posts here)</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Quick Install Steps</h3>
+<ol>
+    <li>Clone the repository</li>
+    <li>Create virtual environment: <code>python -m venv .venv</code></li>
+    <li>Install dependencies: <code>pip install -r requirements.txt</code></li>
+    <li>Copy <code>.env.example</code> to <code>.env</code> and fill in tokens + channel IDs</li>
+    <li>Set up PLAYER_MAP in <code>.env</code>: <code>PLAYER_MAP=john:Frognar,jane:Kallisar</code></li>
+    <li>Run: <code>python orchestration/main.py</code></li>
+</ol>
+
+<h3>PLAYER_MAP Format</h3>
+<p>The <code>PLAYER_MAP</code> environment variable maps Discord users to their in-game character names. The format is:</p>
+<div class="code-block">PLAYER_MAP=discord_username:CharacterName,discord_username2:CharacterName2</div>
+<p>Use <strong>lowercase Discord usernames</strong> (the handle, not the display name). For example, if a player's Discord handle is <code>john_the_great</code> and their character is named Frognar, the entry is <code>john_the_great:Frognar</code>.</p>
+</section>
+
+<!-- ===== CONSOLE ===== -->
+<section id="dm-console">
+<div class="section-header">
+    <h2>The Command Throne</h2>
+    <p>Your 13-button Admin Console controls the entire game</p>
+</div>
+<div class="section-divider"></div>
+
+<p>Type <code>/console</code> in any channel. The bot creates a private thread with a live-updating dashboard and 13 control buttons.</p>
+
+<div class="console-mockup">
+    <div class="console-title">DM CONSOLE</div>
+    <pre>
+Session 3 | The Yawning Portal
+Queue Mode: ON | Foundry: Connected
+
+Queued Actions (2):
+1. &#x1f7e1; [Frognar] "I approach the barkeep..."
+2. &#x1f7e2; [Kallisar] "I scan the room for threats"
+   &#x1f3b2; Perception DC 14: 17 PASS
+
+Party:
+  Frognar &mdash; 28/28 HP | AC 16
+  Kallisar &mdash; 18/18 HP | AC 14</pre>
+
+    <div class="console-btn-row">
+        <div class="console-btn">&#x25b6; Resolve Turn</div>
+        <div class="console-btn">&#x1f50d; Analyze</div>
+        <div class="console-btn">&#x1f3b2; Request Roll</div>
+        <div class="console-btn">&#x2795; DM Event</div>
+    </div>
+    <div class="console-btn-row">
+        <div class="console-btn">&#x1f9cc; Monster Roll</div>
+        <div class="console-btn">&#x1f4dd; Annotate</div>
+        <div class="console-btn">&#x23ed; Skip Action</div>
+        <div class="console-btn">&#x1f910; Secret Toggle</div>
+        <div class="console-btn">&#x1f4e2; Post to Table</div>
+    </div>
+    <div class="console-btn-row">
+        <div class="console-btn">&#x1f504; Refresh</div>
+        <div class="console-btn">&#x25b6; Start Session</div>
+        <div class="console-btn">&#x23f9; End Session</div>
+        <div class="console-btn">&#x26a1; Auto Mode</div>
+    </div>
+</div>
+
+<h3>Row 1 &mdash; Core Actions</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Button</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>&#x25b6; Resolve Turn</strong></td>
+            <td>Flushes all ready actions through the AI pipeline. Narrative posted to Game Table.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f50d; Analyze</strong></td>
+            <td>Runs Rules Lawyer pre-analysis on all pending actions. Identifies needed dice rolls.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f3b2; Request Roll</strong></td>
+            <td>Manually request a specific dice roll for a queued action (opens select menu &rarr; modal).</td>
+        </tr>
+        <tr>
+            <td><strong>&#x2795; DM Event</strong></td>
+            <td>Inject a narrative event into the queue (&ldquo;A hooded figure enters...&rdquo;).</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Row 2 &mdash; Queue Management</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Button</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>&#x1f9cc; Monster Roll</strong></td>
+            <td>Roll dice for a monster/NPC via Foundry. Result shown in console thread.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f4dd; Annotate</strong></td>
+            <td>Add a private DM note to an action. AI sees it, players don't.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x23ed; Skip Action</strong></td>
+            <td>Remove an action from the queue without processing it.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f910; Secret Toggle</strong></td>
+            <td>Mark an action as secret/public. Secret results go to the player's private thread.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f4e2; Post to Table</strong></td>
+            <td>Type narration and post it directly to Game Table, bypassing the AI.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Row 3 &mdash; Session Lifecycle</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Button</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>&#x1f504; Refresh</strong></td>
+            <td>Force-refresh the dashboard embed.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x25b6; Start Session</strong></td>
+            <td>Enables queue mode, creates session log, generates &ldquo;Previously on...&rdquo; recap.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x23f9; End Session</strong></td>
+            <td>Generates session summary, saves to vault, increments session number, disables queue.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x26a1; Auto Mode</strong></td>
+            <td>Toggle between Queue Mode (DM-controlled turns) and Auto Mode (instant AI responses).</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Status Icons</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Icon</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>&#x1f7e1;</td>
+            <td><strong>Pending</strong> &mdash; action received, not yet analyzed</td>
+        </tr>
+        <tr>
+            <td>&#x1f50d;</td>
+            <td><strong>Analyzing</strong> &mdash; Rules Lawyer is examining it</td>
+        </tr>
+        <tr>
+            <td>&#x1f3b2;</td>
+            <td><strong>Awaiting Roll</strong> &mdash; player needs to roll dice</td>
+        </tr>
+        <tr>
+            <td>&#x1f7e2;</td>
+            <td><strong>Ready</strong> &mdash; all rolls done, ready to resolve</td>
+        </tr>
+    </tbody>
+</table>
+</section>
+
+</main>
+
+<footer class="guide-footer">
+  <div class="footer-divider"></div>
+  <p>Adventurer's Compendium &mdash; <a href="../index.html">System Architecture</a></p>
+  <p class="footer-dim">Built for the AI Dungeon Master project</p>
+</footer>
+
+<script src="../guide-shared.js"></script>
+</body>
+</html>

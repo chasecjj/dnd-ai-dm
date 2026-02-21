@@ -1,0 +1,102 @@
+<div class="section-header">
+    <h2>The Art of the Roll</h2>
+    <p>Dice determine fate — learn the sacred polyhedra</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="dice-showcase">
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d4"></use></svg>
+        <div class="dice-label">d4</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d6"></use></svg>
+        <div class="dice-label">d6</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d8"></use></svg>
+        <div class="dice-label">d8</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d10"></use></svg>
+        <div class="dice-label">d10</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d12"></use></svg>
+        <div class="dice-label">d12</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d20"></use></svg>
+        <div class="dice-label">d20</div>
+    </div>
+</div>
+
+<p><strong>The d20 is king.</strong> Nearly every check, attack, and save starts with rolling a d20 and adding your modifier. The higher the result, the better you perform.</p>
+
+<h3>Rolling Dice</h3>
+<p>Use the <code>!roll</code> command to roll dice through Foundry VTT:</p>
+
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Command</th>
+            <th>Example</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>!roll &lt;formula&gt;</code></td>
+            <td><code>!roll 1d20+5</code></td>
+            <td>Roll dice through Foundry VTT</td>
+        </tr>
+        <tr>
+            <td><code>!roll &lt;formula&gt; &lt;reason&gt;</code></td>
+            <td><code>!roll 1d20+5 Perception</code></td>
+            <td>Roll with a label</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Common Formulas</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Formula</th>
+            <th>When You Use It</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>1d20+5</code></td>
+            <td>Standard ability/skill check</td>
+        </tr>
+        <tr>
+            <td><code>2d6+3</code></td>
+            <td>Damage roll</td>
+        </tr>
+        <tr>
+            <td><code>1d20+7</code></td>
+            <td>Attack roll</td>
+        </tr>
+        <tr>
+            <td><code>4d6kh3</code></td>
+            <td>Roll 4d6, keep highest 3 (ability score generation)</td>
+        </tr>
+        <tr>
+            <td><code>2d20kh1+5</code></td>
+            <td>Advantage (roll 2d20, keep highest, add modifier)</td>
+        </tr>
+        <tr>
+            <td><code>2d20kl1+5</code></td>
+            <td>Disadvantage (roll 2d20, keep lowest, add modifier)</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Advantage &amp; Disadvantage</h3>
+<p><strong>Advantage</strong> means roll 2d20, take the higher result. <strong>Disadvantage</strong> means take the lower. Circumstances in the game grant these — a clever plan might earn advantage, while fighting blind imposes disadvantage.</p>
+
+<blockquote>
+    <strong>Wait for the prompt.</strong> Don't pre-roll — the DM and AI decide what rolls are needed and will ask you when it's time. Rolling without being asked won't count.
+</blockquote>

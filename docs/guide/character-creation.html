@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="guide-base" content="../">
+<title>Character Creation — Adventurer's Compendium</title>
+<link rel="stylesheet" href="../guide-shared.css">
+</head>
+<body data-page="character-creation">
+<div id="svg-sprite-container" style="display:none" aria-hidden="true"></div>
+
+<nav class="guide-nav">
+  <div class="nav-inner">
+    <a href="../guide.html" class="nav-brand">Adventurer's Compendium</a>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="character-creation.html" data-page="character-creation">Character Creation</a>
+      <a href="rules.html" data-page="rules">Rules</a>
+      <a href="reference.html" data-page="reference">Reference</a>
+      <a href="dm-setup.html" data-page="dm-setup">DM Setup</a>
+      <a href="dm-running.html" data-page="dm-running">Running Sessions</a>
+    </div>
+  </div>
+</nav>
+
+<div class="breadcrumbs">
+  <a href="../guide.html">Home</a>
+  <span class="separator">&rsaquo;</span>
+  <span class="current">Character Creation</span>
+</div>
+
+<main class="page-content section-glow">
+
+<!-- ===== CLASSES ===== -->
+<section id="classes">
+<div class="section-header">
+    <h2>Choose Your Class</h2>
+    <p>Your class defines your abilities, your role in combat, and your path to glory</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="bento-grid">
+
+    <!-- Fighter (featured) -->
+    <div class="card expandable accent-orange featured">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-fighter"></use></svg>
+            <div class="card-title">Fighter</div>
+            <div class="card-subtitle">Master of weapons and tactics. No one fights harder.</div>
+        </div>
+        <div class="card-summary">
+            Versatile warriors who excel with every weapon and armor, striking more often than any other class.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d10</p>
+            <p><strong>Key Ability:</strong> Strength or Dexterity</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Barbarian -->
+    <div class="card expandable accent-red">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-barbarian"></use></svg>
+            <div class="card-title">Barbarian</div>
+            <div class="card-subtitle">Fury made flesh. You wade into battle with primal rage.</div>
+        </div>
+        <div class="card-summary">
+            Unarmored tanks who channel raw fury to shrug off damage and cleave through foes.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d12</p>
+            <p><strong>Key Ability:</strong> Strength</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Wizard (featured) -->
+    <div class="card expandable accent-blue featured">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-wizard"></use></svg>
+            <div class="card-title">Wizard</div>
+            <div class="card-subtitle">Knowledge is the ultimate power.</div>
+        </div>
+        <div class="card-summary">
+            Scholarly mages who command the largest spell list in the game through rigorous study and preparation.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d6</p>
+            <p><strong>Key Ability:</strong> Intelligence</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Bard -->
+    <div class="card expandable accent-purple">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-bard"></use></svg>
+            <div class="card-title">Bard</div>
+            <div class="card-subtitle">Words are weapons, and songs are spells.</div>
+        </div>
+        <div class="card-summary">
+            Charismatic performers who weave magic through music, bolstering allies and beguiling enemies.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d8</p>
+            <p><strong>Key Ability:</strong> Charisma</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Rogue (featured) -->
+    <div class="card expandable accent-red featured">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-rogue"></use></svg>
+            <div class="card-title">Rogue</div>
+            <div class="card-subtitle">Strike from the shadows. Every lock has a key.</div>
+        </div>
+        <div class="card-summary">
+            Cunning operatives who deal devastating sneak attacks and excel at skills others can only dream of.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d8</p>
+            <p><strong>Key Ability:</strong> Dexterity</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Cleric -->
+    <div class="card expandable accent-gold">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-cleric"></use></svg>
+            <div class="card-title">Cleric</div>
+            <div class="card-subtitle">Divine power flows through your prayers.</div>
+        </div>
+        <div class="card-summary">
+            Holy conduits who heal the wounded, smite the unholy, and channel the will of their deity.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d8</p>
+            <p><strong>Key Ability:</strong> Wisdom</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Druid -->
+    <div class="card expandable accent-green">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-druid"></use></svg>
+            <div class="card-title">Druid</div>
+            <div class="card-subtitle">Nature's champion, shapeshifter, storm-caller.</div>
+        </div>
+        <div class="card-summary">
+            Guardians of the wild who command the elements and take the forms of beasts.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d8</p>
+            <p><strong>Key Ability:</strong> Wisdom</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Monk -->
+    <div class="card expandable accent-teal">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-monk"></use></svg>
+            <div class="card-title">Monk</div>
+            <div class="card-subtitle">Discipline of body becomes power of spirit.</div>
+        </div>
+        <div class="card-summary">
+            Martial artists who channel ki energy to strike with supernatural speed and deflect attacks.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d8</p>
+            <p><strong>Key Ability:</strong> Dexterity &amp; Wisdom</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Paladin -->
+    <div class="card expandable accent-gold">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-paladin"></use></svg>
+            <div class="card-title">Paladin</div>
+            <div class="card-subtitle">Holy warrior bound by a sacred oath.</div>
+        </div>
+        <div class="card-summary">
+            Armored champions who smite evil with divine wrath and shield their companions with holy auras.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d10</p>
+            <p><strong>Key Ability:</strong> Strength &amp; Charisma</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Ranger -->
+    <div class="card expandable accent-green">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-ranger"></use></svg>
+            <div class="card-title">Ranger</div>
+            <div class="card-subtitle">Hunter, tracker, protector of the wild.</div>
+        </div>
+        <div class="card-summary">
+            Skilled scouts who blend martial prowess with nature magic, deadly with bow or blade.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d10</p>
+            <p><strong>Key Ability:</strong> Dexterity &amp; Wisdom</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Sorcerer -->
+    <div class="card expandable accent-blue">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-sorcerer"></use></svg>
+            <div class="card-title">Sorcerer</div>
+            <div class="card-subtitle">Magic runs in your blood — raw and untamed.</div>
+        </div>
+        <div class="card-summary">
+            Innate spellcasters who bend and twist their magic with metamagic, reshaping spells on the fly.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d6</p>
+            <p><strong>Key Ability:</strong> Charisma</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Warlock -->
+    <div class="card expandable accent-purple">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-class-warlock"></use></svg>
+            <div class="card-title">Warlock</div>
+            <div class="card-subtitle">Power borrowed from beings beyond mortal ken.</div>
+        </div>
+        <div class="card-summary">
+            Pact-bound spellcasters who wield eldritch power granted by otherworldly patrons.
+        </div>
+        <div class="card-details">
+            <p><strong>Hit Die:</strong> d8</p>
+            <p><strong>Key Ability:</strong> Charisma</p>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+</div>
+</section>
+
+<!-- ===== RACES ===== -->
+<section id="races">
+<div class="section-header">
+    <h2>Choose Your Race</h2>
+    <p>Your race shapes who you are — your heritage, your strengths, your story</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="bento-grid">
+
+    <!-- Human (featured) -->
+    <div class="card expandable accent-gold featured">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-race-human"></use></svg>
+            <div class="card-title">Human</div>
+            <div class="card-subtitle">Versatile and ambitious. Humans adapt to any situation.</div>
+        </div>
+        <div class="card-summary">
+            The most widespread race in the realms, driven by endless ambition and remarkable adaptability.
+        </div>
+        <div class="card-details">
+            <p><strong>Racial Traits:</strong></p>
+            <ul>
+                <li>+1 to all ability scores</li>
+                <li>Extra language of your choice</li>
+                <li>Extra skill proficiency</li>
+            </ul>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Halfling -->
+    <div class="card expandable accent-green">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-race-halfling"></use></svg>
+            <div class="card-title">Halfling</div>
+            <div class="card-subtitle">Small in stature, enormous in luck and courage.</div>
+        </div>
+        <div class="card-summary">
+            Cheerful wanderers whose uncanny luck and steady nerve carry them through dangers far larger than themselves.
+        </div>
+        <div class="card-details">
+            <p><strong>Racial Traits:</strong></p>
+            <ul>
+                <li>Lucky (reroll natural 1s on attack rolls, ability checks, and saves)</li>
+                <li>Brave (advantage on saves vs. being frightened)</li>
+                <li>Halfling Nimbleness (move through the space of larger creatures)</li>
+            </ul>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Elf (featured) -->
+    <div class="card expandable accent-teal featured">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-race-elf"></use></svg>
+            <div class="card-title">Elf</div>
+            <div class="card-subtitle">Ancient and graceful, with eyes that see through darkness.</div>
+        </div>
+        <div class="card-summary">
+            Long-lived beings of otherworldly grace, attuned to magic and the beauty of the natural world.
+        </div>
+        <div class="card-details">
+            <p><strong>Racial Traits:</strong></p>
+            <ul>
+                <li>Darkvision (60 ft.)</li>
+                <li>Keen Senses (proficiency in Perception)</li>
+                <li>Trance (no sleep needed; 4-hour meditation)</li>
+                <li>Fey Ancestry (advantage vs. charm, immune to magical sleep)</li>
+            </ul>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Gnome -->
+    <div class="card expandable accent-purple">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-race-gnome"></use></svg>
+            <div class="card-title">Gnome</div>
+            <div class="card-subtitle">Curious inventors with a spark of arcane brilliance.</div>
+        </div>
+        <div class="card-summary">
+            Tiny tinkerers and illusionists brimming with energy, curiosity, and an innate resistance to magic.
+        </div>
+        <div class="card-details">
+            <p><strong>Racial Traits:</strong></p>
+            <ul>
+                <li>Darkvision (60 ft.)</li>
+                <li>Gnome Cunning (advantage on INT, WIS, and CHA saving throws against magic)</li>
+            </ul>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Dwarf (featured) -->
+    <div class="card expandable accent-orange featured">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-race-dwarf"></use></svg>
+            <div class="card-title">Dwarf</div>
+            <div class="card-subtitle">Stout, stubborn, and built to endure.</div>
+        </div>
+        <div class="card-summary">
+            Hardy folk forged in mountain halls, renowned for their craftsmanship and unyielding resolve.
+        </div>
+        <div class="card-details">
+            <p><strong>Racial Traits:</strong></p>
+            <ul>
+                <li>Darkvision (60 ft.)</li>
+                <li>Dwarven Resilience (poison resistance and advantage on saves vs. poison)</li>
+                <li>Stonecunning (History bonus for stonework)</li>
+                <li>Tool Proficiency (smith's, brewer's, or mason's tools)</li>
+            </ul>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Half-Orc -->
+    <div class="card expandable accent-red">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-race-halforc"></use></svg>
+            <div class="card-title">Half-Orc</div>
+            <div class="card-subtitle">The strength of orcs tempered by human will.</div>
+        </div>
+        <div class="card-summary">
+            Fierce and imposing warriors who channel their orcish fury with unrelenting tenacity.
+        </div>
+        <div class="card-details">
+            <p><strong>Racial Traits:</strong></p>
+            <ul>
+                <li>Darkvision (60 ft.)</li>
+                <li>Relentless Endurance (drop to 1 HP instead of 0, once per long rest)</li>
+                <li>Savage Attacks (extra damage die on critical melee hits)</li>
+            </ul>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Tiefling -->
+    <div class="card expandable accent-red">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-race-tiefling"></use></svg>
+            <div class="card-title">Tiefling</div>
+            <div class="card-subtitle">Infernal heritage marks your flesh and fuels your magic.</div>
+        </div>
+        <div class="card-summary">
+            Descendants of fiends who bear horns, tails, and innate magical power as marks of their bloodline.
+        </div>
+        <div class="card-details">
+            <p><strong>Racial Traits:</strong></p>
+            <ul>
+                <li>Darkvision (60 ft.)</li>
+                <li>Hellish Resistance (fire damage resistance)</li>
+                <li>Infernal Legacy (thaumaturgy cantrip + hellish rebuke at 3rd level)</li>
+            </ul>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Dragonborn -->
+    <div class="card expandable accent-orange">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-race-dragonborn"></use></svg>
+            <div class="card-title">Dragonborn</div>
+            <div class="card-subtitle">Proud warriors carrying the blood of dragons.</div>
+        </div>
+        <div class="card-summary">
+            Noble beings of draconic ancestry who breathe elemental destruction and resist it in equal measure.
+        </div>
+        <div class="card-details">
+            <p><strong>Racial Traits:</strong></p>
+            <ul>
+                <li>Breath Weapon (choose your draconic ancestry element: fire, cold, lightning, acid, or poison)</li>
+                <li>Damage Resistance (matching your chosen element)</li>
+            </ul>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+    <!-- Half-Elf -->
+    <div class="card expandable accent-teal">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-race-halfelf"></use></svg>
+            <div class="card-title">Half-Elf</div>
+            <div class="card-subtitle">The best of both worlds — human drive and elven grace.</div>
+        </div>
+        <div class="card-summary">
+            Diplomatic and versatile, half-elves walk between cultures and excel wherever their talents take them.
+        </div>
+        <div class="card-details">
+            <p><strong>Racial Traits:</strong></p>
+            <ul>
+                <li>Darkvision (60 ft.)</li>
+                <li>Fey Ancestry (advantage vs. charm, immune to magical sleep)</li>
+                <li>Skill Versatility (two extra skill proficiencies of your choice)</li>
+                <li>Ability Score Increase (+2 Charisma, +1 to two other scores of your choice)</li>
+            </ul>
+        </div>
+        <div class="card-expand-hint">click to expand</div>
+    </div>
+
+</div>
+</section>
+
+<!-- ===== ABILITIES ===== -->
+<section id="abilities">
+<div class="section-header">
+    <h2>The Six Pillars of Power</h2>
+    <p>Every hero is defined by six fundamental ability scores</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="cards-grid cols-3">
+
+    <div class="card accent-red">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-ability-str"></use></svg>
+            <div class="card-title">Strength</div>
+            <div class="card-subtitle">Physical might.</div>
+        </div>
+        <div class="card-summary">
+            <p>Governs melee attacks, carrying capacity, and Athletics checks.</p>
+            <p><em>"Break down the door, grapple the troll, climb the cliff."</em></p>
+        </div>
+    </div>
+
+    <div class="card accent-green">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-ability-dex"></use></svg>
+            <div class="card-title">Dexterity</div>
+            <div class="card-subtitle">Agility and reflexes.</div>
+        </div>
+        <div class="card-summary">
+            <p>Governs ranged attacks, AC, initiative, Acrobatics, and Stealth.</p>
+            <p><em>"Dodge the fireball, pick the lock, land the arrow."</em></p>
+        </div>
+    </div>
+
+    <div class="card accent-orange">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-ability-con"></use></svg>
+            <div class="card-title">Constitution</div>
+            <div class="card-subtitle">Endurance and vitality.</div>
+        </div>
+        <div class="card-summary">
+            <p>Governs hit points and concentration saving throws.</p>
+            <p><em>"Survive the poison, march all night, hold the spell."</em></p>
+        </div>
+    </div>
+
+    <div class="card accent-blue">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-ability-int"></use></svg>
+            <div class="card-title">Intelligence</div>
+            <div class="card-subtitle">Knowledge and reason.</div>
+        </div>
+        <div class="card-summary">
+            <p>Governs Arcana, History, Investigation, Nature, and Religion.</p>
+            <p><em>"Decipher the runes, recall the lore, spot the clue."</em></p>
+        </div>
+    </div>
+
+    <div class="card accent-teal">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-ability-wis"></use></svg>
+            <div class="card-title">Wisdom</div>
+            <div class="card-subtitle">Perception and insight.</div>
+        </div>
+        <div class="card-summary">
+            <p>Governs Perception, Insight, Medicine, Survival, and Animal Handling.</p>
+            <p><em>"Sense the ambush, read the liar, track the beast."</em></p>
+        </div>
+    </div>
+
+    <div class="card accent-purple">
+        <div class="card-header">
+            <svg class="icon-md card-icon"><use href="#icon-ability-cha"></use></svg>
+            <div class="card-title">Charisma</div>
+            <div class="card-subtitle">Force of personality.</div>
+        </div>
+        <div class="card-summary">
+            <p>Governs Persuasion, Deception, Intimidation, and Performance.</p>
+            <p><em>"Charm the guard, inspire the troops, bluff the dragon."</em></p>
+        </div>
+    </div>
+
+</div>
+
+<h3 style="text-align: center; margin: 2rem 0 1rem;">Ability Score Modifiers</h3>
+
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Score</th>
+            <th>Modifier</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>1</td><td>-5</td></tr>
+        <tr><td>8&ndash;9</td><td>-1</td></tr>
+        <tr><td>10&ndash;11</td><td>+0</td></tr>
+        <tr><td>12&ndash;13</td><td>+1</td></tr>
+        <tr><td>14&ndash;15</td><td>+2</td></tr>
+        <tr><td>16&ndash;17</td><td>+3</td></tr>
+        <tr><td>18&ndash;19</td><td>+4</td></tr>
+        <tr><td>20</td><td>+5</td></tr>
+    </tbody>
+</table>
+
+<p style="max-width: 700px; margin: 1.5rem auto; text-align: center; line-height: 1.6;">
+    Your modifier = (Score &minus; 10) &divide; 2, rounded down. This modifier is what you add to dice rolls.
+    Saving throws use these same modifiers &mdash; they represent your ability to resist effects like poison
+    (CON save), dodging a trap (DEX save), or resisting a charm spell (WIS save).
+</p>
+</section>
+
+</main>
+
+<footer class="guide-footer">
+  <div class="footer-divider"></div>
+  <p>Adventurer's Compendium &mdash; <a href="../index.html">System Architecture</a></p>
+  <p class="footer-dim">Built for the AI Dungeon Master project</p>
+</footer>
+
+<script src="../guide-shared.js"></script>
+</body>
+</html>

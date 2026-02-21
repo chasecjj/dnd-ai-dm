@@ -1,0 +1,159 @@
+<div class="section-header">
+    <h2>The Command Throne</h2>
+    <p>Your 13-button Admin Console controls the entire game</p>
+</div>
+<div class="section-divider"></div>
+
+<p>Type <code>/console</code> in any channel. The bot creates a private thread with a live-updating dashboard and 13 control buttons.</p>
+
+<div class="console-mockup">
+    <div class="console-title">DM CONSOLE</div>
+    <pre>
+Session 3 | The Yawning Portal
+Queue Mode: ON | Foundry: Connected
+
+Queued Actions (2):
+1. &#x1f7e1; [Frognar] "I approach the barkeep..."
+2. &#x1f7e2; [Kallisar] "I scan the room for threats"
+   &#x1f3b2; Perception DC 14: 17 PASS
+
+Party:
+  Frognar &mdash; 28/28 HP | AC 16
+  Kallisar &mdash; 18/18 HP | AC 14</pre>
+
+    <div class="console-btn-row">
+        <div class="console-btn">&#x25b6; Resolve Turn</div>
+        <div class="console-btn">&#x1f50d; Analyze</div>
+        <div class="console-btn">&#x1f3b2; Request Roll</div>
+        <div class="console-btn">&#x2795; DM Event</div>
+    </div>
+    <div class="console-btn-row">
+        <div class="console-btn">&#x1f9cc; Monster Roll</div>
+        <div class="console-btn">&#x1f4dd; Annotate</div>
+        <div class="console-btn">&#x23ed; Skip Action</div>
+        <div class="console-btn">&#x1f910; Secret Toggle</div>
+        <div class="console-btn">&#x1f4e2; Post to Table</div>
+    </div>
+    <div class="console-btn-row">
+        <div class="console-btn">&#x1f504; Refresh</div>
+        <div class="console-btn">&#x25b6; Start Session</div>
+        <div class="console-btn">&#x23f9; End Session</div>
+        <div class="console-btn">&#x26a1; Auto Mode</div>
+    </div>
+</div>
+
+<h3>Row 1 &mdash; Core Actions</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Button</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>&#x25b6; Resolve Turn</strong></td>
+            <td>Flushes all ready actions through the AI pipeline. Narrative posted to Game Table.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f50d; Analyze</strong></td>
+            <td>Runs Rules Lawyer pre-analysis on all pending actions. Identifies needed dice rolls.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f3b2; Request Roll</strong></td>
+            <td>Manually request a specific dice roll for a queued action (opens select menu &rarr; modal).</td>
+        </tr>
+        <tr>
+            <td><strong>&#x2795; DM Event</strong></td>
+            <td>Inject a narrative event into the queue (&ldquo;A hooded figure enters...&rdquo;).</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Row 2 &mdash; Queue Management</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Button</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>&#x1f9cc; Monster Roll</strong></td>
+            <td>Roll dice for a monster/NPC via Foundry. Result shown in console thread.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f4dd; Annotate</strong></td>
+            <td>Add a private DM note to an action. AI sees it, players don't.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x23ed; Skip Action</strong></td>
+            <td>Remove an action from the queue without processing it.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f910; Secret Toggle</strong></td>
+            <td>Mark an action as secret/public. Secret results go to the player's private thread.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x1f4e2; Post to Table</strong></td>
+            <td>Type narration and post it directly to Game Table, bypassing the AI.</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Row 3 &mdash; Session Lifecycle</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Button</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>&#x1f504; Refresh</strong></td>
+            <td>Force-refresh the dashboard embed.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x25b6; Start Session</strong></td>
+            <td>Enables queue mode, creates session log, generates &ldquo;Previously on...&rdquo; recap.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x23f9; End Session</strong></td>
+            <td>Generates session summary, saves to vault, increments session number, disables queue.</td>
+        </tr>
+        <tr>
+            <td><strong>&#x26a1; Auto Mode</strong></td>
+            <td>Toggle between Queue Mode (DM-controlled turns) and Auto Mode (instant AI responses).</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Status Icons</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Icon</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>&#x1f7e1;</td>
+            <td><strong>Pending</strong> &mdash; action received, not yet analyzed</td>
+        </tr>
+        <tr>
+            <td>&#x1f50d;</td>
+            <td><strong>Analyzing</strong> &mdash; Rules Lawyer is examining it</td>
+        </tr>
+        <tr>
+            <td>&#x1f3b2;</td>
+            <td><strong>Awaiting Roll</strong> &mdash; player needs to roll dice</td>
+        </tr>
+        <tr>
+            <td>&#x1f7e2;</td>
+            <td><strong>Ready</strong> &mdash; all rolls done, ready to resolve</td>
+        </tr>
+    </tbody>
+</table>

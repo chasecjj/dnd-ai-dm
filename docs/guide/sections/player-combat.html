@@ -1,0 +1,98 @@
+<div class="section-header">
+    <h2>Steel and Sorcery</h2>
+    <p>A beginner's guide to surviving combat</p>
+</div>
+<div class="section-divider"></div>
+
+<h3>Initiative</h3>
+<p>When combat starts, everyone rolls initiative (<code>1d20 + DEX modifier</code>) to determine turn order. The highest rolls act first — speed and reflexes decide who strikes before the enemy can react.</p>
+
+<h3>Action Economy</h3>
+<p>On your turn, you have a budget of things you can do. Understanding action economy is the key to tactical play.</p>
+
+<div class="cards-grid cols-4">
+    <div class="card accent-red">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-action"></use></svg>
+            </div>
+            <div class="card-title">Action</div>
+        </div>
+        <div class="card-summary">Your main activity: attack, cast a spell, dash, dodge, disengage, help, hide, search, or use an object.</div>
+    </div>
+    <div class="card accent-orange">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-bonus-action"></use></svg>
+            </div>
+            <div class="card-title">Bonus Action</div>
+        </div>
+        <div class="card-summary">Some abilities grant an extra quick action. Not everyone has one every turn.</div>
+    </div>
+    <div class="card accent-blue">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-reaction"></use></svg>
+            </div>
+            <div class="card-title">Reaction</div>
+        </div>
+        <div class="card-summary">A response to a trigger — like an opportunity attack when an enemy runs past you.</div>
+    </div>
+    <div class="card accent-green">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-movement"></use></svg>
+            </div>
+            <div class="card-title">Movement</div>
+        </div>
+        <div class="card-summary">Move up to your speed (usually 30 feet). You can split movement around actions.</div>
+    </div>
+</div>
+
+<h3>Attack Flow</h3>
+<div class="flow-diagram">
+    <div class="flow-node">Roll d20 + modifier</div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">Compare to target AC</div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">Hit?</div>
+    <div class="flow-arrow"></div>
+    <div class="flow-node">Roll damage</div>
+</div>
+
+<h3>HP and AC</h3>
+<p><strong>HP (Hit Points)</strong> is your health pool. When it hits 0, you fall unconscious. Healing magic or potions can bring you back up. <strong>AC (Armor Class)</strong> is the number an attacker must meet or beat on their attack roll to hit you. Heavier armor and shields raise your AC.</p>
+
+<h3>Death Saves</h3>
+<p>At 0 HP, you're not dead yet. Each turn, you roll a d20:</p>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Roll</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>10+</code></td>
+            <td>One success</td>
+        </tr>
+        <tr>
+            <td><code>9 or below</code></td>
+            <td>One failure</td>
+        </tr>
+        <tr>
+            <td><code>Natural 1</code></td>
+            <td>Two failures</td>
+        </tr>
+        <tr>
+            <td><code>Natural 20</code></td>
+            <td>You spring back with 1 HP</td>
+        </tr>
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="2"><strong>Three successes:</strong> you stabilize. <strong>Three failures:</strong> you die.</td>
+        </tr>
+    </tfoot>
+</table>

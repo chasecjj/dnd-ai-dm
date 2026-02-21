@@ -1,0 +1,110 @@
+<div class="section-header">
+    <h2>Preparing the Realm</h2>
+    <p>Prerequisites, installation, and setup for Dungeon Masters</p>
+</div>
+<div class="section-divider"></div>
+
+<h3>Accounts &amp; API Keys</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Where to Get It</th>
+            <th>Cost</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Discord Bot Token</td>
+            <td>Discord Developer Portal</td>
+            <td>Free</td>
+        </tr>
+        <tr>
+            <td>Google Gemini API Key</td>
+            <td>Google AI Studio</td>
+            <td>Free tier available</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT (optional)</td>
+            <td>foundryvtt.com</td>
+            <td>$50 one-time</td>
+        </tr>
+        <tr>
+            <td>MongoDB (optional)</td>
+            <td>MongoDB Atlas</td>
+            <td>Free tier available</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Software Requirements</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th>Version</th>
+            <th>Note</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Python</td>
+            <td><code>3.12+</code></td>
+            <td>Required</td>
+        </tr>
+        <tr>
+            <td>Git</td>
+            <td>Any recent</td>
+            <td>Required</td>
+        </tr>
+        <tr>
+            <td>Docker (optional)</td>
+            <td>Latest</td>
+            <td>For Foundry relay only</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Discord Server Setup</h3>
+<p>Your Discord server needs three dedicated channels. Each serves a distinct purpose in the game loop.</p>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Channel</th>
+            <th>Purpose</th>
+            <th>Who Uses It</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Game Table</strong></td>
+            <td>Where the game happens. Players type actions, AI posts narrative.</td>
+            <td>Everyone</td>
+        </tr>
+        <tr>
+            <td><strong>War Room</strong></td>
+            <td>Session prep, worldbuilding, brainstorming. No players during sessions.</td>
+            <td>DM only</td>
+        </tr>
+        <tr>
+            <td><strong>Moderator Log</strong></td>
+            <td>Error messages, Rules Lawyer details, debug output.</td>
+            <td>DM only (bot posts here)</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Quick Install Steps</h3>
+<ol>
+    <li>Clone the repository</li>
+    <li>Create virtual environment: <code>python -m venv .venv</code></li>
+    <li>Install dependencies: <code>pip install -r requirements.txt</code></li>
+    <li>Copy <code>.env.example</code> to <code>.env</code> and fill in tokens + channel IDs</li>
+    <li>Set up PLAYER_MAP in <code>.env</code>: <code>PLAYER_MAP=john:Frognar,jane:Kallisar</code></li>
+    <li>Run: <code>python orchestration/main.py</code></li>
+</ol>
+
+<h3>PLAYER_MAP Format</h3>
+<p>The <code>PLAYER_MAP</code> environment variable maps Discord users to their in-game character names. The format is:</p>
+<div class="code-block">PLAYER_MAP=discord_username:CharacterName,discord_username2:CharacterName2</div>
+<p>Use <strong>lowercase Discord usernames</strong> (the handle, not the display name). For example, if a player's Discord handle is <code>john_the_great</code> and their character is named Frognar, the entry is <code>john_the_great:Frognar</code>.</p>

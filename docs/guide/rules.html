@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="guide-base" content="../">
+<title>Rules — Adventurer's Compendium</title>
+<link rel="stylesheet" href="../guide-shared.css">
+</head>
+<body data-page="rules">
+<div id="svg-sprite-container" style="display:none" aria-hidden="true"></div>
+
+<nav class="guide-nav">
+  <div class="nav-inner">
+    <a href="../guide.html" class="nav-brand">Adventurer's Compendium</a>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="character-creation.html" data-page="character-creation">Character Creation</a>
+      <a href="rules.html" data-page="rules">Rules</a>
+      <a href="reference.html" data-page="reference">Reference</a>
+      <a href="dm-setup.html" data-page="dm-setup">DM Setup</a>
+      <a href="dm-running.html" data-page="dm-running">Running Sessions</a>
+    </div>
+  </div>
+</nav>
+
+<div class="breadcrumbs">
+  <a href="../guide.html">Home</a>
+  <span class="separator">&rsaquo;</span>
+  <span class="current">Rules</span>
+</div>
+
+<main class="page-content section-glow">
+
+<!-- ===== DICE ===== -->
+<section id="dice">
+<div class="section-header">
+    <h2>The Art of the Roll</h2>
+    <p>Dice determine fate — learn the sacred polyhedra</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="dice-showcase">
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d4"></use></svg>
+        <div class="dice-label">d4</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d6"></use></svg>
+        <div class="dice-label">d6</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d8"></use></svg>
+        <div class="dice-label">d8</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d10"></use></svg>
+        <div class="dice-label">d10</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d12"></use></svg>
+        <div class="dice-label">d12</div>
+    </div>
+    <div class="dice-item">
+        <svg class="icon-md"><use href="#icon-d20"></use></svg>
+        <div class="dice-label">d20</div>
+    </div>
+</div>
+
+<p><strong>The d20 is king.</strong> Nearly every check, attack, and save starts with rolling a d20 and adding your modifier. The higher the result, the better you perform.</p>
+
+<h3>Rolling Dice</h3>
+<p>Use the <code>!roll</code> command to roll dice through Foundry VTT:</p>
+
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Command</th>
+            <th>Example</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>!roll &lt;formula&gt;</code></td>
+            <td><code>!roll 1d20+5</code></td>
+            <td>Roll dice through Foundry VTT</td>
+        </tr>
+        <tr>
+            <td><code>!roll &lt;formula&gt; &lt;reason&gt;</code></td>
+            <td><code>!roll 1d20+5 Perception</code></td>
+            <td>Roll with a label</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Common Formulas</h3>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Formula</th>
+            <th>When You Use It</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>1d20+5</code></td>
+            <td>Standard ability/skill check</td>
+        </tr>
+        <tr>
+            <td><code>2d6+3</code></td>
+            <td>Damage roll</td>
+        </tr>
+        <tr>
+            <td><code>1d20+7</code></td>
+            <td>Attack roll</td>
+        </tr>
+        <tr>
+            <td><code>4d6kh3</code></td>
+            <td>Roll 4d6, keep highest 3 (ability score generation)</td>
+        </tr>
+        <tr>
+            <td><code>2d20kh1+5</code></td>
+            <td>Advantage (roll 2d20, keep highest, add modifier)</td>
+        </tr>
+        <tr>
+            <td><code>2d20kl1+5</code></td>
+            <td>Disadvantage (roll 2d20, keep lowest, add modifier)</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Advantage &amp; Disadvantage</h3>
+<p><strong>Advantage</strong> means roll 2d20, take the higher result. <strong>Disadvantage</strong> means take the lower. Circumstances in the game grant these — a clever plan might earn advantage, while fighting blind imposes disadvantage.</p>
+
+<blockquote>
+    <strong>Wait for the prompt.</strong> Don't pre-roll — the DM and AI decide what rolls are needed and will ask you when it's time. Rolling without being asked won't count.
+</blockquote>
+</section>
+
+<!-- ===== COMBAT ===== -->
+<section id="combat">
+<div class="section-header">
+    <h2>Steel and Sorcery</h2>
+    <p>A beginner's guide to surviving combat</p>
+</div>
+<div class="section-divider"></div>
+
+<h3>Initiative</h3>
+<p>When combat starts, everyone rolls initiative (<code>1d20 + DEX modifier</code>) to determine turn order. The highest rolls act first — speed and reflexes decide who strikes before the enemy can react.</p>
+
+<h3>Action Economy</h3>
+<p>On your turn, you have a budget of things you can do. Understanding action economy is the key to tactical play.</p>
+
+<div class="cards-grid cols-4">
+    <div class="card accent-red">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-action"></use></svg>
+            </div>
+            <div class="card-title">Action</div>
+        </div>
+        <div class="card-summary">Your main activity: attack, cast a spell, dash, dodge, disengage, help, hide, search, or use an object.</div>
+    </div>
+    <div class="card accent-orange">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-bonus-action"></use></svg>
+            </div>
+            <div class="card-title">Bonus Action</div>
+        </div>
+        <div class="card-summary">Some abilities grant an extra quick action. Not everyone has one every turn.</div>
+    </div>
+    <div class="card accent-blue">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-reaction"></use></svg>
+            </div>
+            <div class="card-title">Reaction</div>
+        </div>
+        <div class="card-summary">A response to a trigger — like an opportunity attack when an enemy runs past you.</div>
+    </div>
+    <div class="card accent-green">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-movement"></use></svg>
+            </div>
+            <div class="card-title">Movement</div>
+        </div>
+        <div class="card-summary">Move up to your speed (usually 30 feet). You can split movement around actions.</div>
+    </div>
+</div>
+
+<h3>Attack Flow</h3>
+<div class="flow-diagram">
+    <div class="flow-node">Roll d20 + modifier</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">Compare to target AC</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">Hit?</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">Roll damage</div>
+</div>
+
+<h3>HP and AC</h3>
+<p><strong>HP (Hit Points)</strong> is your health pool. When it hits 0, you fall unconscious. Healing magic or potions can bring you back up. <strong>AC (Armor Class)</strong> is the number an attacker must meet or beat on their attack roll to hit you. Heavier armor and shields raise your AC.</p>
+
+<h3>Death Saves</h3>
+<p>At 0 HP, you're not dead yet. Each turn, you roll a d20:</p>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Roll</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>10+</code></td>
+            <td>One success</td>
+        </tr>
+        <tr>
+            <td><code>9 or below</code></td>
+            <td>One failure</td>
+        </tr>
+        <tr>
+            <td><code>Natural 1</code></td>
+            <td>Two failures</td>
+        </tr>
+        <tr>
+            <td><code>Natural 20</code></td>
+            <td>You spring back with 1 HP</td>
+        </tr>
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="2"><strong>Three successes:</strong> you stabilize. <strong>Three failures:</strong> you die.</td>
+        </tr>
+    </tfoot>
+</table>
+</section>
+
+<!-- ===== SPELLCASTING ===== -->
+<section id="spellcasting">
+<div class="section-header">
+    <h2>Your Spellbook of Power</h2>
+    <p>Harnessing the arcane, divine, and primal forces</p>
+</div>
+<div class="section-divider"></div>
+
+<h3>Spell Slots</h3>
+<p>Spell slots are your magical fuel. You spend a slot to cast a spell of that level or lower. Higher-level slots can power lower-level spells, sometimes with extra effect. All spent slots recharge after a long rest.</p>
+
+<h4>Full Spell Slots</h4>
+<div class="spell-slots-visual">
+    <div>
+        <span class="slot-label">Level 1</span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+    </div>
+    <div>
+        <span class="slot-label">Level 2</span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+    </div>
+    <div>
+        <span class="slot-label">Level 3</span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+    </div>
+</div>
+
+<h4>After Casting 2 Spells</h4>
+<div class="spell-slots-visual">
+    <div>
+        <span class="slot-label">Level 1</span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+        <span class="slot empty"></span>
+        <span class="slot empty"></span>
+    </div>
+    <div>
+        <span class="slot-label">Level 2</span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+    </div>
+    <div>
+        <span class="slot-label">Level 3</span>
+        <span class="slot filled"></span>
+        <span class="slot filled"></span>
+    </div>
+</div>
+
+<h3>Cantrips</h3>
+<p>Free spells you can cast endlessly. No slot required. They're your magical basics — like a fighter's sword swing, but with arcane energy. Every spellcaster knows a handful, and they scale in power as you level up.</p>
+
+<h3>Concentration</h3>
+<p>Some spells require <strong>concentration</strong> to maintain their effect. The rules are straightforward:</p>
+<ul>
+    <li>You can only maintain <strong>one</strong> concentration spell at a time.</li>
+    <li>Casting another concentration spell ends the first.</li>
+    <li>Taking damage might break it — you must make a <strong>CON save</strong> (DC = 10 or half the damage taken, whichever is higher).</li>
+    <li>Being incapacitated or killed ends concentration automatically.</li>
+</ul>
+
+<h3>Ritual Casting</h3>
+<p>Some spells have a <strong>ritual</strong> tag. You can cast them without spending a slot by adding 10 minutes to the casting time. This is perfect for out-of-combat utility spells like <em>Detect Magic</em>, <em>Identify</em>, or <em>Comprehend Languages</em>. Save your slots for when they matter.</p>
+
+<blockquote>
+    <strong>Don't worry about memorizing spell rules.</strong> Just describe what you want to do and the AI Rules Lawyer handles the mechanics. Say "I want to cast Shield" or "I try to detect any magic in the area" and the system takes care of the rest.
+</blockquote>
+</section>
+
+<!-- ===== CONDITIONS ===== -->
+<section id="conditions">
+<div class="section-header">
+    <h2>Curses and Afflictions</h2>
+    <p>Status conditions that can affect your character in combat</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="condition-grid">
+    <div class="condition-badge cat-harmful">
+        <svg><use href="#icon-cond-blinded"></use></svg>
+        <span>Blinded</span>
+    </div>
+    <div class="condition-badge cat-harmful">
+        <svg><use href="#icon-cond-frightened"></use></svg>
+        <span>Frightened</span>
+    </div>
+    <div class="condition-badge cat-harmful">
+        <svg><use href="#icon-cond-poisoned"></use></svg>
+        <span>Poisoned</span>
+    </div>
+    <div class="condition-badge cat-control">
+        <svg><use href="#icon-cond-grappled"></use></svg>
+        <span>Grappled</span>
+    </div>
+    <div class="condition-badge cat-control">
+        <svg><use href="#icon-cond-prone"></use></svg>
+        <span>Prone</span>
+    </div>
+    <div class="condition-badge cat-control">
+        <svg><use href="#icon-cond-restrained"></use></svg>
+        <span>Restrained</span>
+    </div>
+    <div class="condition-badge cat-control">
+        <svg><use href="#icon-cond-stunned"></use></svg>
+        <span>Stunned</span>
+    </div>
+    <div class="condition-badge cat-magic">
+        <svg><use href="#icon-cond-charmed"></use></svg>
+        <span>Charmed</span>
+    </div>
+    <div class="condition-badge cat-magic">
+        <svg><use href="#icon-cond-invisible"></use></svg>
+        <span>Invisible</span>
+    </div>
+    <div class="condition-badge cat-magic">
+        <svg><use href="#icon-cond-paralyzed"></use></svg>
+        <span>Paralyzed</span>
+    </div>
+    <div class="condition-badge cat-magic">
+        <svg><use href="#icon-cond-petrified"></use></svg>
+        <span>Petrified</span>
+    </div>
+    <div class="condition-badge cat-status">
+        <svg><use href="#icon-cond-deafened"></use></svg>
+        <span>Deafened</span>
+    </div>
+    <div class="condition-badge cat-status">
+        <svg><use href="#icon-cond-incapacitated"></use></svg>
+        <span>Incapacitated</span>
+    </div>
+    <div class="condition-badge cat-status">
+        <svg><use href="#icon-cond-unconscious"></use></svg>
+        <span>Unconscious</span>
+    </div>
+</div>
+
+<div id="condition-details" style="margin-top: 2rem;">
+    <details>
+        <summary style="cursor: pointer; font-weight: bold; color: var(--gold); margin-bottom: 1rem;">Show Condition Details</summary>
+        <ul style="list-style: none; padding: 0;">
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--red-glow);">Blinded</strong> &mdash; Can't see. Auto-fail sight checks. Attacks have disadvantage.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--red-glow);">Frightened</strong> &mdash; Disadvantage on checks/attacks while the source is in sight. Can't willingly move closer.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--red-glow);">Poisoned</strong> &mdash; Disadvantage on attack rolls and ability checks.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--blue-glow);">Grappled</strong> &mdash; Speed becomes 0. Ends if grappler is incapacitated or you're moved out of reach.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--blue-glow);">Prone</strong> &mdash; Melee attacks against you have advantage. Ranged attacks have disadvantage. Must spend movement to stand.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--blue-glow);">Restrained</strong> &mdash; Speed 0. Attacks against you have advantage. Your attacks and DEX saves have disadvantage.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--blue-glow);">Stunned</strong> &mdash; Incapacitated. Can't move. Auto-fail STR/DEX saves. Attacks against you have advantage.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--purple-glow);">Charmed</strong> &mdash; Can't attack the charmer. The charmer has advantage on social checks against you.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--purple-glow);">Invisible</strong> &mdash; Can't be seen without magic/special sense. Attacks against you have disadvantage, yours have advantage.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--purple-glow);">Paralyzed</strong> &mdash; Incapacitated and can't move or speak. Auto-fail STR/DEX saves. Hits within 5 ft are auto-crits.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--purple-glow);">Petrified</strong> &mdash; Turned to stone. Incapacitated, unaware. Resistant to all damage. Immune to poison and disease.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--orange-glow);">Deafened</strong> &mdash; Can't hear. Auto-fail hearing checks.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--orange-glow);">Incapacitated</strong> &mdash; Can't take actions or reactions.
+            </li>
+            <li style="margin-bottom: 0.75rem;">
+                <strong style="color: var(--orange-glow);">Unconscious</strong> &mdash; Incapacitated, prone, unaware. Attacks have advantage. Hits within 5 ft are crits.
+            </li>
+        </ul>
+    </details>
+</div>
+</section>
+
+</main>
+
+<footer class="guide-footer">
+  <div class="footer-divider"></div>
+  <p>Adventurer's Compendium &mdash; <a href="../index.html">System Architecture</a></p>
+  <p class="footer-dim">Built for the AI Dungeon Master project</p>
+</footer>
+
+<script src="../guide-shared.js"></script>
+</body>
+</html>

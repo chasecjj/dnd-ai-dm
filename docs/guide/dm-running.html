@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="guide-base" content="../">
+<title>Running Sessions — Adventurer's Compendium</title>
+<link rel="stylesheet" href="../guide-shared.css">
+</head>
+<body data-page="dm-running">
+<div id="svg-sprite-container" style="display:none" aria-hidden="true"></div>
+
+<nav class="guide-nav">
+  <div class="nav-inner">
+    <a href="../guide.html" class="nav-brand">Adventurer's Compendium</a>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="character-creation.html" data-page="character-creation">Character Creation</a>
+      <a href="rules.html" data-page="rules">Rules</a>
+      <a href="reference.html" data-page="reference">Reference</a>
+      <a href="dm-setup.html" data-page="dm-setup">DM Setup</a>
+      <a href="dm-running.html" data-page="dm-running">Running Sessions</a>
+    </div>
+  </div>
+</nav>
+
+<div class="breadcrumbs">
+  <a href="../guide.html">Home</a>
+  <span class="separator">&rsaquo;</span>
+  <span class="current">Running Sessions</span>
+</div>
+
+<main class="page-content section-glow">
+
+<!-- ===== SESSION LIFECYCLE ===== -->
+<section id="dm-session">
+<div class="section-header">
+    <h2>The Session Lifecycle</h2>
+    <p>From preparation to the final curtain</p>
+</div>
+<div class="section-divider"></div>
+
+<h3>Before the Session</h3>
+<p>Session prep is optional but powerful. Use the War Room channel to plan ahead.</p>
+<table class="guide-table">
+    <thead>
+        <tr>
+            <th>Command</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>!prep</code></td>
+            <td>Generate a prep outline for your next session based on campaign state</td>
+        </tr>
+        <tr>
+            <td><code>!brainstorm</code></td>
+            <td>Collaborative AI brainstorming for encounters, NPCs, or plot hooks</td>
+        </tr>
+        <tr>
+            <td><code>!plan</code></td>
+            <td>Create a structured session plan with objectives and contingencies</td>
+        </tr>
+        <tr>
+            <td><code>!build</code></td>
+            <td>Generate a Foundry VTT scene with tokens and lighting</td>
+        </tr>
+        <tr>
+            <td><code>!scene</code></td>
+            <td>Set up or switch the active Foundry scene</td>
+        </tr>
+    </tbody>
+</table>
+
+<h3>Starting the Session</h3>
+<ol>
+    <li>Open the console: <code>/console</code></li>
+    <li>Click <strong>&#x25b6; Start Session</strong></li>
+    <li>Queue mode auto-enables, session log created, &ldquo;Previously on...&rdquo; recap posted</li>
+</ol>
+
+<h3>The Turn Cycle</h3>
+<div class="flow-diagram">
+    <div class="flow-node">Players Type Actions</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">Queue Fills Up</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">DM Reviews</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">Resolve</div>
+    <div class="flow-arrow">&#x2192;</div>
+    <div class="flow-node">Narrative Posted</div>
+</div>
+
+<h3>Step-by-Step Turn Cycle</h3>
+<ol>
+    <li>Players type actions in Game Table (each gets &#x23f3;)</li>
+    <li>DM clicks <strong>&#x1f50d; Analyze</strong> (Rules Lawyer checks what rolls are needed)</li>
+    <li>Players roll dice when prompted</li>
+    <li>DM manages queue (Annotate, Monster Roll, DM Event)</li>
+    <li>DM clicks <strong>&#x25b6; Resolve Turn</strong> (AI narrates the round)</li>
+    <li>Repeat</li>
+</ol>
+
+<h3>Two Modes</h3>
+<div class="cards-grid cols-2">
+    <div class="card accent-blue">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-shield"></use></svg>
+            </div>
+            <div class="card-title">Queue Mode</div>
+        </div>
+        <div class="card-summary">
+            <ul>
+                <li>Player messages queue up with &#x23f3;</li>
+                <li>Nothing happens until DM reviews</li>
+                <li>Full control over turn order and narrative</li>
+                <li><strong>Best for:</strong> Combat, important story beats</li>
+            </ul>
+        </div>
+    </div>
+    <div class="card accent-orange">
+        <div class="card-header">
+            <div class="card-icon">
+                <svg class="icon-md"><use href="#icon-campfire"></use></svg>
+            </div>
+            <div class="card-title">Auto Mode</div>
+        </div>
+        <div class="card-summary">
+            <ul>
+                <li>Player messages immediately trigger AI</li>
+                <li>Narrative posted within seconds</li>
+                <li>No DM review</li>
+                <li><strong>Best for:</strong> Free exploration, casual RP</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<h3>Ending the Session</h3>
+<ol>
+    <li>Click <strong>&#x23f9; End Session</strong></li>
+    <li>AI generates session summary, saves to vault</li>
+    <li>Session number incremented, queue disabled</li>
+</ol>
+</section>
+
+<!-- ===== DM COMMANDS ===== -->
+<section id="dm-commands">
+<div class="section-header">
+    <h2>The Dungeon Master's Grimoire</h2>
+    <p>Every command at your disposal</p>
+</div>
+<div class="section-divider"></div>
+
+<div class="filter-bar">
+    <input type="text" class="filter-input" placeholder="Search commands..." data-filter-target="dm-cmd-table">
+</div>
+
+<table class="guide-table" id="dm-cmd-table">
+    <thead>
+        <tr>
+            <th>Category</th>
+            <th>Command</th>
+            <th>Example / Notes</th>
+            <th>What It Does</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Slash Commands</td>
+            <td><code>/console</code></td>
+            <td>Any text channel</td>
+            <td>Opens your private DM Admin Console thread</td>
+        </tr>
+        <tr>
+            <td>Slash Commands</td>
+            <td><code>/whisper</code></td>
+            <td>Any text channel (players use this)</td>
+            <td>Creates a player's private action thread</td>
+        </tr>
+        <tr>
+            <td>Dice &amp; Lookup</td>
+            <td><code>!roll</code></td>
+            <td><code>!roll 1d20+5</code></td>
+            <td>Roll dice via Foundry VTT</td>
+        </tr>
+        <tr>
+            <td>Dice &amp; Lookup</td>
+            <td><code>!roll</code></td>
+            <td><code>!roll 1d20+5 Perception</code></td>
+            <td>Roll with a reason label</td>
+        </tr>
+        <tr>
+            <td>Dice &amp; Lookup</td>
+            <td><code>!monster</code></td>
+            <td><code>!monster goblin</code></td>
+            <td>Look up a monster stat block</td>
+        </tr>
+        <tr>
+            <td>Dice &amp; Lookup</td>
+            <td><code>!pc</code></td>
+            <td><code>!pc Frognar</code></td>
+            <td>Look up a player character's stats</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!scene</code></td>
+            <td><code>!scene tavern</code></td>
+            <td>Search Foundry for battle maps</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!build</code></td>
+            <td><code>!build 4 goblins ambush in a forest</code></td>
+            <td>AI builds a full encounter (finds map, places tokens)</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!daytime</code></td>
+            <td></td>
+            <td>Set active Foundry scene to bright</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!nighttime</code></td>
+            <td></td>
+            <td>Set active Foundry scene to dark</td>
+        </tr>
+        <tr>
+            <td>Foundry VTT</td>
+            <td><code>!foundry</code></td>
+            <td></td>
+            <td>Check Foundry VTT connection status</td>
+        </tr>
+        <tr>
+            <td>Information</td>
+            <td><code>!status</code></td>
+            <td></td>
+            <td>Show party HP, AC, conditions, active quests</td>
+        </tr>
+        <tr>
+            <td>Information</td>
+            <td><code>!recap</code></td>
+            <td><code>!recap</code></td>
+            <td>Show latest session recap</td>
+        </tr>
+        <tr>
+            <td>Information</td>
+            <td><code>!recap</code></td>
+            <td><code>!recap 3</code></td>
+            <td>Show recap for session 3</td>
+        </tr>
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!campaign</code></td>
+            <td><code>!campaign list</code></td>
+            <td>List all campaigns</td>
+        </tr>
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!campaign</code></td>
+            <td><code>!campaign new Dragon Heist</code></td>
+            <td>Create a new campaign</td>
+        </tr>
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!campaign</code></td>
+            <td><code>!campaign load Dragon Heist</code></td>
+            <td>Switch to a different campaign</td>
+        </tr>
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!save</code></td>
+            <td></td>
+            <td>Confirms game state is saved (vault is always persistent)</td>
+        </tr>
+        <tr>
+            <td>Campaign Management</td>
+            <td><code>!reset</code></td>
+            <td></td>
+            <td>Clear conversation memory (vault files untouched)</td>
+        </tr>
+        <tr>
+            <td>War Room Only</td>
+            <td><code>!prep</code></td>
+            <td><code>!prep &lt;description&gt;</code></td>
+            <td>AI blind-preps a session</td>
+        </tr>
+        <tr>
+            <td>War Room Only</td>
+            <td><code>!brainstorm</code></td>
+            <td><code>!brainstorm &lt;topic&gt;</code></td>
+            <td>Worldbuilding brainstorm</td>
+        </tr>
+        <tr>
+            <td>War Room Only</td>
+            <td><code>!plan</code></td>
+            <td><code>!plan &lt;notes&gt;</code></td>
+            <td>AI helps plan a session</td>
+        </tr>
+    </tbody>
+</table>
+</section>
+
+<!-- ===== DM TIPS ===== -->
+<section id="dm-tips">
+<div class="section-header">
+    <h2>Secrets of the Craft</h2>
+    <p>Seven tips from seasoned Dungeon Masters</p>
+</div>
+<div class="section-divider"></div>
+
+<ul class="tips-list">
+    <li>
+        <strong>Analyze early.</strong> Click Analyze as soon as actions arrive. This gives players time to roll while you review.
+    </li>
+    <li>
+        <strong>Batch intelligently.</strong> Include related actions in the same resolve. The AI handles multi-character narration well.
+    </li>
+    <li>
+        <strong>Use annotations freely.</strong> The AI reads your DM notes and adjusts its storytelling. "Make this dramatic" or "This should feel eerie" work great.
+    </li>
+    <li>
+        <strong>Monster rolls before Resolve.</strong> Roll monster attacks/damage before clicking Resolve so the AI has all the information for narration.
+    </li>
+    <li>
+        <strong>Auto Mode for downtime.</strong> Switch to Auto Mode for tavern RP and exploration, then back to Queue Mode when combat starts.
+    </li>
+    <li>
+        <strong>The console thread persists.</strong> You can close and reopen it with <code>/console</code> without losing state.
+    </li>
+    <li>
+        <strong>If the pipeline crashes.</strong> Actions are automatically restored to the queue. Check Moderator Log for errors, then try resolving again.
+    </li>
+</ul>
+</section>
+
+</main>
+
+<footer class="guide-footer">
+  <div class="footer-divider"></div>
+  <p>Adventurer's Compendium &mdash; <a href="../index.html">System Architecture</a></p>
+  <p class="footer-dim">Built for the AI Dungeon Master project</p>
+</footer>
+
+<script src="../guide-shared.js"></script>
+</body>
+</html>
