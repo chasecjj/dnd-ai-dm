@@ -63,6 +63,28 @@
   margin: 20px auto;
 }
 
+/* ===== HERO CTA ===== */
+.hero-cta {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 14px 32px;
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s;
+  background: rgba(212, 165, 68, 0.08);
+  position: relative;
+}
+.hero-cta:hover {
+  background: rgba(212, 165, 68, 0.18);
+  box-shadow: 0 4px 20px rgba(212, 165, 68, 0.25);
+  transform: translateY(-2px);
+}
+
 /* ===== ROLE SELECTOR ===== */
 .role-selector {
   display: flex;

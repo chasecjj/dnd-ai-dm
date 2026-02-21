@@ -673,7 +673,9 @@ strong {
     position: absolute;
     top: var(--nav-height);
     left: 0; right: 0;
-    background: rgba(10, 10, 18, 0.97);
+    background: var(--bg-deep);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
     padding: 12px 20px;
     flex-direction: column;

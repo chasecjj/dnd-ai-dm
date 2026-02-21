@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="guide-base" content="../">
+<title>Create Your Character — Adventurer's Compendium</title>
+<link rel="stylesheet" href="../guide-shared.css">
+<link rel="stylesheet" href="character-wizard.css">
+</head>
+<body data-page="character-wizard">
+<div id="svg-sprite-container" style="display:none" aria-hidden="true"></div>
+
+<nav class="guide-nav">
+  <div class="nav-inner">
+    <a href="../guide.html" class="nav-brand">Adventurer's Compendium</a>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a href="character-creation.html" data-page="character-creation">Character Creation</a>
+      <a href="rules.html" data-page="rules">Rules</a>
+      <a href="reference.html" data-page="reference">Reference</a>
+      <a href="dm-setup.html" data-page="dm-setup">DM Setup</a>
+      <a href="dm-running.html" data-page="dm-running">Running Sessions</a>
+      <a href="character-wizard.html" data-page="character-wizard">Create Character</a>
+    </div>
+  </div>
+</nav>
+
+<div class="breadcrumbs">
+  <a href="../guide.html">Home</a>
+  <span class="separator">&rsaquo;</span>
+  <a href="character-creation.html">Character Creation</a>
+  <span class="separator">&rsaquo;</span>
+  <span class="current">Create Your Character</span>
+</div>
+
+<main class="page-content section-glow">
+
+<!-- ===== PROGRESS BAR ===== -->
+<div class="wizard-progress" id="wizard-progress">
+  <!-- 7 step circles connected by lines, rendered by JS -->
+</div>
+
+<!-- ===== STEP 1: NAME & CONCEPT ===== -->
+<section class="wizard-step active" id="step-1">
+  <div class="section-header">
+    <h2>Name Your Hero</h2>
+    <p>Every legend begins with a name</p>
+  </div>
+
+  <div class="name-input-group">
+    <label for="char-name" class="sr-only">Character Name</label>
+    <input type="text" class="name-input" id="char-name" placeholder="Enter character name..." autocomplete="off" maxlength="60">
+  </div>
+
+  <div class="name-generator">
+    <div class="gender-toggle">
+      <button class="gender-btn active" data-gender="male">Male</button>
+      <button class="gender-btn" data-gender="female">Female</button>
+    </div>
+    <button class="generate-name-btn" disabled title="Choose a race first to generate names">
+      <svg class="icon-sm" aria-hidden="true"><use href="#icon-d20-hero"></use></svg>
+      Roll a Name
+    </button>
+  </div>
+
+  <div class="concept-group">
+    <label for="char-concept" class="sr-only">Character Concept</label>
+    <textarea class="concept-textarea" id="char-concept" placeholder="Who is this person? What drives them? (optional)" rows="3"></textarea>
+  </div>
+</section>
+
+<!-- ===== STEP 2: RACE ===== -->
+<section class="wizard-step" id="step-2">
+  <div class="section-header">
+    <h2>Choose Your Race</h2>
+    <p>Your race shapes who you are &mdash; your heritage, your strengths, your story</p>
+  </div>
+
+  <div class="bento-grid" id="race-grid">
+    <!-- Populated by JS from wizard-data.js -->
+  </div>
+
+  <div id="race-details" class="selection-details">
+    <!-- Expanded info about the selected race, populated by JS -->
+  </div>
+</section>
+
+<!-- ===== STEP 3: CLASS ===== -->
+<section class="wizard-step" id="step-3">
+  <div class="section-header">
+    <h2>Choose Your Class</h2>
+    <p>Your class defines your abilities, your role in combat, and your path to glory</p>
+  </div>
+
+  <div class="bento-grid" id="class-grid">
+    <!-- Populated by JS from wizard-data.js -->
+  </div>
+
+  <div id="class-details" class="selection-details">
+    <!-- Expanded info about the selected class, populated by JS -->
+  </div>
+
+  <div id="class-skills" style="display:none">
+    <h3>Choose Your Skills</h3>
+    <p id="skill-choices-label"></p>
+    <div class="skill-choices-grid" id="skill-choices-grid"></div>
+    <p class="skill-choices-remaining" id="skill-choices-remaining"></p>
+  </div>
+</section>
+
+<!-- ===== STEP 4: BACKGROUND ===== -->
+<section class="wizard-step" id="step-4">
+  <div class="section-header">
+    <h2>Choose Your Background</h2>
+    <p>Your background tells where you came from before the adventure began</p>
+  </div>
+
+  <div class="bento-grid" id="background-grid">
+    <!-- Populated by JS from wizard-data.js -->
+  </div>
+
+  <div id="background-details" class="selection-details">
+    <!-- Expanded info about the selected background, populated by JS -->
+  </div>
+
+  <div id="personality-section" style="display:none">
+    <h3>Personality</h3>
+    <div class="cards-grid cols-2">
+      <div class="card">
+        <div class="card-title">Personality Trait</div>
+        <select id="personality-trait" class="concept-textarea" style="min-height:auto"></select>
+      </div>
+      <div class="card">
+        <div class="card-title">Ideal</div>
+        <select id="personality-ideal" class="concept-textarea" style="min-height:auto"></select>
+      </div>
+      <div class="card">
+        <div class="card-title">Bond</div>
+        <select id="personality-bond" class="concept-textarea" style="min-height:auto"></select>
+      </div>
+      <div class="card">
+        <div class="card-title">Flaw</div>
+        <select id="personality-flaw" class="concept-textarea" style="min-height:auto"></select>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== STEP 5: ABILITY SCORES ===== -->
+<section class="wizard-step" id="step-5">
+  <div class="section-header">
+    <h2>Assign Ability Scores</h2>
+    <p>The six pillars that define your hero's capabilities</p>
+  </div>
+
+  <div class="ability-method-tabs">
+    <button class="ability-tab active" data-method="standard-array">Standard Array</button>
+    <button class="ability-tab" data-method="point-buy">Point Buy</button>
+    <button class="ability-tab" data-method="roll">Roll</button>
+  </div>
+
+  <div class="ability-method-panel active" id="method-standard-array">
+    <p class="method-description">Assign these values to your abilities: <strong>15, 14, 13, 12, 10, 8</strong></p>
+    <div class="ability-grid" id="standard-array-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <div class="ability-method-panel" id="method-point-buy">
+    <p class="method-description">You have <strong><span id="point-buy-remaining">27</span></strong> points to spend. All scores start at 8.</p>
+    <div class="ability-grid" id="point-buy-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <div class="ability-method-panel" id="method-roll">
+    <p class="method-description">Roll 4d6, drop the lowest die for each ability score.</p>
+    <button class="generate-name-btn" id="roll-abilities-btn">
+      <svg class="icon-sm" aria-hidden="true"><use href="#icon-d20-hero"></use></svg>
+      Roll Ability Scores
+    </button>
+    <div class="ability-grid" id="roll-grid">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ===== STEP 6: EQUIPMENT ===== -->
+<section class="wizard-step" id="step-6">
+  <div class="section-header">
+    <h2>Starting Equipment</h2>
+    <p>Gear up for your first adventure</p>
+  </div>
+
+  <div class="equipment-section" id="equipment-section">
+    <!-- Populated by JS based on class + background -->
+  </div>
+</section>
+
+<!-- ===== STEP 7: CHARACTER SHEET SUMMARY ===== -->
+<section class="wizard-step summary-step" id="step-7">
+  <div class="section-header">
+    <h2>Your Character</h2>
+    <p>Review your creation</p>
+  </div>
+
+  <div class="char-sheet" id="char-sheet">
+    <!-- Populated by JS with full character sheet -->
+  </div>
+
+  <div class="action-bar">
+    <button class="action-btn copy-btn" id="copy-btn">Copy for DM</button>
+    <button class="action-btn print-btn" id="print-btn">Print Sheet</button>
+  </div>
+</section>
+
+</main>
+
+<!-- ===== WIZARD NAVIGATION ===== -->
+<div class="wizard-nav">
+  <button class="wizard-btn" id="prev-btn" disabled>Back</button>
+  <button class="wizard-btn primary" id="next-btn">Next</button>
+</div>
+
+<footer class="guide-footer">
+  <div class="footer-divider"></div>
+  <p>Adventurer's Compendium &mdash; <a href="../index.html">System Architecture</a></p>
+  <p class="footer-dim">Built for the AI Dungeon Master project</p>
+</footer>
+
+<!-- Toast notification for copy confirmation -->
+<div class="toast" id="toast">Copied to clipboard!</div>
+
+<script src="../guide-shared.js"></script>
+<script src="wizard-data.js"></script>
+<script src="character-wizard.js"></script>
+</body>
+</html>
