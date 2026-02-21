@@ -73,6 +73,16 @@ class DMCog(commands.Cog, name="DM Commands"):
             ),
             inline=False,
         )
+        embed.add_field(
+            name="Automation",
+            value=(
+                "`!window [seconds|off]` — Configure turn collection window\n"
+                "`!ambient [on|off|<seconds>]` — Toggle idle ambient narration\n"
+                "`!hooks [on|off]` — Toggle post-turn story hooks\n"
+                "`!whoami` — Show identity and character mapping"
+            ),
+            inline=False,
+        )
         embed.set_footer(text="Full guide: docs/DM_GUIDE.md | Player guide: docs/PLAYER_GUIDE.md")
         await ctx.send(embed=embed)
 
@@ -239,6 +249,67 @@ class DMCog(commands.Cog, name="DM Commands"):
         except Exception as e:
             logger.error(f"Status command failed: {e}", exc_info=True)
             await ctx.send("⚠️ Couldn't fetch status. Check the log.")
+
+    # ------------------------------------------------------------------
+    # !whoami
+    # ------------------------------------------------------------------
+    @commands.command(name="whoami")
+    async def whoami_cmd(self, ctx):
+        """Show your Discord identity and character mapping."""
+        from tools.player_identity import resolve_from_message_author
+        author = ctx.author
+        char = resolve_from_message_author(author)
+
+        lines = [
+            f"**Discord Identity:**",
+            f"  Username: `{author.name}`",
+            f"  Global Name: `{getattr(author, 'global_name', 'None')}`",
+            f"  Display Name: `{author.display_name}`",
+            f"  Guild Nick: `{getattr(author, 'nick', 'None')}`",
+            f"",
+            f"**Character:** {char or 'NOT FOUND -- check PLAYER_MAP in .env'}",
+        ]
+        await ctx.send("\n".join(lines))
+
+    # ------------------------------------------------------------------
+    # !window
+    # ------------------------------------------------------------------
+    @commands.command(name="window")
+    async def window_cmd(self, ctx, setting: str = None):  # type: ignore[assignment]
+        """Configure the Auto Mode collection window.
+
+        Usage:
+            !window        — Show current setting
+            !window 30     — Set window to 30 seconds
+            !window off    — Disable collection (instant pipeline)
+        """
+        tc = getattr(self.bot, "turn_collector", None)
+        if tc is None:
+            await ctx.send("Turn collector not available.")
+            return
+
+        if setting is None:
+            status = "disabled" if not tc.enabled else f"{tc.window_seconds}s"
+            await ctx.send(f"Collection window: **{status}**")
+            return
+
+        if setting.lower() == "off":
+            tc.enabled = False
+            if tc.is_collecting:
+                await tc.cancel()
+            await ctx.send("Collection window **disabled**. Auto Mode now processes messages instantly.")
+            return
+
+        try:
+            seconds = int(setting)
+            if seconds < 5 or seconds > 300:
+                await ctx.send("Window must be between 5 and 300 seconds.")
+                return
+            tc.window_seconds = seconds
+            tc.enabled = True
+            await ctx.send(f"Collection window set to **{seconds}s**.")
+        except ValueError:
+            await ctx.send("Usage: `!window [seconds|off]`")
 
     # ------------------------------------------------------------------
     # !image

@@ -287,12 +287,12 @@ class AdminCog(commands.Cog, name="Admin Console"):
         """Resolve the DM's character name from PLAYER_MAP."""
         if not self._dm_user_id:
             return None
-        # Find the DM's discord username from any guild member list
+        from tools.player_identity import resolve_from_message_author
         guild = self.bot.guilds[0] if self.bot.guilds else None
         if guild:
             member = guild.get_member(self._dm_user_id)
             if member:
-                return self.player_map.get(member.name.lower())
+                return resolve_from_message_author(member)
         return None
 
     def is_console_thread(self, channel_id: int) -> bool:

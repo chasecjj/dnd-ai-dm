@@ -1,7 +1,7 @@
 ---
 type: party_member
 name: Hadrian Goldhammer
-player: Ember
+player: ember
 race: Tiefling
 class: Rogue
 level: 1

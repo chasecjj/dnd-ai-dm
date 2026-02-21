@@ -5,7 +5,7 @@ race: Human
 role: Retired Adventurer, Owner of the Yawning Portal
 location: '[[Yawning Portal]]'
 faction: none
-disposition: neutral
+disposition: -3
 alive: true
 first_seen_session: null
 last_seen_session: 0
@@ -37,3 +37,30 @@ Proprietor of the Yawning Portal, grizzled man with a close-cropped grey beard a
 
 ### Session 0 Update
 Scanning the room, wary of the whispering.
+
+### Session 0 Update
+Suspicious of Hadrian's actions.
+
+### Session 0 Update
+Became suspicious of Hadrian's actions near the well.
+
+### Session 0 Update
+Watching Hadrian near the well with suspicion.
+
+### Session 0 Update
+Skeptical of Kallisar's actions.
+
+### Session 0 Update
+Expresses annoyance at the situation.
+
+### Session 0 Update
+Observing the situation with practiced ease.
+
+### Session 0 Update
+Clearly unimpressed and hostile towards Victor.
+
+### Session 0 Update
+Unhappy with Victor's actions.
+
+### Session 0 Update
+Unimpressed by Victor's actions.

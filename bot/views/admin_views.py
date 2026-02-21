@@ -762,6 +762,12 @@ class AdminConsoleView(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
 
         self.admin_cog.queue.enable_queue_mode()
+
+        # Activate ambient cog for the session
+        ambient = self.admin_cog.bot.get_cog("Ambient")
+        if ambient:
+            ambient.set_session_active(True)
+
         game_table = self.admin_cog.get_game_table_channel()
         session_num = self.admin_cog.context_assembler.current_session
 
@@ -821,6 +827,11 @@ class AdminConsoleView(discord.ui.View):
             from bot.client import _send_chunked
             await _send_chunked(game_table, closing)
 
+        # Deactivate ambient cog for the session
+        ambient = self.admin_cog.bot.get_cog("Ambient")
+        if ambient:
+            ambient.set_session_active(False)
+
         # Increment session number and update context
         self.admin_cog.queue.disable_queue_mode()
         new_session = self.admin_cog.vault.increment_session()
@@ -847,6 +858,11 @@ class AdminConsoleView(discord.ui.View):
         """Toggle between queue mode and auto mode."""
         new_state = self.admin_cog.queue.toggle_queue_mode()
         if new_state:
+            # Switching to queue mode — cancel any active collection window
+            tc = getattr(self.admin_cog.bot, "turn_collector", None)
+            if tc and tc.is_collecting:
+                await tc.cancel()
+                logger.info("Turn collector cancelled on queue mode toggle.")
             mode_msg = (
                 "Switched to **Queue Mode** — Player messages are queued "
                 "with an hourglass reaction. You review, analyze, and "

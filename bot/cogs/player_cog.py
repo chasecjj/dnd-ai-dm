@@ -210,9 +210,9 @@ class PlayerCog(commands.Cog, name="Player Console"):
     )
     async def whisper_cmd(self, interaction: discord.Interaction):
         """Create a private thread for this player's secret actions."""
+        from tools.player_identity import resolve_from_message_author
         user_id = interaction.user.id
-        discord_name = interaction.user.name.lower()
-        character_name = self.player_map.get(discord_name, discord_name)
+        character_name = resolve_from_message_author(interaction.user) or interaction.user.name
 
         # Check if player already has a thread
         existing_thread_id = self.queue.get_player_thread(user_id)

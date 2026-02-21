@@ -27,6 +27,8 @@ from tools.reference_manager import ReferenceManager
 from tools.rate_limiter import gemini_limiter
 from tools.state_manager import StateManager
 from tools.action_queue import ActionQueue, QueuedAction
+from tools.player_identity import init_player_map, resolve_from_message_author, get_player_map
+from tools.turn_collector import TurnCollector, PendingMessage
 from agents.tools.foundry_tool import FoundryClient
 
 # Agents — Live DM Team
@@ -68,6 +70,9 @@ if raw_map:
         if ":" in pair:
             discord_name, char_name = pair.split(":", 1)
             PLAYER_MAP[discord_name.strip().lower()] = char_name.strip()
+
+# Initialize centralized resolver (supports username, global_name, display_name, nick)
+init_player_map(PLAYER_MAP)
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -116,6 +121,11 @@ foundry_client = FoundryClient()
 # Action Queue — DM Admin Console state
 # ---------------------------------------------------------------------------
 action_queue = ActionQueue()
+
+# ---------------------------------------------------------------------------
+# Turn Collector — Auto Mode batching window
+# ---------------------------------------------------------------------------
+turn_collector = TurnCollector(window_seconds=45)
 
 # ---------------------------------------------------------------------------
 # Agents — Live DM Team (Game Table channel)
@@ -221,6 +231,9 @@ bot.campaign_planner = campaign_planner
 bot.cartographer_agent = cartographer_agent
 bot.send_to_moderator_log = send_to_moderator_log
 bot.war_room_channel_id = WAR_ROOM_CHANNEL_ID
+bot.resolve_character = resolve_from_message_author
+bot.turn_collector = turn_collector
+bot.action_queue = action_queue
 
 
 # ---------------------------------------------------------------------------
@@ -282,12 +295,11 @@ async def _handle_game_table(message, user_input: str):
     """
     logger.info(f"[Game Table] {message.author}: {user_input}")
 
-    # Resolve player identity
-    discord_name = message.author.name.lower()
-    character_name = PLAYER_MAP.get(discord_name)
+    # Resolve player identity (tries username, global_name, display_name, nick)
+    character_name = resolve_from_message_author(message.author)
     if character_name:
         user_input = f"[{character_name}]: {user_input}"
-        logger.info(f"Player identified: {discord_name} -> {character_name}")
+        logger.info(f"Player identified: {message.author.name} -> {character_name}")
 
     try:
         # Build the initial state and invoke the pipeline
@@ -328,6 +340,11 @@ async def _handle_game_table(message, user_input: str):
                     await message.channel.send(narrative[i : i + 2000])
             else:
                 await message.channel.send(narrative)
+
+            # Fire post-turn story hook (non-blocking)
+            _ambient = bot.get_cog("Ambient")
+            if _ambient:
+                asyncio.create_task(_ambient.post_story_hook(message.channel, narrative))
 
         # Foundry VTT dispatch (runs AFTER delivery, non-blocking)
         scene_changes = result.get("scene_changes")
@@ -456,6 +473,11 @@ async def handle_batch_resolve(actions, game_table_channel):
                     except Exception as e:
                         logger.error(f"Failed to send secret result: {e}")
 
+            # Fire post-turn story hook (non-blocking)
+            _ambient = bot.get_cog("Ambient")
+            if _ambient and has_public:
+                asyncio.create_task(_ambient.post_story_hook(game_table_channel, narrative))
+
         # Direct reply fallback
         if result.get("direct_reply"):
             await _send_chunked(game_table_channel, result["direct_reply"])
@@ -497,6 +519,100 @@ async def handle_batch_resolve(actions, game_table_channel):
             admin_cog = bot.get_cog("Admin Console")
             if admin_cog:
                 await admin_cog.refresh_console()
+
+
+# ---------------------------------------------------------------------------
+# Auto-Batch Resolve — TurnCollector callback for Auto Mode
+# ---------------------------------------------------------------------------
+async def _resolve_auto_batch(pending_messages: list):
+    """Resolve a batch of collected Auto Mode messages through the pipeline.
+
+    Called by TurnCollector when the collection window expires.
+    Similar to handle_batch_resolve() but without DM annotations or Foundry dispatch.
+    """
+    if not pending_messages:
+        return
+
+    game_table_channel = None
+
+    # Find the game table channel from any pending message
+    for pm in pending_messages:
+        if hasattr(pm.message, "channel"):
+            game_table_channel = pm.message.channel
+            break
+
+    if game_table_channel is None:
+        logger.error("Auto-batch resolve: no channel found in pending messages")
+        return
+
+    # Clean up the status message
+    if turn_collector.status_message:
+        try:
+            await turn_collector.status_message.delete()
+        except Exception:
+            pass
+        turn_collector.status_message = None
+
+    # Single message — just run the normal pipeline path
+    if len(pending_messages) == 1:
+        pm = pending_messages[0]
+        await _handle_game_table(pm.message, pm.user_input)
+        return
+
+    # Multiple messages — build a batched pipeline call
+    combined_parts = []
+    for pm in pending_messages:
+        prefix = f"[{pm.character_name}]" if pm.character_name else "[Unknown]"
+        combined_parts.append(f"{prefix}: {pm.user_input}")
+
+    batched_input = "\n".join(combined_parts)
+    logger.info(f"Auto-batch resolving {len(pending_messages)} messages:\n{batched_input}")
+
+    initial_state = {
+        "player_input": batched_input,
+        "character_name": None,  # Multi-character batch
+        "session": current_session,
+        "current_location": storyteller._current_location,
+        "is_batched": True,
+    }
+
+    try:
+        async with game_table_channel.typing():
+            result = await game_pipeline.ainvoke(initial_state)
+
+        logger.info(f"Auto-batch resolve complete. Keys: {list(result.keys())}")
+
+        # Direct response fallback
+        if result.get("direct_reply"):
+            await _send_chunked(game_table_channel, result["direct_reply"])
+            return
+
+        # Narrative delivery
+        narrative = result.get("narrative", "")
+        if narrative:
+            await _send_chunked(game_table_channel, narrative)
+
+            # Fire post-turn story hook (non-blocking)
+            _ambient = bot.get_cog("Ambient")
+            if _ambient:
+                asyncio.create_task(_ambient.post_story_hook(game_table_channel, narrative))
+
+        # Advance conversation history decay once per batch
+        context_assembler.history.advance_turn()
+
+        if result.get("error"):
+            logger.error(f"Auto-batch pipeline error: {result['error']}")
+
+    except Exception as e:
+        logger.error(f"Auto-batch resolve error: {e}", exc_info=True)
+        await send_to_moderator_log(f"[auto_batch_resolve] Error:\n{traceback.format_exc()}")
+        await game_table_channel.send(
+            "\u26a0\ufe0f Something went wrong resolving the turn. The DM has been notified."
+        )
+
+
+# Wire the callback
+turn_collector._on_resolve = _resolve_auto_batch
 
 
 # ---------------------------------------------------------------------------
@@ -632,8 +748,7 @@ async def on_message(message):
             await admin_cog.handle_ooc_message(message)
         else:
             # IC mode: treat as DM's action (queue or pipeline)
-            discord_name = message.author.name.lower()
-            character_name = PLAYER_MAP.get(discord_name)
+            character_name = resolve_from_message_author(message.author)
             if action_queue.is_queue_mode:
                 action = QueuedAction(
                     discord_user_id=message.author.id,
@@ -661,10 +776,14 @@ async def on_message(message):
     if WAR_ROOM_CHANNEL_ID and channel_id == WAR_ROOM_CHANNEL_ID:
         await _handle_war_room(message, user_input)
     elif is_player_thread or (GAME_TABLE_CHANNEL_ID and channel_id == GAME_TABLE_CHANNEL_ID):
+        # Record activity for ambient idle detection
+        ambient_cog = bot.get_cog("Ambient")
+        if ambient_cog:
+            ambient_cog.record_activity()
+
         # Queue mode: capture the action instead of running the pipeline
         if action_queue.is_queue_mode:
-            discord_name = message.author.name.lower()
-            character_name = PLAYER_MAP.get(discord_name)
+            character_name = resolve_from_message_author(message.author)
             action = QueuedAction(
                 discord_user_id=message.author.id,
                 discord_message_id=message.id,
@@ -683,7 +802,30 @@ async def on_message(message):
             admin_cog = bot.get_cog("Admin Console")
             if admin_cog:
                 await admin_cog.refresh_console()
+        elif turn_collector.enabled and not is_player_thread:
+            # Auto Mode with collection window — batch messages before pipeline
+            character_name = resolve_from_message_author(message.author)
+            is_first = await turn_collector.collect(message, character_name, user_input)
+            if is_first:
+                # Window just opened — post a status message
+                turn_collector.status_message = await message.channel.send(
+                    f"\u23f3 *Collecting actions for {turn_collector.window_seconds}s... "
+                    f"(1 action so far)*"
+                )
+            else:
+                # Update existing status message with count
+                if turn_collector.status_message:
+                    try:
+                        await turn_collector.status_message.edit(
+                            content=(
+                                f"\u23f3 *Collecting actions for {turn_collector.window_seconds}s... "
+                                f"({turn_collector.pending_count} actions so far)*"
+                            )
+                        )
+                    except discord.HTTPException:
+                        pass
         else:
+            # Collection disabled or player thread — run pipeline immediately
             await _handle_game_table(message, user_input)
     else:
         await _handle_game_table(message, user_input)
@@ -700,6 +842,7 @@ async def load_cogs():
     await bot.load_extension("bot.cogs.admin_cog")
     await bot.load_extension("bot.cogs.player_cog")
     await bot.load_extension("bot.cogs.sync_cog")
+    await bot.load_extension("bot.cogs.ambient_cog")
     logger.info("All Cogs loaded.")
 
 
