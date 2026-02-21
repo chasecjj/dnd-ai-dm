@@ -1,1 +1,17 @@
-[]
+[
+  {
+    "text": "Victor Saltzpyre enters the Yawning Portal tavern.",
+    "base_impact": 2,
+    "turns_ago": 2
+  },
+  {
+    "text": "The whispering sound persists near the well in the Yawning Portal, unnoticed by most patrons but noted by Durnan.",
+    "base_impact": 4,
+    "turns_ago": 1
+  },
+  {
+    "text": "A player attempts to discern the content of whispers near the well in the Yawning Portal.",
+    "base_impact": 4,
+    "turns_ago": 0
+  }
+]

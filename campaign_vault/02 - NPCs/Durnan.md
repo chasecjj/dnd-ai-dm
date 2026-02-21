@@ -8,7 +8,7 @@ faction: none
 disposition: neutral
 alive: true
 first_seen_session: null
-last_seen_session: null
+last_seen_session: 0
 tags:
 - npc
 - key_npc
@@ -31,3 +31,9 @@ Not yet met.
 ## DM Notes
 - Key NPC for Dragon Heist. Bridge between the tavern and the dungeon below.
 - Will likely offer the party a discount or favors as a consequence of their bravery.
+
+### Session 0 Update
+Proprietor of the Yawning Portal, grizzled man with a close-cropped grey beard and one good eye.
+
+### Session 0 Update
+Scanning the room, wary of the whispering.
