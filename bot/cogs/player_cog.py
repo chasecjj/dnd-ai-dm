@@ -1,7 +1,9 @@
 """
 Player Cog — Per-player private console for secret actions and individual decisions.
 
-Commands: /whisper (slash command) — creates a private thread for the player
+Commands:
+  /whisper — creates a private thread for the player
+  /import  — import a character sheet from the creation wizard
 Players can type actions in their private thread that only the DM sees.
 """
 
@@ -9,6 +11,10 @@ import logging
 import discord
 from discord import app_commands
 from discord.ext import commands
+from pydantic import ValidationError
+
+from tools.vault_manager import VaultManager, parse_frontmatter
+from tools.models import PartyMember
 
 logger = logging.getLogger("Player_Cog")
 
@@ -79,6 +85,113 @@ class PlayerStatusView(discord.ui.View):
             "actions the whole party should see."
         )
         await interaction.response.send_message(help_text, ephemeral=True)
+
+
+class CharacterImportModal(discord.ui.Modal, title="Import Character Sheet"):
+    """Modal for pasting character sheet markdown from the creation wizard."""
+
+    sheet = discord.ui.TextInput(
+        label="Paste your character sheet here",
+        style=discord.TextStyle.long,
+        placeholder="---\nname: Frognar Emberheart\nrace: Dwarf\nclass: Paladin\n...",
+        max_length=4000,
+        required=True,
+    )
+
+    def __init__(self, vault: VaultManager, state_manager):
+        super().__init__()
+        self.vault = vault
+        self.state_manager = state_manager
+
+    async def on_submit(self, interaction: discord.Interaction):
+        raw = self.sheet.value
+
+        # 1. Parse YAML frontmatter
+        frontmatter, body = parse_frontmatter(raw)
+        if not frontmatter:
+            await interaction.response.send_message(
+                "Could not parse YAML frontmatter. Make sure your paste "
+                "starts with `---` and has valid YAML.",
+                ephemeral=True,
+            )
+            return
+
+        # 2. Auto-fill player field with Discord username
+        if not frontmatter.get("player"):
+            frontmatter["player"] = interaction.user.display_name
+
+        # 3. Validate with PartyMember
+        try:
+            member = PartyMember(**frontmatter)
+        except ValidationError as e:
+            field_errors = []
+            for err in e.errors():
+                loc = " → ".join(str(p) for p in err["loc"])
+                field_errors.append(f"**{loc}**: {err['msg']}")
+            await interaction.response.send_message(
+                "Validation failed. Please fix and try again:\n"
+                + "\n".join(field_errors),
+                ephemeral=True,
+            )
+            return
+
+        char_name = member.name
+
+        # 4. Write to vault
+        file_path = f"{VaultManager.PARTY}/{char_name}.md"
+        success = self.vault.write_file(file_path, frontmatter, body)
+        if not success:
+            await interaction.response.send_message(
+                f"Failed to write `{file_path}` to the vault. Check bot logs.",
+                ephemeral=True,
+            )
+            return
+
+        # 5. Upsert to MongoDB (if connected)
+        mongo_status = ""
+        if self.state_manager and self.state_manager.is_connected:
+            try:
+                ok = await self.state_manager.upsert_character(frontmatter)
+                mongo_status = "Synced to database." if ok else "Database sync failed (validation)."
+            except Exception as exc:
+                logger.warning(f"MongoDB upsert failed for {char_name}: {exc}")
+                mongo_status = "Database unavailable — vault-only."
+        else:
+            mongo_status = "Database not connected — vault-only."
+
+        # 6. Build confirmation embed
+        embed = discord.Embed(
+            title=f"Character Imported: {char_name}",
+            color=discord.Color.green(),
+        )
+        embed.add_field(
+            name="Race / Class",
+            value=f"{frontmatter.get('race', '?')} {frontmatter.get('class', '?')}",
+            inline=True,
+        )
+        embed.add_field(
+            name="Level",
+            value=str(frontmatter.get("level", 1)),
+            inline=True,
+        )
+        embed.add_field(
+            name="HP",
+            value=f"{frontmatter.get('hp_current', '?')}/{frontmatter.get('hp_max', '?')}",
+            inline=True,
+        )
+        embed.add_field(name="AC", value=str(frontmatter.get("ac", "?")), inline=True)
+        embed.add_field(
+            name="Player",
+            value=frontmatter.get("player", interaction.user.display_name),
+            inline=True,
+        )
+        embed.set_footer(text=mongo_status)
+
+        logger.info(
+            f"Character imported: {char_name} by {interaction.user.name} "
+            f"→ {file_path}"
+        )
+        await interaction.response.send_message(embed=embed)
 
 
 class PlayerCog(commands.Cog, name="Player Console"):
@@ -156,6 +269,23 @@ class PlayerCog(commands.Cog, name="Player Console"):
             f"Player console created for {character_name} "
             f"(user={user_id}, thread={thread.id})"
         )
+
+
+    @app_commands.command(
+        name="import",
+        description="Import a character sheet from the creation wizard",
+    )
+    async def import_cmd(self, interaction: discord.Interaction):
+        """Open a modal to paste and import a character sheet."""
+        vault = getattr(self.bot, "vault", None)
+        state_mgr = getattr(self.bot, "state_manager", None)
+        if not vault:
+            await interaction.response.send_message(
+                "Vault is not configured. Cannot import.", ephemeral=True
+            )
+            return
+        modal = CharacterImportModal(vault=vault, state_manager=state_mgr)
+        await interaction.response.send_modal(modal)
 
 
 async def setup(bot: commands.Bot):
