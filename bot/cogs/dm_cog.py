@@ -77,6 +77,7 @@ class DMCog(commands.Cog, name="DM Commands"):
             name="Automation",
             value=(
                 "`!window [seconds|off]` — Configure turn collection window\n"
+                "`!autoroll [on|off]` — Toggle automatic dice rolling\n"
                 "`!ambient [on|off|<seconds>]` — Toggle idle ambient narration\n"
                 "`!hooks [on|off]` — Toggle post-turn story hooks\n"
                 "`!whoami` — Show identity and character mapping"
@@ -310,6 +311,37 @@ class DMCog(commands.Cog, name="DM Commands"):
             await ctx.send(f"Collection window set to **{seconds}s**.")
         except ValueError:
             await ctx.send("Usage: `!window [seconds|off]`")
+
+    # ------------------------------------------------------------------
+    # !autoroll
+    # ------------------------------------------------------------------
+    @commands.command(name="autoroll")
+    async def autoroll_cmd(self, ctx, setting: str = None):  # type: ignore[assignment]
+        """Toggle automatic dice rolling in Auto Mode.
+
+        Usage:
+            !autoroll      — Show current setting
+            !autoroll on   — Enable (rules lawyer pre-analyzes + dice roll automatically)
+            !autoroll off  — Disable (storyteller narrates outcomes without real rolls)
+        """
+        current = getattr(self.bot, "auto_roll_enabled", None)
+        if current is None:
+            await ctx.send("Auto-roll not available.")
+            return
+
+        if setting is None:
+            status = "on" if current else "off"
+            await ctx.send(f"Auto-roll: **{status}**")
+            return
+
+        if setting.lower() == "on":
+            self.bot.auto_roll_enabled = True
+            await ctx.send("Auto-roll **enabled**. Dice will be rolled automatically in Auto Mode.")
+        elif setting.lower() == "off":
+            self.bot.auto_roll_enabled = False
+            await ctx.send("Auto-roll **disabled**. Storyteller will narrate outcomes without real rolls.")
+        else:
+            await ctx.send("Usage: `!autoroll [on|off]`")
 
     # ------------------------------------------------------------------
     # !image

@@ -1,192 +1,62 @@
 [
   {
-    "text": "A tremor shakes the Yawning Portal, and something massive begins to ascend from the well.",
-    "base_impact": 8,
-    "turns_ago": 49
-  },
-  {
-    "text": "A monster emerges from the well in the Yawning Portal, and Sigfried attempts to attack it with a sewage-covered shovel.",
-    "base_impact": 8,
-    "turns_ago": 47
-  },
-  {
-    "text": "Sigfried Pye stumbles, falls, and soils himself in the Yawning Portal, drawing disgusted reactions from patrons and a weary response from Durnan.",
-    "base_impact": 4,
-    "turns_ago": 44
-  },
-  {
-    "text": "A large troll emerges from the well in the Yawning Portal, threatening the patrons.",
-    "base_impact": 8,
-    "turns_ago": 43
-  },
-  {
-    "text": "Victor Saltzpyre threatens Kallisar with his sword, causing a tense moment in the tavern.",
-    "base_impact": 4,
-    "turns_ago": 42
-  },
-  {
-    "text": "Victor Saltzpyre threatens Durnan with his sword, demanding he say a specific phrase.",
-    "base_impact": 6,
-    "turns_ago": 41
-  },
-  {
-    "text": "Kallisar reveals a magic looking glass to Victor, showing him his own face and saying \"I like boys\", causing a stir in the tavern.",
-    "base_impact": 4,
-    "turns_ago": 40
-  },
-  {
-    "text": "Sigfried Pye changes into clean overalls behind a tapestry while the troll rampages.",
-    "base_impact": 2,
-    "turns_ago": 39
-  },
-  {
-    "text": "Victor Saltzpyre attempts to intimidate Durnan, but Durnan remains unfazed and issues a warning.",
-    "base_impact": 4,
-    "turns_ago": 38
-  },
-  {
-    "text": "Victor Saltzpyre strikes down the troll with a decisive blow.",
-    "base_impact": 10,
-    "turns_ago": 37
-  },
-  {
-    "text": "Victor attempts to collect payment from the Yawning Portal patrons for saving them from the troll.",
-    "base_impact": 4,
-    "turns_ago": 36
-  },
-  {
-    "text": "Victor defeats a troll in the Yawning Portal and attempts to collect payment, but is unsuccessful. Kallisar reveals a magic looking glass, causing a stir. Victor threatens Kallisar. Hadrian approaches Victor.",
-    "base_impact": 6,
-    "turns_ago": 35
-  },
-  {
-    "text": "Victor Saltzpyre checks his underwear for skid marks after defeating a troll.",
-    "base_impact": 2,
-    "turns_ago": 34
-  },
-  {
-    "text": "Balthur is revealed as the main antagonist and teleports to a dark castle at the edge of the kingdom.",
-    "base_impact": 8,
-    "turns_ago": 33
-  },
-  {
-    "text": "The party engages in extensive roleplaying and banter, primarily targeting Balthur with insults and jokes.",
-    "base_impact": 2,
-    "turns_ago": 32
-  },
-  {
-    "text": "Victor attempts to intimidate a tavern patron, but Hadrian points out the patron is a strong-looking woman.",
-    "base_impact": 4,
-    "turns_ago": 30
-  },
-  {
-    "text": "Sigfried Pye licks a corpse's elbow, prompting a strong reaction from Victor.",
-    "base_impact": 4,
-    "turns_ago": 28
-  },
-  {
-    "text": "Victor speaks to an unseen entity behind the tapestry, provoking a growl and scurrying sounds.",
-    "base_impact": 4,
-    "turns_ago": 26
-  },
-  {
-    "text": "Sigfried Pye states he is using his tongue to interact with the environment, causing discomfort among the party.",
-    "base_impact": 2,
-    "turns_ago": 25
-  },
-  {
-    "text": "A tavern patron gouges out his own eyes in apparent disgust.",
-    "base_impact": 8,
-    "turns_ago": 23
-  },
-  {
-    "text": "Sigfried Pye tunnels out of the bar into the Waterdeep sewage system using a shovel and his knowledge of sewage.",
-    "base_impact": 4,
-    "turns_ago": 22
-  },
-  {
-    "text": "Kallisar levels up to level 6 after receiving a steak.",
-    "base_impact": 10,
-    "turns_ago": 20
-  },
-  {
-    "text": "Kallisar casts a homebrew regrowth spell on Sigfried, restoring his shattered teeth, but causing them to overgrow into beaver teeth.",
-    "base_impact": 6,
-    "turns_ago": 18
-  },
-  {
-    "text": "Sigfried Pye breaks through a wall into a new area.",
-    "base_impact": 4,
-    "turns_ago": 16
-  },
-  {
-    "text": "Balthur rolls a d20, but the action has no immediate mechanical effect.",
-    "base_impact": 2,
-    "turns_ago": 14
-  },
-  {
-    "text": "Victor is placed on Hadrian's head as a hat.",
-    "base_impact": 2,
-    "turns_ago": 13
-  },
-  {
-    "text": "Victor Saltzpyre crouches up and down on Hadrian Goldhammer's head.",
-    "base_impact": 2,
-    "turns_ago": 12
-  },
-  {
-    "text": "Sigfried Pye charges Victor Saltzpyre, knocking him prone and throwing Hadrian Goldhammer off his head.",
-    "base_impact": 5,
-    "turns_ago": 11
-  },
-  {
-    "text": "Victor Saltzpyre throws a javelin at the orc, Toilet.",
-    "base_impact": 4,
-    "turns_ago": 10
-  },
-  {
-    "text": "Victor Saltzpyre throws a javelin, hitting Sigfried Pye in the heel instead of the intended target, an orc.",
-    "base_impact": 4,
-    "turns_ago": 9
-  },
-  {
-    "text": "Victor Saltzpyre decapitates the hippogriff with his sword.",
-    "base_impact": 5,
-    "turns_ago": 7
-  },
-  {
-    "text": "Sigfried Pye attempts to persuade the party to spare his life by offering to 'eat bofa'.",
-    "base_impact": 4,
-    "turns_ago": 6
-  },
-  {
-    "text": "Victor Saltzpyre scratches his nuts, prompting a reaction from Hadrian and indifference from Kallisar.",
-    "base_impact": 2,
-    "turns_ago": 5
-  },
-  {
-    "text": "Victor Saltzpyre attempts to scratch Kallisar's nuts, prompting a negative reaction from Kallisar and amusement from Hadrian.",
-    "base_impact": 2,
-    "turns_ago": 4
-  },
-  {
-    "text": "Victor Saltzpyre attempts to scratch Kallisar's nuts, leading to Kallisar's annoyance, Hadrian's amusement, and the triggering of a wet cough and growl from deeper in the passage.",
-    "base_impact": 4,
-    "turns_ago": 3
-  },
-  {
     "text": "Victor's inappropriate action alerts a creature in the passage.",
     "base_impact": 5,
-    "turns_ago": 2
+    "turns_ago": 14
   },
   {
     "text": "Sigfried Pye's desperate offer to lick elbows alerts a creature in the passage.",
     "base_impact": 5,
-    "turns_ago": 1
+    "turns_ago": 13
   },
   {
     "text": "Victor's inappropriate action alerts a creature in the passage.",
     "base_impact": 5,
+    "turns_ago": 12
+  },
+  {
+    "text": "Victor attempts to tie up Kallisar, leading to a confrontation and alerting a creature in the passage.",
+    "base_impact": 6,
+    "turns_ago": 11
+  },
+  {
+    "text": "An unseen creature in the mildew-stenched passage is alerted by the party's actions.",
+    "base_impact": 6,
+    "turns_ago": 10
+  },
+  {
+    "text": "Victor removes his armor and flexes to intimidate the unseen creature, resulting in a strange gurgling sound.",
+    "base_impact": 4,
+    "turns_ago": 9
+  },
+  {
+    "text": "Hadrian slaps Victor's hand and makes a comment, alerting a creature in the passage.",
+    "base_impact": 4,
+    "turns_ago": 8
+  },
+  {
+    "text": "Victor Saltzpyre utters a racial slur towards Kallisar Voidcaller, causing a disturbance in the tavern and alerting something in the mildew-stenched passage.",
+    "base_impact": 8,
+    "turns_ago": 7
+  },
+  {
+    "text": "Sigfried Pye's comment about Victor causes a reaction from the well, including a growl, a thunk, and a foul stench.",
+    "base_impact": 6,
+    "turns_ago": 5
+  },
+  {
+    "text": "Victor throws two javelins at an approaching woman, narrowly missing her. Sigfried charges the woman with a bucket on his head.",
+    "base_impact": 5,
+    "turns_ago": 4
+  },
+  {
+    "text": "The Storyteller describes the various patrons in the Yawning Portal.",
+    "base_impact": 2,
+    "turns_ago": 2
+  },
+  {
+    "text": "Hadrian speaks, prompting a response from the well in the form of a growl, a thunk, and a foul stench, causing the ropes around the well to shake.",
+    "base_impact": 6,
     "turns_ago": 0
   }
 ]

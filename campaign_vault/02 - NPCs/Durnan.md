@@ -8,7 +8,7 @@ faction: none
 disposition: -3
 alive: true
 first_seen_session: null
-last_seen_session: 0
+last_seen_session: 2
 tags:
 - npc
 - key_npc
@@ -64,3 +64,6 @@ Unhappy with Victor's actions.
 
 ### Session 0 Update
 Unimpressed by Victor's actions.
+
+### Session 2 Update
+Keeping a watchful eye on the crowd.

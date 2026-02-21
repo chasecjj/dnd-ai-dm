@@ -29,6 +29,7 @@ from tools.state_manager import StateManager
 from tools.action_queue import ActionQueue, QueuedAction
 from tools.player_identity import init_player_map, resolve_from_message_author, get_player_map
 from tools.turn_collector import TurnCollector, PendingMessage
+from tools.dice_roller import parse_and_roll, format_roll_detail
 from agents.tools.foundry_tool import FoundryClient
 
 # Agents — Live DM Team
@@ -126,6 +127,9 @@ action_queue = ActionQueue()
 # Turn Collector — Auto Mode batching window
 # ---------------------------------------------------------------------------
 turn_collector = TurnCollector(window_seconds=45)
+
+# Auto-roll toggle — when True, Auto Mode pre-analyzes actions and rolls dice automatically
+auto_roll_enabled: bool = True
 
 # ---------------------------------------------------------------------------
 # Agents — Live DM Team (Game Table channel)
@@ -234,6 +238,7 @@ bot.war_room_channel_id = WAR_ROOM_CHANNEL_ID
 bot.resolve_character = resolve_from_message_author
 bot.turn_collector = turn_collector
 bot.action_queue = action_queue
+bot.auto_roll_enabled = auto_roll_enabled
 
 
 # ---------------------------------------------------------------------------
@@ -302,12 +307,22 @@ async def _handle_game_table(message, user_input: str):
         logger.info(f"Player identified: {message.author.name} -> {character_name}")
 
     try:
+        # Auto-roll dice if enabled (pre-analyze + roll before pipeline)
+        dice_results = None
+        if auto_roll_enabled and character_name:
+            dice_results, roll_summary = await _auto_roll_for_actions(
+                [(character_name, user_input)]
+            )
+            if roll_summary:
+                await message.channel.send(f"\U0001f3b2 {' | '.join(roll_summary)}")
+
         # Build the initial state and invoke the pipeline
         initial_state = {
             "player_input": user_input,
             "character_name": character_name,
             "session": current_session,
             "current_location": storyteller._current_location,
+            "dice_results": dice_results,
         }
 
         async with message.channel.typing():
@@ -380,6 +395,79 @@ async def _send_chunked(channel, text: str):
     else:
         for i in range(0, len(text), 2000):
             await channel.send(text[i : i + 2000])
+
+
+async def _auto_roll_for_actions(actions_list):
+    """Pre-analyze actions and auto-roll dice for Auto Mode.
+
+    Args:
+        actions_list: List of (character_name, user_input) tuples.
+
+    Returns:
+        (dice_results, summary_lines) — dice_results dict for pipeline state,
+        summary_lines list for posting to channel. Both may be empty.
+    """
+    dice_results = {}
+    summary_lines = []
+
+    for char_name, user_input in actions_list:
+        if not char_name:
+            continue
+
+        try:
+            await gemini_limiter.acquire()
+            pre_analysis = await rules_lawyer.pre_analyze(user_input, char_name)
+
+            if not pre_analysis.get("needs_roll") or not pre_analysis.get("rolls"):
+                continue
+
+            char_rolls = []
+            char_summary_parts = []
+
+            for roll_spec in pre_analysis["rolls"]:
+                roll_type = roll_spec.get("roll_type", "Check")
+                formula = roll_spec.get("formula", "1d20")
+                dc = roll_spec.get("dc")
+
+                # Roll via Foundry if connected, else Python fallback
+                if foundry_client.is_connected:
+                    try:
+                        result = await foundry_client.roll_dice(formula)
+                    except Exception as e:
+                        logger.warning(f"Foundry roll failed, using fallback: {e}")
+                        result = parse_and_roll(formula)
+                else:
+                    result = parse_and_roll(formula)
+
+                total = result["total"]
+                detail = format_roll_detail(formula, result)
+                is_crit = result.get("isCritical", False)
+                is_fumble = result.get("isFumble", False)
+
+                char_rolls.append({
+                    "type": roll_type,
+                    "result": total,
+                    "dc": dc,
+                })
+
+                # Build display string
+                crit_tag = " **NAT 20!**" if is_crit else (" **NAT 1!**" if is_fumble else "")
+                dc_tag = ""
+                if dc and isinstance(total, int):
+                    passed = total >= dc
+                    dc_tag = f" (DC {dc} {'✓' if passed else '✗'})"
+                char_summary_parts.append(
+                    f"{roll_type} `{formula}` = **{total}**{crit_tag}{dc_tag}"
+                )
+
+            if char_rolls:
+                dice_results[char_name] = {"rolls": char_rolls}
+                summary_lines.append(f"**{char_name}**: {', '.join(char_summary_parts)}")
+
+        except Exception as e:
+            logger.error(f"Auto-roll failed for {char_name}: {e}", exc_info=True)
+
+    return (dice_results if dice_results else None, summary_lines)
 
 
 async def handle_batch_resolve(actions, game_table_channel):
@@ -568,12 +656,26 @@ async def _resolve_auto_batch(pending_messages: list):
     batched_input = "\n".join(combined_parts)
     logger.info(f"Auto-batch resolving {len(pending_messages)} messages:\n{batched_input}")
 
+    # Auto-roll dice for all actions in the batch
+    dice_results = None
+    if auto_roll_enabled:
+        actions_for_roll = [
+            (pm.character_name, pm.user_input)
+            for pm in pending_messages
+            if pm.character_name
+        ]
+        if actions_for_roll:
+            dice_results, roll_summary = await _auto_roll_for_actions(actions_for_roll)
+            if roll_summary:
+                await game_table_channel.send(f"\U0001f3b2 {' | '.join(roll_summary)}")
+
     initial_state = {
         "player_input": batched_input,
         "character_name": None,  # Multi-character batch
         "session": current_session,
         "current_location": storyteller._current_location,
         "is_batched": True,
+        "dice_results": dice_results,
     }
 
     try:

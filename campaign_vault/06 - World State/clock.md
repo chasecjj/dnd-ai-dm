@@ -3,7 +3,7 @@ type: world_clock
 current_date: 1st of Ches
 time_of_day: evening
 season: early_spring
-session: 1
+session: 2
 tags:
 - meta
 - world_state

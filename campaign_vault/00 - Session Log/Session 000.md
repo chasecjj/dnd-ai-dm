@@ -88,3 +88,7 @@ _What worked, what to improve, setup for next session._
 | | Victor's inappropriate action alerts a creature in the passage. | 5 | |
 | | Sigfried Pye's desperate offer to lick elbows alerts a creature in the passage. | 5 | |
 | | Victor's inappropriate action alerts a creature in the passage. | 5 | |
+| | Victor attempts to tie up Kallisar, leading to a confrontation and alerting a creature in the passage. | 6 | |
+| | An unseen creature in the mildew-stenched passage is alerted by the party's actions. | 6 | |
+| | Victor removes his armor and flexes to intimidate the unseen creature, resulting in a strange gurgling sound. | 4 | |
+| | Hadrian slaps Victor's hand and makes a comment, alerting a creature in the passage. | 4 | |
