@@ -1,6 +1,6 @@
 # D&D AI Dungeon Master
 
-Discord-based AI Dungeon Master for D&D 5e campaigns. A multi-agent LangGraph pipeline processes player actions through Router, Rules Lawyer, Storyteller, and Chronicler nodes — narrating the story via Google Gemini, tracking state in an Obsidian vault (narrative) and optional MongoDB (mechanical), and syncing live with Foundry VTT for battle maps, tokens, and dice.
+AI-powered Dungeon Master for D&D 5e campaigns over Discord. The AI runs the game autonomously — narrating scenes, adjudicating rules, and responding to players in real time. A human admin monitors via the Admin Console and intervenes only when needed. A multi-agent LangGraph pipeline processes player actions through Router, Rules Lawyer, Storyteller, and Chronicler nodes, powered by Google Gemini. Persistent state lives in an Obsidian vault (narrative) and optional MongoDB (mechanical), with live Foundry VTT integration for battle maps, tokens, and dice.
 
 ## Quick Start
 
@@ -20,12 +20,15 @@ See [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md) for full setup instructio
 
 | Guide | Audience | Description |
 |-------|----------|-------------|
-| [Getting Started](docs/GETTING_STARTED.md) | New DMs | Installation, environment setup, first run |
-| [DM Guide](docs/DM_GUIDE.md) | DMs | Full command and button reference, session lifecycle |
-| [Player Guide](docs/PLAYER_GUIDE.md) | Players | How to play, dice rolling, secret actions |
+| [Getting Started](docs/GETTING_STARTED.md) | New admins | Installation, environment setup, first run |
+| [Campaign Setup](docs/CAMPAIGN_SETUP.md) | Admins | Creating a campaign, populating the vault, file formats |
+| [Admin Guide](docs/DM_GUIDE.md) | Admins | Monitoring dashboard, intervention tools, session lifecycle |
+| [Player Guide](docs/PLAYER_GUIDE.md) | Players | How to play with an AI DM, dice rolling, secret actions |
 | [Session Walkthrough](docs/SESSION_WALKTHROUGH.md) | Everyone | Simulated full session showing what "working" looks like |
 
 ## Architecture
+
+The AI is the DM; the human is an admin who monitors and assists. Auto Mode is the primary gameplay mode; Queue Mode is the override for complex scenes.
 
 Three-layer design:
 

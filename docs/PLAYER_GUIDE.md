@@ -1,6 +1,6 @@
-# Player Guide — D&D AI Dungeon Master
+# Player Guide — Playing D&D with an AI Dungeon Master
 
-Welcome! This guide explains how to play D&D with the AI Dungeon Master bot. Your DM handles the behind-the-scenes work — you just need to know how to interact with the bot in Discord.
+Your Dungeon Master is an AI. It narrates the world, adjudicates rules, and responds to your actions in real time. A human admin monitors the session and can intervene for complex situations, but most of the time you're interacting directly with the AI.
 
 ---
 
@@ -8,7 +8,7 @@ Welcome! This guide explains how to play D&D with the AI Dungeon Master bot. You
 
 ### Where to play
 
-Your DM has set up a Discord channel called something like **Game Table**. That's where the game happens. Type your actions there and the AI (guided by your DM) will narrate what happens.
+Your admin has set up a Discord channel called something like **Game Table**. That's where the game happens. Type your actions there and the AI processes them immediately.
 
 ### How to take actions
 
@@ -22,11 +22,11 @@ Just type what your character does in natural language:
 
 > I try to persuade the guard to let us through
 
-The bot acknowledges your action with an ⏳ hourglass reaction. Your DM will review it and trigger the AI to narrate the results.
+In most cases, the AI responds within seconds with a narration of what happens. Sometimes the admin may be using Queue Mode (for combat or complex scenes), in which case your action gets an ⏳ hourglass reaction and is processed when the admin resolves the turn.
 
 ### When you need to roll dice
 
-Sometimes the DM (or the AI Rules Lawyer) will determine that your action requires a dice roll. The bot will prompt you:
+Sometimes the AI (or the admin) determines that your action requires a dice roll. The bot will prompt you:
 
 > **Frognar**, roll Perception: `!roll 1d20+3`
 
@@ -40,7 +40,7 @@ The bot responds with your result:
 
 > `1d20+3`: **16** d20: [13]
 
-If your action requires multiple rolls (like Attack then Damage), the bot will prompt you for each one in order:
+If your action requires multiple rolls (like Attack then Damage), the bot prompts you for each one in order:
 
 > **Frognar**, roll Attack: `!roll 1d20+7`
 
@@ -50,7 +50,78 @@ If your action requires multiple rolls (like Attack then Damage), the bot will p
 
 *(you roll)*
 
-After all rolls are captured, the DM resolves the turn and the AI narrates what happened.
+After all rolls are captured, the AI narrates what happened.
+
+---
+
+## Writing Good Actions
+
+The AI responds to what you write, so better input produces better narration.
+
+### Be specific
+| Instead of | Try |
+|-----------|-----|
+| "I search the room" | "I carefully check the desk drawers for hidden compartments or false bottoms" |
+| "I attack" | "I charge at the nearest goblin, swinging my greataxe at its neck" |
+| "I talk to the bartender" | "I lean on the bar and quietly ask the bartender if he's seen anyone matching Floon's description" |
+
+### Describe attempts, not outcomes
+Write what you **try** to do, not what happens. The AI decides the outcome based on rules, dice, and context.
+
+- **Good:** "I try to leap across the chasm"
+- **Bad:** "I leap across the chasm and land safely"
+
+### One action per message
+Send one action per message. If you want to do multiple things, send multiple messages. This helps the AI process each action clearly.
+
+### Include motivation
+The AI narrates better when it understands *why* you're doing something:
+
+> "I examine the strange runes on the wall — my character studied ancient languages at the academy and might recognize them"
+
+### Use the environment
+Reference things the AI has described. If the narration mentioned chandeliers, use them:
+
+> "I grab the chandelier chain and swing across to the balcony"
+
+---
+
+## What the AI Can and Cannot Do
+
+### The AI can:
+- Narrate scenes with atmosphere, dialogue, and sensory detail
+- Adjudicate D&D 5e rules (attacks, spells, skill checks, saving throws)
+- Remember recent events (what happened this session and the last few sessions)
+- Track HP, spell slots, conditions, and other mechanical state
+- Role-play NPCs with distinct personalities
+- Manage quests, consequences, and world state
+- Respond to creative and unexpected player actions
+
+### The AI cannot:
+- Adjudicate homebrew rules (the admin handles these)
+- Recall events from many sessions ago without prompting (long-term memory is being improved)
+- Perfectly balance encounter difficulty every time
+- Read your mind — if your intent isn't clear, the AI guesses
+- Handle simultaneous complex interactions between many NPCs (the admin may step in)
+
+If the AI gets something wrong, say so in Game Table. The admin is watching and can correct it.
+
+---
+
+## Pacing Expectations
+
+### Auto Mode (most of the time)
+The AI responds in **seconds**. You type an action, and the narration appears almost immediately. There's a short batching window (~45 seconds) where the AI may wait to see if other players are also acting, then it narrates all actions together.
+
+### Queue Mode (combat and complex scenes)
+The admin switches to Queue Mode for tighter control. In this mode:
+- Your action gets an ⏳ reaction (it's been received)
+- The admin clicks Analyze — you may be prompted to roll dice
+- You roll when prompted
+- The admin clicks Resolve — narration appears
+- This is closer to traditional D&D pacing
+
+You'll notice the difference — Auto Mode feels like a conversation, Queue Mode feels like structured turns.
 
 ---
 
@@ -71,9 +142,9 @@ After all rolls are captured, the DM resolves the turn and the AI narrates what 
 - `2d20kh1+5` — advantage (roll 2d20, keep highest, add modifier)
 - `2d20kl1+5` — disadvantage (roll 2d20, keep lowest, add modifier)
 
-> **If Foundry VTT is not connected:** The `!roll` command won't work. Your DM
+> **If Foundry VTT is not connected:** The `!roll` command won't work. Your admin
 > can use an external dice roller and input results manually, or you can roll
-> physical dice and tell the DM your result in the Game Table.
+> physical dice and report your result in Game Table.
 
 ### Information
 
@@ -93,12 +164,12 @@ Want to do something the other players shouldn't know about? Use the `/whisper` 
 ### How it works
 
 1. Type `/whisper` in any text channel
-2. The bot creates a private thread — only you and the DM can see it
+2. The bot creates a private thread — only you and the admin can see it
 3. Type your secret action in that thread
 
 > I secretly pocket the gemstone before the others notice
 
-Your action joins the DM's queue tagged as `[SECRET]`. When the DM resolves it, the results appear **in your private thread**, not the Game Table.
+Your action joins the queue tagged as `[SECRET]`. When it resolves, the results appear **in your private thread**, not the Game Table.
 
 ### The private console
 
@@ -122,35 +193,44 @@ Your private thread has two buttons:
 
 ## What the Status Icons Mean
 
-When your action is in the queue, you'll see these status indicators if you check with the **My Queue Status** button:
+When your action is in the queue (Queue Mode), you'll see these if you check with **My Queue Status**:
 
 | Icon | Meaning |
 |------|---------|
-| 🟡 | **Pending** — DM hasn't reviewed it yet |
+| 🟡 | **Pending** — not yet reviewed |
 | 🔍 | **Analyzing** — the AI is figuring out if you need to roll |
 | 🎲 | **Awaiting Roll** — you need to roll dice (check Game Table for the prompt) |
-| 🟢 | **Ready** — all set, waiting for DM to resolve the turn |
+| 🟢 | **Ready** — all set, waiting for the turn to resolve |
 
-### What if my action is stuck?
+---
 
-If your action stays in **Pending** for a while, that's normal — it means the
-DM hasn't reviewed it yet. In Queue Mode, the DM clicks **Analyze** to review
-actions and **Resolve Turn** to trigger the AI narrative.
+## Troubleshooting
 
-If you're stuck on **Awaiting Roll**, check the Game Table channel — the bot
-should have posted a roll prompt for you (e.g., "Frognar, roll Perception:
-`!roll 1d20+3`"). Type the `!roll` command exactly as shown.
+### The AI responded incorrectly
+Say so in Game Table: "Wait, my character has darkvision — I should be able to see in this room." The admin can correct the narration or annotate the next turn. The AI also learns from corrections within the session.
 
-If you're unsure about your action's state, click the **My Queue Status**
-button in your private thread.
+### The AI forgot something
+The AI's memory covers recent sessions well but may miss details from many sessions ago. Remind it in your action: "I check the map we found in session 2 — does it show this area?" The admin can also annotate with forgotten context.
+
+### No response after typing an action
+- **In Auto Mode:** Check the Moderator Log channel for errors. The admin may need to restart the pipeline.
+- **In Queue Mode:** This is normal — your action is queued. The admin will process it when ready.
+
+### The narrative seems off
+If the AI's tone or pacing feels wrong, mention it in Game Table. The admin can adjust the AI's approach with annotations. You can also steer the tone through your own actions — writing dramatically encourages dramatic narration.
+
+### Dice roll didn't register
+Make sure you typed the `!roll` command exactly as prompted. The formula must match (e.g., `!roll 1d20+7`, not `!roll d20+7`). If Foundry is disconnected, the admin will handle rolls manually.
 
 ---
 
 ## Tips
 
-- **Be descriptive.** "I search the desk" is fine, but "I carefully check the desk drawers for hidden compartments or false bottoms" gives the AI more to work with.
-- **Wait for the prompt before rolling.** Don't pre-roll dice — the DM and AI decide what rolls are needed.
-- **One action at a time.** Send one action per message. If you want to do multiple things, send multiple messages.
+- **Be descriptive.** "I search the desk" works, but "I carefully check the desk drawers for hidden compartments" gives the AI more to work with.
+- **Wait for the prompt before rolling.** Don't pre-roll dice — the AI decides what rolls are needed.
+- **One action at a time.** Send one action per message for clearest results.
 - **NAT 20 / NAT 1** are called out automatically when you roll through Foundry.
-- **Don't worry about rules.** The AI Rules Lawyer handles D&D 5e mechanics. Just describe what you want to do in plain English.
-- **The ⏳ hourglass** means your action was received. Sit tight — the DM will process it.
+- **Don't worry about rules.** The AI handles D&D 5e mechanics. Just describe what you want to do in plain English.
+- **The AI handles rules automatically** but you can challenge a ruling in character — "I don't think that's how Shield works" — and the admin will review it.
+- **If something seems wrong, say so in Game Table.** The admin is watching and can correct the AI.
+- **The ⏳ hourglass** means your action was received. In Auto Mode it processes immediately; in Queue Mode the admin will handle it.

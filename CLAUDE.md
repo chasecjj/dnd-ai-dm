@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Discord-based AI Dungeon Master for D&D 5e campaigns. Multi-agent LangGraph pipeline processes player actions through Router → Rules Lawyer → Storyteller → Chronicler. Persistent state in MongoDB (mechanical truth) and Obsidian vault (narrative truth). Live Foundry VTT integration for battlemaps/tokens. LLM backbone is Google Gemini.
+Discord-based AI Dungeon Master for D&D 5e campaigns. **The AI is the primary DM — it runs the game autonomously in Auto Mode. A human admin monitors via the Admin Console and intervenes only when needed. Queue Mode is the override for complex scenes.** Multi-agent LangGraph pipeline processes player actions through Router → Rules Lawyer → Storyteller → Chronicler. Persistent state in MongoDB (mechanical truth) and Obsidian vault (narrative truth). Live Foundry VTT integration for battlemaps/tokens. LLM backbone is Google Gemini.
 
 ## Commands
 
@@ -49,9 +49,11 @@ router ──conditional──┬─→ board ──conditional──┬─→ r
 
 The router sets flags (`needs_board_monitor`, `needs_rules_lawyer`, `needs_storyteller`) that conditional edges read. After rules, the path is always linear: rules → storyteller → scene_sync → chronicler → END. Agents are bound to nodes via `functools.partial()` in `pipeline/graph.py`.
 
-### DM Admin Console (Queue Mode)
+### Admin Console (AI Monitoring + Override)
 
-The bot has two modes: **Auto Mode** (pipeline fires instantly on every message) and **Queue Mode** (actions queue for DM review). Toggle via the admin console or session start/end.
+The bot operates in two modes. **Auto Mode is primary** (`auto_roll_enabled = True` by default) — the AI pipeline fires instantly on every player message, narrating scenes and adjudicating rules without human intervention. **Queue Mode is the override** — actions queue for admin review, used for combat, complex negotiations, or when the admin wants tighter control. Toggle via the ⚡ button or session start/end.
+
+**Auto Mode flow:** Player message → full LangGraph pipeline fires → narrative posted to Game Table within seconds. The admin monitors via the console dashboard and can intervene at any time by switching to Queue Mode or using Post to Table.
 
 **Key files:**
 - `tools/action_queue.py` — `ActionQueue`, `QueuedAction`, `RollRequest`, `MonsterRoll` models. Thread-safe via asyncio.Lock.
@@ -60,7 +62,7 @@ The bot has two modes: **Auto Mode** (pipeline fires instantly on every message)
 - `bot/cogs/player_cog.py` — `/whisper` slash command for player private threads, secret actions
 - `bot/client.py: handle_batch_resolve()` — processes curated action batches through the pipeline with two-phase commit (confirm_batch/restore_batch)
 
-**Queue Mode flow:** Player message → `QueuedAction` created → ⏳ reaction → DM reviews in console → Analyze (Rules Lawyer pre-pass) → Players roll dice → DM clicks Resolve → `handle_batch_resolve()` → narrative posted.
+**Queue Mode flow:** Player message → `QueuedAction` created → ⏳ reaction → admin reviews in console → Analyze (Rules Lawyer pre-pass) → Players roll dice → admin clicks Resolve → `handle_batch_resolve()` → narrative posted.
 
 **Dice flow:** `RollRequest` model supports multi-roll sequences (Attack → Damage). `update_roll_result()` returns `(action, next_roll)` tuple — next_roll is None when all rolls are done. Foundry cog intercepts `!roll` results when queue mode is active.
 
@@ -121,6 +123,7 @@ These are the project's architectural invariants and must be followed:
 5. **Scene sync errors never block gameplay** — logged and skipped.
 6. **All Gemini calls go through the rate limiter** — `await gemini_limiter.acquire()` before every call.
 7. **Vault `.md` files are never deleted** during any migration or overhaul.
+8. **AI-First Design** — All features must work in Auto Mode without human intervention. Queue Mode capabilities are the fallback, not the primary path.
 
 ## Key Patterns
 
@@ -143,8 +146,10 @@ Configured in `.env`: `DISCORD_BOT_TOKEN`, `GEMINI_API_KEY`, `FOUNDRY_API_KEY`, 
 ## Development Notes
 
 - **Test baseline:** 14 pre-existing failures in `test_blind_prep` (7), `test_cartographer` (7), `test_scene_classifier` (1 error). These are mock/fixture issues unrelated to core game logic. The 20 passing tests (`test_vault_models`, `test_vault_concurrency`, `test_campaign_manager`, `test_blind_prep` imports, `test_cartographer` imports) are the real regression gate.
-- `docs/` contains player/DM documentation: `GETTING_STARTED.md`, `DM_GUIDE.md`, `PLAYER_GUIDE.md`, `SESSION_WALKTHROUGH.md`
-- `COMPLETION_PLAN.md` tracks the phased development roadmap and known TODOs
+- `docs/` contains documentation: `GETTING_STARTED.md`, `DM_GUIDE.md` (Admin Guide), `PLAYER_GUIDE.md`, `CAMPAIGN_SETUP.md`, `SESSION_WALKTHROUGH.md`
+- `ENHANCEMENT_PLAN.md` is the unified development roadmap (replaces old `COMPLETION_PLAN.md`)
+- Rate limiting is DONE (`tools/rate_limiter.py`) — do not re-implement
+- System uses the **admin-assisted AI DM paradigm**: AI is the DM, human is the admin
 - `docs/index.html` contains a generated architecture diagram
 - IDE type checkers will show false positives for `discord`, `google`, `aiohttp`, `bot.client` imports — these are from unconfigured search roots, not real errors
 - `pyrightconfig.json` is configured for Python 3.14 with extra paths for module resolution
