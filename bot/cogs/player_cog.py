@@ -72,17 +72,19 @@ class PlayerStatusView(discord.ui.View):
     async def show_help(self, interaction: discord.Interaction, button):
         """Show help text for the player console."""
         help_text = (
-            "**Private Console**\n"
-            "Type actions here that only the DM will see.\n\n"
-            "**How it works:**\n"
-            "- Your message is added to the DM's queue as a *secret action*\n"
-            "- Other players won't know what you did\n"
-            "- The DM resolves it during the turn\n"
-            "- Results appear here in your private thread\n\n"
-            "**Dice rolls:** If the DM needs you to roll, "
-            "you'll be prompted in the Game Table channel with `!roll`.\n\n"
-            "**Regular actions:** Use the Game Table channel for "
-            "actions the whole party should see."
+            "**Private Console — Brainstorm Mode**\n"
+            "Chat here to brainstorm with your AI advisor!\n\n"
+            "**What you can ask:**\n"
+            "- \"What abilities do I have?\"\n"
+            "- \"How can I sneak past the guards?\"\n"
+            "- \"What spells would help here?\"\n"
+            "- \"Help me come up with a cool move\"\n\n"
+            "**Committing an action:**\n"
+            "`!commit <your action>` — sends it to the Game Table\n\n"
+            "**Your brainstorming is private.** Only committed actions "
+            "are visible to other players.\n\n"
+            "**Queue Mode:** When the DM enables queue mode, messages "
+            "here become secret actions instead of brainstorming."
         )
         await interaction.response.send_message(help_text, ephemeral=True)
 
@@ -194,8 +196,16 @@ class CharacterImportModal(discord.ui.Modal, title="Import Character Sheet"):
         await interaction.response.send_message(embed=embed)
 
 
+class _CommitProxy:
+    """Minimal message-like object so _handle_game_table can direct output to Game Table."""
+
+    def __init__(self, channel, author):
+        self.channel = channel
+        self.author = author
+
+
 class PlayerCog(commands.Cog, name="Player Console"):
-    """Per-player private consoles for secret actions."""
+    """Per-player private consoles for brainstorming and secret actions."""
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -249,11 +259,14 @@ class PlayerCog(commands.Cog, name="Player Console"):
         embed = discord.Embed(
             title=f"{character_name}'s Private Console",
             description=(
-                "This is your private channel with the DM.\n\n"
-                "**Type any action here** and it will be added to the DM's "
-                "queue as a *secret action*. Other players won't see it.\n\n"
-                "The DM will resolve your action during the turn, and the "
-                "results will appear here."
+                "This is your private brainstorming space with the AI advisor.\n\n"
+                "**Ask anything** about your character's abilities, spells, "
+                "tactics, or what you could do in the current situation. "
+                "The advisor knows your character sheet and the game state.\n\n"
+                "**When you're ready**, commit your action to the Game Table:\n"
+                "`!commit I flip a coin to Durnan and ask about factions`\n\n"
+                "Your brainstorming stays private. Only committed actions "
+                "appear in the Game Table."
             ),
             color=discord.Color.dark_purple(),
         )
@@ -270,6 +283,52 @@ class PlayerCog(commands.Cog, name="Player Console"):
             f"(user={user_id}, thread={thread.id})"
         )
 
+
+    @commands.command(name="commit")
+    async def commit_cmd(self, ctx, *, action: str):
+        """Commit a brainstormed action to the Game Table.
+
+        Usage (in whisper thread): !commit I flip a coin to Durnan and ask about factions
+        """
+        # Verify this is a player thread
+        if not self.queue.is_player_thread(ctx.channel.id):
+            await ctx.send("Use this in your private console (`/whisper` thread).")
+            return
+
+        from tools.player_identity import resolve_from_message_author
+        character_name = resolve_from_message_author(ctx.author) or ctx.author.display_name
+
+        game_channel = self.bot.get_channel(int(self.game_table_id)) if self.game_table_id else None
+        if not game_channel:
+            await ctx.send("Game Table channel not found.")
+            return
+
+        from bot.client import action_queue
+
+        if action_queue.is_queue_mode:
+            # Queue mode: add as public action for DM review
+            from tools.action_queue import QueuedAction
+            queued = QueuedAction(
+                discord_user_id=ctx.author.id,
+                discord_message_id=ctx.message.id,
+                channel_id=int(self.game_table_id),
+                character_name=character_name,
+                player_input=action,
+                is_secret=False,
+            )
+            await action_queue.enqueue(queued)
+            await ctx.send("Action queued for the DM's next turn! Check the Game Table.")
+            admin_cog = self.bot.get_cog("Admin Console")
+            if admin_cog:
+                await admin_cog.refresh_console()
+        else:
+            # Auto mode: post to Game Table and process through pipeline
+            await game_channel.send(f"**{character_name}**: *{action}*")
+            await ctx.send("Action committed! Watch the Game Table.")
+
+            from bot.client import _handle_game_table
+            proxy = _CommitProxy(channel=game_channel, author=ctx.author)
+            await _handle_game_table(proxy, action)
 
     @app_commands.command(
         name="import",

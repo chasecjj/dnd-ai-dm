@@ -41,6 +41,7 @@ from agents.storyteller import StorytellerAgent
 from agents.foundry_architect import FoundryArchitectAgent
 from agents.message_router import MessageRouterAgent
 from agents.chronicler import ChroniclerAgent
+from agents.player_advisor import PlayerAdvisorAgent
 
 
 # LangGraph pipeline
@@ -144,6 +145,7 @@ storyteller = StorytellerAgent(gemini_client, context_assembler, model_id=MODEL_
 foundry_architect = FoundryArchitectAgent(gemini_client, foundry=foundry_client, model_id=MODEL_ID)
 message_router = MessageRouterAgent(gemini_client, context_assembler, model_id=MODEL_ID)
 chronicler = ChroniclerAgent(gemini_client, vault, context_assembler, model_id=MODEL_ID)
+player_advisor = PlayerAdvisorAgent(gemini_client, context_assembler, vault, model_id=MODEL_ID)
 
 # ---------------------------------------------------------------------------
 # Agents — Prep Team (War Room channel)
@@ -249,6 +251,7 @@ bot.resolve_character = resolve_from_message_author
 bot.turn_collector = turn_collector
 bot.action_queue = action_queue
 bot.auto_roll_enabled = auto_roll_enabled
+bot.player_advisor = player_advisor
 
 
 # ---------------------------------------------------------------------------
@@ -945,7 +948,53 @@ async def on_message(message):
 
     if WAR_ROOM_CHANNEL_ID and channel_id == WAR_ROOM_CHANNEL_ID:
         await _handle_war_room(message, user_input)
-    elif is_player_thread or (GAME_TABLE_CHANNEL_ID and channel_id == GAME_TABLE_CHANNEL_ID):
+    elif is_player_thread:
+        # Player private thread — brainstorm mode with advisor
+        ambient_cog = bot.get_cog("Ambient")
+        if ambient_cog:
+            ambient_cog.record_activity()
+
+        if action_queue.is_queue_mode:
+            # Queue mode: capture as secret action (existing behavior)
+            character_name = resolve_from_message_author(message.author)
+            action = QueuedAction(
+                discord_user_id=message.author.id,
+                discord_message_id=message.id,
+                channel_id=message.channel.id,
+                character_name=character_name,
+                player_input=user_input,
+                is_secret=True,
+                private_thread_id=message.channel.id,
+            )
+            await action_queue.enqueue(action)
+            try:
+                await message.add_reaction("\u23f3")
+            except discord.HTTPException:
+                pass
+            admin_cog = bot.get_cog("Admin Console")
+            if admin_cog:
+                await admin_cog.refresh_console()
+        else:
+            # Auto mode: brainstorm with Player Advisor
+            character_name = resolve_from_message_author(message.author)
+            if character_name and player_advisor.client:
+                try:
+                    await gemini_limiter.acquire()
+                    async with message.channel.typing():
+                        advice = await player_advisor.advise(
+                            message.channel.id, character_name, user_input
+                        )
+                    await _send_chunked(message.channel, advice)
+                except Exception as e:
+                    logger.error(f"Player advisor error: {e}", exc_info=True)
+                    await message.channel.send(
+                        "I'm having trouble right now. Try pasting your action "
+                        "directly into the Game Table!"
+                    )
+            else:
+                # Fallback: run through normal pipeline
+                await _handle_game_table(message, user_input)
+    elif GAME_TABLE_CHANNEL_ID and channel_id == GAME_TABLE_CHANNEL_ID:
         # Record activity for ambient idle detection
         ambient_cog = bot.get_cog("Ambient")
         if ambient_cog:
@@ -960,19 +1009,16 @@ async def on_message(message):
                 channel_id=message.channel.id,
                 character_name=character_name,
                 player_input=user_input,
-                is_secret=is_player_thread,
-                private_thread_id=message.channel.id if is_player_thread else None,
             )
             await action_queue.enqueue(action)
             try:
-                await message.add_reaction("\u23f3")  # Hourglass — action received
+                await message.add_reaction("\u23f3")
             except discord.HTTPException:
-                pass  # Reaction failed (permissions, deleted message) — non-critical
-            # Refresh admin console embed
+                pass
             admin_cog = bot.get_cog("Admin Console")
             if admin_cog:
                 await admin_cog.refresh_console()
-        elif turn_collector.enabled and not is_player_thread:
+        elif turn_collector.enabled:
             # Auto Mode with collection window — batch messages before pipeline
             character_name = resolve_from_message_author(message.author)
             is_first = await turn_collector.collect(message, character_name, user_input)
