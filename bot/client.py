@@ -992,8 +992,16 @@ async def on_message(message):
                         "directly into the Game Table!"
                     )
             else:
-                # Fallback: run through normal pipeline
-                await _handle_game_table(message, user_input)
+                # No character mapping — tell the player instead of falling through to pipeline
+                logger.warning(
+                    f"Player thread message from {message.author.name} but no character mapping "
+                    f"(character_name={character_name}, advisor.client={bool(player_advisor.client)})"
+                )
+                await message.channel.send(
+                    "I can't find your character sheet. Make sure you're in the "
+                    "`PLAYER_MAP` and try `/whisper` again, or paste your action "
+                    "directly into the Game Table."
+                )
     elif GAME_TABLE_CHANNEL_ID and channel_id == GAME_TABLE_CHANNEL_ID:
         # Record activity for ambient idle detection
         ambient_cog = bot.get_cog("Ambient")
@@ -1046,9 +1054,17 @@ async def on_message(message):
                     except discord.HTTPException:
                         pass
         else:
-            # Collection disabled or player thread — run pipeline immediately
+            # Collection disabled — run pipeline immediately
             await _handle_game_table(message, user_input)
     else:
+        # Guard: don't process thread messages through the pipeline
+        # (unregistered whisper threads after bot restart, etc.)
+        if isinstance(message.channel, discord.Thread):
+            logger.debug(
+                f"Ignoring thread message from {message.author.name} in "
+                f"unregistered thread {message.channel.id} (parent={message.channel.parent_id})"
+            )
+            return
         await _handle_game_table(message, user_input)
 
 
