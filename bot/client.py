@@ -311,7 +311,10 @@ async def _handle_game_table(message, user_input: str):
     All agent calls happen inside LangGraph nodes. This function only handles
     Discord I/O (delivery, Foundry dispatch) after the pipeline finishes.
     """
-    logger.info(f"[Game Table] {message.author}: {user_input}")
+    logger.info(
+        f"[Game Table] {message.author}: {user_input} "
+        f"(channel={message.channel.id}, is_thread={isinstance(message.channel, discord.Thread)})"
+    )
 
     # Content filter — blocklist check before pipeline entry
     user_input, was_filtered = filter_content(user_input)
@@ -946,10 +949,18 @@ async def on_message(message):
     # DM channel separation: DM messages in Game Table are forced in-character
     is_dm_user = DM_DISCORD_USER_ID and str(message.author.id) == str(DM_DISCORD_USER_ID)
 
+    # --- Routing diagnostics ---
+    logger.info(
+        f"[ROUTING] channel_id={channel_id} thread={isinstance(message.channel, discord.Thread)} "
+        f"is_player_thread={is_player_thread} author={message.author.name} "
+        f"msg_id={message.id}"
+    )
+
     if WAR_ROOM_CHANNEL_ID and channel_id == WAR_ROOM_CHANNEL_ID:
         await _handle_war_room(message, user_input)
     elif is_player_thread:
         # Player private thread — brainstorm mode with advisor
+        logger.info(f"[ROUTING] → player_thread path for {message.author.name}")
         ambient_cog = bot.get_cog("Ambient")
         if ambient_cog:
             ambient_cog.record_activity()

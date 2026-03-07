@@ -391,6 +391,133 @@ class AdminCog(commands.Cog, name="Admin Console"):
         from bot.client import _send_chunked
         await _send_chunked(message.channel, reply)
 
+    # ------------------------------------------------------------------
+    # Session Opener — AI-generated scene-setting narrative
+    # ------------------------------------------------------------------
+    @app_commands.command(
+        name="open",
+        description="Generate and post a session opening scene to the Game Table",
+    )
+    async def open_cmd(self, interaction: discord.Interaction):
+        """Generate a rich opening scene based on party, location, and lore, then post it."""
+        game_table = self.get_game_table_channel()
+        if not game_table:
+            await interaction.response.send_message(
+                "Game Table channel not found.", ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        # Gather party data
+        party = self.vault.get_party_state()
+        party_descriptions = []
+        for member in party:
+            fm = member["frontmatter"]
+            name = fm.get("name", "Unknown")
+            race = fm.get("race", "Unknown")
+            char_class = fm.get("class") or fm.get("char_class", "Unknown")
+            personality = ""
+            for key in ["personality", "trait"]:
+                val = fm.get(key)
+                if val:
+                    personality = str(val)[:200]
+                    break
+            # Pull personality from body text if not in frontmatter
+            if not personality:
+                body = member.get("body", "")
+                for line in body.split("\n"):
+                    if "Trait:" in line:
+                        personality = line.strip().strip("_*")
+                        break
+
+            equipment_highlights = []
+            for key in ["equipment", "inventory"]:
+                val = fm.get(key)
+                if val and isinstance(val, list):
+                    equipment_highlights = val[:5]
+                    break
+
+            desc = f"- **{name}** — {race} {char_class}"
+            if personality:
+                desc += f". {personality}"
+            if equipment_highlights:
+                desc += f" Notable gear: {', '.join(str(e) for e in equipment_highlights)}."
+            party_descriptions.append(desc)
+
+        party_block = "\n".join(party_descriptions) if party_descriptions else "No party members found."
+
+        # Current location and lore
+        location = self.storyteller._current_location or "Unknown Location"
+        lore_context = ""
+        if hasattr(self.context_assembler, "lorebook") and self.context_assembler.lorebook:
+            lore_entries = self.context_assembler.lorebook.search(location)
+            if lore_entries:
+                lore_context = "\n".join(e.content[:500] for e in lore_entries[:2])
+
+        session_num = self.context_assembler.current_session
+
+        prompt = (
+            "You are a Dungeon Master opening a D&D 5e session. Write a vivid, atmospheric "
+            "opening scene that accomplishes ALL of the following:\n\n"
+            "1. **Set the scene** — Describe the location with sensory details (sights, sounds, "
+            "smells). Make it feel alive.\n"
+            "2. **Introduce each character** — Give each PC a brief, flavorful entrance that "
+            "reflects their personality and class. Show, don't tell.\n"
+            "3. **Establish the situation** — What's happening right now? Why are these people here?\n"
+            "4. **Drop a hook** — End with something that invites action. A detail that begs "
+            "investigation, a person who catches the eye, a sound from the well.\n"
+            "5. **End with 'What do you do?'** — Always.\n\n"
+            "RULES:\n"
+            "- Write in present tense, second person for atmosphere, third person for character intros\n"
+            "- Keep it under 1800 characters so it fits in one Discord message\n"
+            "- NO mechanical information (HP, AC, stats). Pure narrative.\n"
+            "- Make each character's intro distinct — reflect their personality and gear\n"
+            "- Do NOT invent backstory details that aren't in the character data\n\n"
+            f"**Session:** {session_num}\n"
+            f"**Location:** {location}\n\n"
+            f"**Party:**\n{party_block}\n"
+        )
+        if lore_context:
+            prompt += f"\n**Location Lore:**\n{lore_context}\n"
+
+        prompt += "\nWrite the opening scene:"
+
+        try:
+            from tools.rate_limiter import gemini_limiter
+            await gemini_limiter.acquire()
+            response = await self.bot.gemini_client.aio.models.generate_content(
+                model=self.bot.model_id,
+                contents=[{"role": "user", "parts": [{"text": prompt}]}],
+                config={"temperature": 0.9},
+            )
+            opening = response.text if response.text else None
+        except Exception as e:
+            logger.error(f"Session opener generation failed: {e}", exc_info=True)
+            opening = None
+
+        if not opening:
+            await interaction.followup.send(
+                "AI generation failed. Use **Post to Table** to write your own opening.",
+                ephemeral=True,
+            )
+            return
+
+        # Post to Game Table
+        from bot.client import _send_chunked
+        await _send_chunked(game_table, opening)
+
+        # Add to context memory so the AI remembers the opening
+        self.context_assembler.history.add(
+            text=f"[Session {session_num} opened] {location} — party introduced.",
+            impact=8,
+        )
+
+        await interaction.followup.send(
+            f"Opening scene posted to {game_table.mention}!", ephemeral=True
+        )
+        logger.info(f"Session {session_num} opened with /open command")
+
     async def send_dm_roll_prompt(self, action, roll_type: str, formula: str, dc: int | None):
         """Send an inline roll button to the console thread for the DM's character.
 
