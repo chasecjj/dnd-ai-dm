@@ -209,6 +209,7 @@ You MUST respond with ONLY a valid JSON object (no markdown, no explanation):
                 config=genai.types.GenerateContentConfig(
                     system_instruction=WORLD_ARCHITECT_IDENTITY,
                     temperature=0.85,
+                    response_mime_type="application/json",
                 )
             )
 
@@ -304,6 +305,7 @@ You MUST respond with ONLY a valid JSON object (no markdown, no explanation):
                 config=genai.types.GenerateContentConfig(
                     system_instruction=WORLD_ARCHITECT_IDENTITY,
                     temperature=0.85,
+                    response_mime_type="application/json",
                 )
             )
 

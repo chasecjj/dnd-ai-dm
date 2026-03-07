@@ -127,6 +127,7 @@ class MessageRouterAgent:
                     config=genai.types.GenerateContentConfig(
                         system_instruction=CLASSIFIER_IDENTITY,
                         temperature=0.0,  # Deterministic classification
+                        response_mime_type="application/json",
                     )
                 )
                 text = response.text.strip()

@@ -124,6 +124,7 @@ What roll does this action need? Output JSON only."""
                 config=genai.types.GenerateContentConfig(
                     system_instruction=PRE_ANALYZE_IDENTITY,
                     temperature=0.1,
+                    response_mime_type="application/json",
                 )
             )
             text = response.text.strip()
@@ -215,6 +216,7 @@ Provide your ruling as a JSON object. Be precise about resource costs and state 
                 config=genai.types.GenerateContentConfig(
                     system_instruction=RULES_LAWYER_IDENTITY,
                     temperature=0.1,  # Low temperature for precise mechanical rulings
+                    response_mime_type="application/json",
                 )
             )
             text = response.text.strip()

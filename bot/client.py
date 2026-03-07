@@ -130,7 +130,7 @@ action_queue = ActionQueue()
 # ---------------------------------------------------------------------------
 # Turn Collector — Auto Mode batching window
 # ---------------------------------------------------------------------------
-turn_collector = TurnCollector(window_seconds=45)
+turn_collector = TurnCollector(window_seconds=45, expected_players=len(PLAYER_MAP))
 
 # Auto-roll toggle — when True, Auto Mode pre-analyzes actions and rolls dice automatically
 auto_roll_enabled: bool = True
@@ -324,33 +324,58 @@ async def _handle_game_table(message, user_input: str):
         user_input = f"[{character_name}]: {user_input}"
         logger.info(f"Player identified: {message.author.name} -> {character_name}")
 
-    try:
-        # Auto-roll dice if enabled (pre-analyze + roll before pipeline)
-        dice_results = None
-        if auto_roll_enabled and character_name:
+    # Auto-roll dice if enabled (pre-analyze + roll before pipeline)
+    dice_results = None
+    if auto_roll_enabled and character_name:
+        try:
             dice_results, roll_summary = await _auto_roll_for_actions(
                 [(character_name, user_input)]
             )
             if roll_summary:
                 await message.channel.send(f"\U0001f3b2 {' | '.join(roll_summary)}")
+        except Exception as e:
+            logger.warning(f"Auto-roll failed, continuing without dice: {e}")
 
-        # Build the initial state and invoke the pipeline
-        initial_state = {
-            "player_input": user_input,
-            "character_name": character_name,
-            "session": current_session,
-            "current_location": storyteller._current_location,
-            "dice_results": dice_results,
-        }
+    # Build the initial state and invoke the pipeline
+    initial_state = {
+        "player_input": user_input,
+        "character_name": character_name,
+        "session": current_session,
+        "current_location": storyteller._current_location,
+        "dice_results": dice_results,
+    }
 
-        async with _pipeline_semaphore:
-            async with message.channel.typing():
-                result = await game_pipeline.ainvoke(initial_state)
+    # Pipeline invocation with single retry on failure
+    result = None
+    for _attempt in range(2):
+        try:
+            async with _pipeline_semaphore:
+                async with message.channel.typing():
+                    result = await game_pipeline.ainvoke(initial_state)
+            break  # Success
+        except Exception as pipeline_err:
+            if _attempt == 0:
+                logger.warning(f"Pipeline attempt 1 failed, retrying: {pipeline_err}")
+                await asyncio.sleep(1)
+            else:
+                logger.error(f"Pipeline failed after retry: {pipeline_err}", exc_info=True)
+                await send_to_moderator_log(
+                    f"[Game Table] Pipeline failed after retry for {message.author}:\n"
+                    f"Input: {user_input[:200]}\n{traceback.format_exc()}"
+                )
+                await message.channel.send(
+                    "*The DM pauses to collect their thoughts... "
+                    "(Something went wrong behind the screen. Try again in a moment!)*"
+                )
+                return
 
-        logger.info(f"Pipeline complete. Keys returned: {list(result.keys())}")
+    if result is None:
+        return
 
-        # --- Discord I/O after pipeline ---
+    logger.info(f"Pipeline complete. Keys returned: {list(result.keys())}")
 
+    # --- Discord I/O after pipeline ---
+    try:
         # Direct response (out-of-game question answered by router)
         if result.get("direct_reply"):
             reply = result["direct_reply"]
@@ -400,12 +425,11 @@ async def _handle_game_table(message, user_input: str):
             logger.error(f"Pipeline returned error: {result['error']}")
 
     except Exception as e:
-        logger.error(f"Error processing message: {e}", exc_info=True)
+        logger.error(f"Error delivering response: {e}", exc_info=True)
         await send_to_moderator_log(
-            f"[on_message] Error processing message from {message.author}:\n"
-            f"Content: {user_input}\n{traceback.format_exc()}"
+            f"[on_message] Delivery error for {message.author}:\n"
+            f"Content: {user_input[:200]}\n{traceback.format_exc()}"
         )
-        await message.channel.send("⚠️ Something went wrong processing that. The DM has been notified.")
 
 
 # ---------------------------------------------------------------------------
@@ -956,16 +980,21 @@ async def on_message(message):
                 # Window just opened — post a status message
                 turn_collector.status_message = await message.channel.send(
                     f"\u23f3 *Collecting actions for {turn_collector.window_seconds}s... "
-                    f"(1 action so far)*"
+                    f"(1 player so far)*"
                 )
             else:
-                # Update existing status message with count
+                # Update existing status message with unique player count
                 if turn_collector.status_message:
                     try:
+                        players = turn_collector.unique_player_count
+                        total = turn_collector.pending_count
+                        count_str = f"{players} player{'s' if players != 1 else ''}"
+                        if total > players:
+                            count_str += f", {total} actions"
                         await turn_collector.status_message.edit(
                             content=(
                                 f"\u23f3 *Collecting actions for {turn_collector.window_seconds}s... "
-                                f"({turn_collector.pending_count} actions so far)*"
+                                f"({count_str} so far)*"
                             )
                         )
                     except discord.HTTPException:

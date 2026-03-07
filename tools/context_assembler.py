@@ -16,8 +16,11 @@ If StateManager is not connected, falls back silently to vault-only mode.
 import json
 import os
 import logging
+import tempfile
+import time
 from typing import Dict, Any, List, Optional, TYPE_CHECKING
 from tools.vault_manager import VaultManager
+from tools.lorebook import Lorebook
 
 if TYPE_CHECKING:
     from tools.reference_manager import ReferenceManager
@@ -29,10 +32,11 @@ logger = logging.getLogger('ContextAssembler')
 class MemoryEntry:
     """A single event/fact in the conversation history with a weighted impact score."""
     
-    def __init__(self, text: str, impact: int = 5, turns_ago: int = 0):
+    def __init__(self, text: str, impact: int = 5, turns_ago: int = 0, timestamp: float = 0.0):
         self.text = text
         self.base_impact = impact  # 1-10 scale
         self.turns_ago = turns_ago
+        self.timestamp = timestamp or time.time()
     
     @property
     def score(self) -> float:
@@ -115,18 +119,39 @@ class ConversationHistory:
         self.entries.clear()
 
     def save_to_file(self, filepath: str):
-        """Serialize conversation history to a JSON file for persistence across restarts."""
+        """Serialize conversation history to a JSON file for persistence across restarts.
+
+        Uses atomic writes (write to temp, then os.replace) to prevent
+        corruption if the bot crashes mid-write.
+        """
         data = [
-            {"text": e.text, "base_impact": e.base_impact, "turns_ago": e.turns_ago}
+            {
+                "text": e.text,
+                "base_impact": e.base_impact,
+                "turns_ago": e.turns_ago,
+                "timestamp": e.timestamp,
+            }
             for e in self.entries
         ]
+        tmp_path = None
         try:
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            dir_name = os.path.dirname(filepath)
+            os.makedirs(dir_name, exist_ok=True)
+            with tempfile.NamedTemporaryFile(
+                'w', dir=dir_name, suffix='.tmp',
+                delete=False, encoding='utf-8',
+            ) as tmp:
+                json.dump(data, tmp, indent=2, ensure_ascii=False)
+                tmp_path = tmp.name
+            os.replace(tmp_path, filepath)
             logger.info(f"Saved {len(data)} history entries to {filepath}")
         except Exception as e:
             logger.error(f"Failed to save history: {e}")
+            if tmp_path and os.path.exists(tmp_path):
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
 
     def load_from_file(self, filepath: str):
         """Restore conversation history from a JSON checkpoint file."""
@@ -137,7 +162,10 @@ class ConversationHistory:
             with open(filepath, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             self.entries = [
-                MemoryEntry(text=e['text'], impact=e['base_impact'], turns_ago=e['turns_ago'])
+                MemoryEntry(
+                    text=e['text'], impact=e['base_impact'],
+                    turns_ago=e['turns_ago'], timestamp=e.get('timestamp', 0.0),
+                )
                 for e in data
             ]
             # Prune entries that have decayed below threshold
@@ -169,6 +197,7 @@ class ContextAssembler:
         self.reference_manager = reference_manager
         self.state_manager = state_manager  # Optional async MongoDB backend
         self.history = ConversationHistory()
+        self.lorebook = Lorebook(os.path.join(vault.vault_path, "07 - Lore"))
         self.current_session = 0
         self._last_query: Optional[str] = None  # Tracks latest player action for reference search
         self._load_session_number()
@@ -216,7 +245,21 @@ class ContextAssembler:
             refs = self._build_reference_section(ref_query, mode='lore')
             if refs:
                 sections.append(refs)
-        
+
+        # 8. Lorebook triggers (keyword-matched campaign lore)
+        lore_query = query or self._last_query
+        if lore_query:
+            lore_entries = self.lorebook.search(lore_query)
+            if lore_entries:
+                before = [e for e in lore_entries if e.position == "before"]
+                after = [e for e in lore_entries if e.position != "before"]
+                # Inject "before" entries at the front
+                for entry in reversed(before):
+                    sections.insert(0, f"## Lorebook: {entry.name}\n{entry.content[:800]}")
+                # Inject "after" entries at the end
+                for entry in after:
+                    sections.append(f"## Lorebook: {entry.name}\n{entry.content[:800]}")
+
         return "\n\n---\n\n".join(sections)
     
     def build_rules_lawyer_context(self, query: Optional[str] = None) -> str:

@@ -144,6 +144,7 @@ Respond with ONLY the JSON extraction. No other text."""
                 config=genai.types.GenerateContentConfig(
                     system_instruction=self.system_prompt,
                     temperature=0.1,  # Low temperature for factual extraction
+                    response_mime_type="application/json",
                 )
             )
             

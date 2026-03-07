@@ -94,6 +94,7 @@ class PrepRouterAgent:
                 config=genai.types.GenerateContentConfig(
                     system_instruction=PREP_CLASSIFIER_IDENTITY,
                     temperature=0.1,
+                    response_mime_type="application/json",
                 )
             )
 

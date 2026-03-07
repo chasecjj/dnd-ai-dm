@@ -34,8 +34,12 @@ class PendingMessage:
 class TurnCollector:
     """Time-based collection window for Auto Mode batching.
 
+    Tracks unique players so the status message shows how many distinct
+    characters have acted, not raw message count. Optionally auto-resolves
+    early when all expected players have submitted actions.
+
     Usage:
-        collector = TurnCollector(window_seconds=45, on_resolve=my_callback)
+        collector = TurnCollector(window_seconds=45, expected_players=3)
 
         # In on_message handler:
         is_first = await collector.collect(message, char_name, text)
@@ -46,9 +50,12 @@ class TurnCollector:
         self,
         window_seconds: int = 45,
         on_resolve: Optional[Callable[[List[PendingMessage]], Awaitable[None]]] = None,
+        expected_players: int = 0,
     ):
         self.window_seconds: int = window_seconds
+        self.expected_players: int = expected_players
         self._pending: List[PendingMessage] = []
+        self._unique_players: set[str] = set()
         self._window_task: Optional[asyncio.Task] = None
         self._lock: asyncio.Lock = asyncio.Lock()
         self._on_resolve: Optional[Callable[[List[PendingMessage]], Awaitable[None]]] = on_resolve
@@ -63,6 +70,11 @@ class TurnCollector:
     @property
     def pending_count(self) -> int:
         return len(self._pending)
+
+    @property
+    def unique_player_count(self) -> int:
+        """Number of distinct characters that have acted in this window."""
+        return len(self._unique_players)
 
     @property
     def enabled(self) -> bool:
@@ -93,6 +105,8 @@ class TurnCollector:
                 character_name=character_name,
                 user_input=user_input,
             ))
+            if character_name:
+                self._unique_players.add(character_name)
 
             if self._window_task is None or self._window_task.done():
                 # First message — start the window
@@ -102,8 +116,19 @@ class TurnCollector:
             else:
                 logger.info(
                     f"Message collected: {character_name or 'Unknown'} "
-                    f"(total: {len(self._pending)})"
+                    f"(unique players: {len(self._unique_players)}, "
+                    f"total msgs: {len(self._pending)})"
                 )
+                # All expected players have acted — resolve immediately
+                if (
+                    self.expected_players > 0
+                    and len(self._unique_players) >= self.expected_players
+                ):
+                    logger.info("All expected players have acted — resolving early")
+                    if self._window_task and not self._window_task.done():
+                        self._window_task.cancel()
+                    # Release lock before resolving
+                    asyncio.create_task(self._resolve())
                 return False  # Caller should update status message
 
     async def _window_timer(self):
@@ -119,6 +144,7 @@ class TurnCollector:
         async with self._lock:
             messages = list(self._pending)
             self._pending.clear()
+            self._unique_players.clear()
             self._window_task = None
 
         if not messages:
@@ -138,6 +164,7 @@ class TurnCollector:
             if self._window_task and not self._window_task.done():
                 self._window_task.cancel()
             self._pending.clear()
+            self._unique_players.clear()
             self._window_task = None
         logger.info("Collection window cancelled.")
 
