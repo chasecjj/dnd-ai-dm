@@ -9,7 +9,7 @@ hp_current: 8
 hp_max: 8
 ac: 12
 conditions: []
-spell_slots_used: 0
+spell_slots_used: 1
 spell_slots_max: 2
 lay_on_hands_pool: 0
 tags:

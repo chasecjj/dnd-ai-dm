@@ -1,87 +1,338 @@
 [
   {
-    "text": "Victor's inappropriate action alerts a creature in the passage.",
+    "text": "The tentacle attacks, narrowly missing Hadrian.",
     "base_impact": 5,
-    "turns_ago": 22
+    "turns_ago": 73,
+    "timestamp": 1772859325.1577349
   },
   {
-    "text": "Sigfried Pye's desperate offer to lick elbows alerts a creature in the passage.",
-    "base_impact": 5,
-    "turns_ago": 21
-  },
-  {
-    "text": "Victor's inappropriate action alerts a creature in the passage.",
-    "base_impact": 5,
-    "turns_ago": 20
-  },
-  {
-    "text": "Victor attempts to tie up Kallisar, leading to a confrontation and alerting a creature in the passage.",
+    "text": "The party attacks a Gibbering Mouther in the Yawning Portal, dealing damage and hindering its attacks.",
     "base_impact": 6,
-    "turns_ago": 19
+    "turns_ago": 71,
+    "timestamp": 1772859659.3524013
   },
   {
-    "text": "An unseen creature in the mildew-stenched passage is alerted by the party's actions.",
+    "text": "Kallisar attempts to transform his weapon into a shield but fails, then casts Hellish Rebuke, damaging a tentacle.",
+    "base_impact": 5,
+    "turns_ago": 69,
+    "timestamp": 1772860170.263918
+  },
+  {
+    "text": "Victor throws five javelins at the Gibbering Mouther, hitting three times for a total of 16 damage.",
+    "base_impact": 5,
+    "turns_ago": 68,
+    "timestamp": 1772860170.2725077
+  },
+  {
+    "text": "Hadrian analyzes the Gibbering Mouther and identifies its weaknesses, relaying the information to the party.",
     "base_impact": 6,
-    "turns_ago": 18
+    "turns_ago": 67,
+    "timestamp": 1772860170.2778726
   },
   {
-    "text": "Victor removes his armor and flexes to intimidate the unseen creature, resulting in a strange gurgling sound.",
-    "base_impact": 4,
-    "turns_ago": 17
-  },
-  {
-    "text": "Hadrian slaps Victor's hand and makes a comment, alerting a creature in the passage.",
-    "base_impact": 4,
-    "turns_ago": 16
-  },
-  {
-    "text": "Victor Saltzpyre utters a racial slur towards Kallisar Voidcaller, causing a disturbance in the tavern and alerting something in the mildew-stenched passage.",
+    "text": "Sigfried casts Sleep, causing the Gibbering Mouther to fall asleep.",
     "base_impact": 8,
-    "turns_ago": 15
+    "turns_ago": 66,
+    "timestamp": 1772860170.2830117
   },
   {
-    "text": "Sigfried Pye's comment about Victor causes a reaction from the well, including a growl, a thunk, and a foul stench.",
-    "base_impact": 6,
-    "turns_ago": 13
-  },
-  {
-    "text": "Victor throws two javelins at an approaching woman, narrowly missing her. Sigfried charges the woman with a bucket on his head.",
-    "base_impact": 5,
-    "turns_ago": 12
-  },
-  {
-    "text": "The Storyteller describes the various patrons in the Yawning Portal.",
-    "base_impact": 2,
-    "turns_ago": 10
-  },
-  {
-    "text": "Hadrian speaks, prompting a response from the well in the form of a growl, a thunk, and a foul stench, causing the ropes around the well to shake.",
-    "base_impact": 6,
-    "turns_ago": 8
-  },
-  {
-    "text": "A troll emerges from the well in the Yawning Portal, initiating combat.",
+    "text": "Hadrian kills the Gibbering Mouther with his shortsword.",
     "base_impact": 10,
-    "turns_ago": 6
+    "turns_ago": 65,
+    "timestamp": 1772860871.2387137
   },
   {
-    "text": "Hadrian, Sigfried, and Balthur grab Kallisar's groin, causing a stir in the Yawning Portal.",
+    "text": "Sigfried casts Mage Hand to grope Durnan and Light on Hadrian's weapon.",
     "base_impact": 4,
-    "turns_ago": 4
+    "turns_ago": 64,
+    "timestamp": 1772860871.2453814
   },
   {
-    "text": "Kallisar ends their illusion spell, causing discomfort to fade in the tavern, but drawing the ire of Yagra Strongfist.",
+    "text": "Victor threatens Durnan about the monster.",
     "base_impact": 4,
-    "turns_ago": 2
+    "turns_ago": 63,
+    "timestamp": 1772860871.2504327
   },
   {
-    "text": "Victor attempts an inappropriate action, leading to a confrontation with Yagra Strongfist.",
+    "text": "Kallisar casts Expeditious Retreat.",
+    "base_impact": 2,
+    "turns_ago": 62,
+    "timestamp": 1772860871.2550316
+  },
+  {
+    "text": "Kallisar examines the Gibbering Mouther's corpse, identifying residual magical energy.",
+    "base_impact": 4,
+    "turns_ago": 60,
+    "timestamp": 1772861634.5888467
+  },
+  {
+    "text": "Hadrian insults Victor and questions Durnan about the frequency of monster attacks.",
+    "base_impact": 2,
+    "turns_ago": 59,
+    "timestamp": 1772861667.5043323
+  },
+  {
+    "text": "Sigfried attempts to charm Durnan, but Durnan resists the charm.",
+    "base_impact": 4,
+    "turns_ago": 58,
+    "timestamp": 1772861667.5116513
+  },
+  {
+    "text": "Victor does pushups.",
+    "base_impact": 2,
+    "turns_ago": 57,
+    "timestamp": 1772861667.5172126
+  },
+  {
+    "text": "Kallisar attempts to find usable components on the Gibbering Mouther corpse but finds nothing.",
+    "base_impact": 4,
+    "turns_ago": 55,
+    "timestamp": 1772861830.262915
+  },
+  {
+    "text": "Hadrian asks Durnan if they met his standards; Durnan is unimpressed.",
+    "base_impact": 4,
+    "turns_ago": 54,
+    "timestamp": 1772861830.2701788
+  },
+  {
+    "text": "Sigfried asks Durnan about quests and prizes; Durnan says they are earned, not given.",
+    "base_impact": 4,
+    "turns_ago": 53,
+    "timestamp": 1772861830.2752051
+  },
+  {
+    "text": "Victor attempts to impress Durnan with his physique, but Durnan is unimpressed and tells him to put his armor back on.",
+    "base_impact": 4,
+    "turns_ago": 51,
+    "timestamp": 1772861941.472581
+  },
+  {
+    "text": "Kallisar asks Durnan to cook the Gibbering Mouther, Durnan refuses.",
+    "base_impact": 2,
+    "turns_ago": 49,
+    "timestamp": 1772862089.030597
+  },
+  {
+    "text": "Sigfried asks Durnan for a quest; Durnan says quests are earned.",
+    "base_impact": 4,
+    "turns_ago": 48,
+    "timestamp": 1772862089.0374963
+  },
+  {
+    "text": "Hadrian buys Durnan a round of drinks.",
+    "base_impact": 2,
+    "turns_ago": 47,
+    "timestamp": 1772862089.042021
+  },
+  {
+    "text": "Victor does pushups.",
+    "base_impact": 2,
+    "turns_ago": 46,
+    "timestamp": 1772862089.046223
+  },
+  {
+    "text": "The party attempts to recruit adventurers and impress a dwarf named Bruenor at the Yawning Portal.",
+    "base_impact": 4,
+    "turns_ago": 44,
+    "timestamp": 1772862521.035909
+  },
+  {
+    "text": "Sigfried heals Victor for 10 hit points using Cure Wounds.",
+    "base_impact": 5,
+    "turns_ago": 42,
+    "timestamp": 1772862822.2767851
+  },
+  {
+    "text": "Kallisar attempts to persuade others to join the party.",
+    "base_impact": 4,
+    "turns_ago": 41,
+    "timestamp": 1772862822.2840147
+  },
+  {
+    "text": "Victor scans the tavern, looking for someone.",
+    "base_impact": 2,
+    "turns_ago": 40,
+    "timestamp": 1772862822.2892401
+  },
+  {
+    "text": "Durnan asks if the party is going down the well.",
+    "base_impact": 4,
+    "turns_ago": 39,
+    "timestamp": 1772862822.2942505
+  },
+  {
+    "text": "Kallisar waits for her enchantment to take hold.",
+    "base_impact": 2,
+    "turns_ago": 37,
+    "timestamp": 1772863060.0581398
+  },
+  {
+    "text": "Victor attempts to recruit a squire but is reminded to roll for persuasion.",
+    "base_impact": 4,
+    "turns_ago": 36,
+    "timestamp": 1772863060.0651164
+  },
+  {
+    "text": "Sigfried leaves the tavern to urinate on the building.",
+    "base_impact": 2,
+    "turns_ago": 35,
+    "timestamp": 1772863060.069615
+  },
+  {
+    "text": "Hadrian asks Bruenor about his experience.",
+    "base_impact": 4,
+    "turns_ago": 34,
+    "timestamp": 1772863060.073445
+  },
+  {
+    "text": "Sigfried challenges Bruenor to an Indian leg wrestle.",
+    "base_impact": 4,
+    "turns_ago": 32,
+    "timestamp": 1772863366.3187068
+  },
+  {
+    "text": "Hadrian attempts to recruit Bruenor.",
+    "base_impact": 4,
+    "turns_ago": 31,
+    "timestamp": 1772863366.3273764
+  },
+  {
+    "text": "Victor attempts to recruit a stablehand.",
+    "base_impact": 4,
+    "turns_ago": 30,
+    "timestamp": 1772863366.33318
+  },
+  {
+    "text": "Kallisar attempts to sway the Yawning Portal's patrons with honeyed words.",
+    "base_impact": 2,
+    "turns_ago": 28,
+    "timestamp": 1772863409.733682
+  },
+  {
+    "text": "Sigfried attempts to charm a youth, but the youth resists the enchantment.",
+    "base_impact": 4,
+    "turns_ago": 27,
+    "timestamp": 1772864102.861015
+  },
+  {
+    "text": "Hadrian attempts to negotiate with Bruenor for proof of the quest's worth.",
+    "base_impact": 4,
+    "turns_ago": 26,
+    "timestamp": 1772864102.868646
+  },
+  {
+    "text": "Victor and Kallisar attempt to recruit a youth with warnings and cursed trinkets.",
+    "base_impact": 4,
+    "turns_ago": 25,
+    "timestamp": 1772864102.8744063
+  },
+  {
+    "text": "Sigfried attempts to persuade a youth named Willum, Victor interrupts with an energy drink, and Hadrian attempts to gain information about Willum's map.",
+    "base_impact": 4,
+    "turns_ago": 23,
+    "timestamp": 1772864764.0659513
+  },
+  {
+    "text": "Sigfried drops a torch down the well to gauge its depth.",
+    "base_impact": 4,
+    "turns_ago": 21,
+    "timestamp": 1772865275.745438
+  },
+  {
+    "text": "Kallisar attempts to gather information from the bartender about secret entrances to the dungeon.",
     "base_impact": 6,
-    "turns_ago": 1
+    "turns_ago": 20,
+    "timestamp": 1772865275.7523901
   },
   {
-    "text": "Kallisar's backstory is added to his character sheet, and he is confronted by Yagra Strongfist for making her spill her drink.",
+    "text": "Hadrian compares Willum's map with Bruenor and tells a humorous story.",
     "base_impact": 4,
-    "turns_ago": 0
+    "turns_ago": 19,
+    "timestamp": 1772865275.757719
+  },
+  {
+    "text": "Victor attempts to intimidate Willum into joining the quest.",
+    "base_impact": 4,
+    "turns_ago": 18,
+    "timestamp": 1772865275.7632344
+  },
+  {
+    "text": "Kallisar attempts to bribe the bartender for information about the tunnels.",
+    "base_impact": 4,
+    "turns_ago": 16,
+    "timestamp": 1772865761.6322994
+  },
+  {
+    "text": "Hadrian listens to Willum and Bruenor's conversation.",
+    "base_impact": 2,
+    "turns_ago": 15,
+    "timestamp": 1772865761.6395423
+  },
+  {
+    "text": "Sigfried drinks an ale.",
+    "base_impact": 2,
+    "turns_ago": 14,
+    "timestamp": 1772865761.6449704
+  },
+  {
+    "text": "Victor questions Willum about his opinion of adventurers.",
+    "base_impact": 4,
+    "turns_ago": 13,
+    "timestamp": 1772865761.6499853
+  },
+  {
+    "text": "Victor clarifies the meaning of a racial slur and questions Willum about its use.",
+    "base_impact": 4,
+    "turns_ago": 11,
+    "timestamp": 1772866122.2913613
+  },
+  {
+    "text": "Sigfried attempts to jump on Willum's back for a piggyback ride but fails.",
+    "base_impact": 2,
+    "turns_ago": 10,
+    "timestamp": 1772866122.2981098
+  },
+  {
+    "text": "Kallisar bribes the barkeep with a magical bathroom key for information about tunnels.",
+    "base_impact": 6,
+    "turns_ago": 9,
+    "timestamp": 1772866122.3029823
+  },
+  {
+    "text": "Hadrian asks Bruenor to accompany the party to the docks, and Bruenor agrees.",
+    "base_impact": 4,
+    "turns_ago": 8,
+    "timestamp": 1772866122.3075602
+  },
+  {
+    "text": "Kallisar successfully uses Persuasion to get a lead on Fingers Finnigan, who may know about the smuggler tunnels.",
+    "base_impact": 6,
+    "turns_ago": 6,
+    "timestamp": 1772866391.871882
+  },
+  {
+    "text": "Victor Saltzpyre directs Willum to shout a racial slur, creating tension within the party and confusion for Willum.",
+    "base_impact": 8,
+    "turns_ago": 5,
+    "timestamp": 1772866469.701506
+  },
+  {
+    "text": "Sigfried attempts to intimidate Willum with a threat of a 'wet willie'.",
+    "base_impact": 2,
+    "turns_ago": 3,
+    "timestamp": 1772866662.3754165
+  },
+  {
+    "text": "Victor Saltzpyre attempts to attack Willum in an alley, creating a tense situation.",
+    "base_impact": 8,
+    "turns_ago": 2,
+    "timestamp": 1772866819.6853116
+  },
+  {
+    "text": "[Monster turn] enemies acted (round 1).",
+    "base_impact": 5,
+    "turns_ago": 1,
+    "timestamp": 1772866822.8573725
   }
 ]

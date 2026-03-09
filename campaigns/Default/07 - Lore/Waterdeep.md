@@ -1,9 +1,6 @@
 ---
 type: lore
 name: Waterdeep
-triggers: [waterdeep, city of splendors, sword coast, castle ward, dock ward, sea ward, trades ward, north ward, south ward, yawning portal]
-category: location
-position: after
 tags: [lore, city]
 ---
 # Waterdeep — The City of Splendors

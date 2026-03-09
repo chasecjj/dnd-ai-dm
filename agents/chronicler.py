@@ -29,7 +29,9 @@ You must respond with ONLY valid JSON matching this exact schema. No markdown, n
     {
       "description": "One-sentence summary of what happened",
       "impact": 5,
-      "type": "combat|npc_interaction|discovery|movement|flavor|decision"
+      "type": "combat|npc_interaction|discovery|movement|flavor|decision",
+      "character": "Character Name or null if general",
+      "location": "Location name where this happened or null"
     }
   ],
   "character_updates": [
@@ -38,7 +40,10 @@ You must respond with ONLY valid JSON matching this exact schema. No markdown, n
       "hp_current": null,
       "conditions": [],
       "spell_slots_used": null,
-      "lay_on_hands_pool": null
+      "lay_on_hands_pool": null,
+      "inventory_changes": [
+        {"item": "Javelin", "change": -1, "new_quantity": 4}
+      ]
     }
   ],
   "npc_updates": [
@@ -82,17 +87,27 @@ IMPACT SCALE:
 DISPOSITION VALUES: "friendly", "neutral", "hostile", "unknown" (always use strings, never numbers).
 
 Only include sections where something actually changed. Use null for unchanged fields.
+
+INVENTORY TRACKING (critical):
+- When a character uses a consumable item (throws a javelin, fires an arrow, uses a potion,
+  spends gold), add an entry to inventory_changes.
+- "item" must match the item name in the character sheet (e.g., "Javelin", "Arrow").
+- "change" is the delta: -1 for one consumed, -2 for two consumed, +1 for gained, etc.
+- "new_quantity" is the resulting count. If a character had Javelin (5) and threw 1, new_quantity = 4.
+- Track ALL consumable usage: thrown weapons, arrows, spell components with cost, potions, gold spent.
 """
 
 
 class ChroniclerAgent:
     """Analyzes game exchanges and writes structured updates to the vault."""
     
-    def __init__(self, client, vault: VaultManager, context_assembler: ContextAssembler, model_id: str = "gemini-2.0-flash"):
+    def __init__(self, client, vault: VaultManager, context_assembler: ContextAssembler,
+                 model_id: str = "gemini-2.0-flash", storyteller=None):
         self.client = client
         self.vault = vault
         self.context_assembler = context_assembler
         self.model_id = model_id
+        self._storyteller = storyteller  # For updating per-character locations
         
         self.system_prompt = f"""You are the Chronicler, a silent record-keeper for a D&D 5e campaign.
 You NEVER speak to players. Your only job is to analyze game exchanges and extract structured data.
@@ -112,7 +127,8 @@ If nothing changed in a category, omit it or use null.
 """
     
     async def process_exchange(self, player_action: str, rules_response: str, story_response: str,
-                               session_number: int, current_location: str = None) -> Dict[str, Any]:
+                               session_number: int, current_location: str = None,
+                               character_name: str = None) -> Dict[str, Any]:
         """Process a game exchange and update the vault.
 
         Args:
@@ -121,6 +137,7 @@ If nothing changed in a category, omit it or use null.
             story_response: The Storyteller's narrative response.
             session_number: Current session number.
             current_location: The current location name (for spatial context).
+            character_name: The acting character (for memory tagging).
 
         Returns:
             Dict with the extracted changes, or empty dict on failure.
@@ -163,7 +180,9 @@ Respond with ONLY the JSON extraction. No other text."""
                         f"{len(changes.new_consequences)} consequences")
 
             # Apply validated changes to the vault
-            await self._apply_changes(changes, session_number)
+            await self._apply_changes(changes, session_number,
+                                      character_name=character_name,
+                                      current_location=current_location)
 
             return changes.model_dump()
 
@@ -179,30 +198,60 @@ Respond with ONLY the JSON extraction. No other text."""
             logger.error(f"Chronicler error: {e}")
             return {}
     
-    async def _apply_changes(self, changes: ChroniclerOutput, session_number: int):
+    async def _apply_changes(self, changes: ChroniclerOutput, session_number: int,
+                             character_name: str = None, current_location: str = None):
         """Apply validated ChroniclerOutput to the vault files.
 
         Args:
             changes: A validated ChroniclerOutput instance (never a raw dict).
             session_number: Current session number.
+            character_name: The acting character (for memory tagging).
+            current_location: Where this action happened (for memory tagging).
         """
 
         # 1. Record events in conversation history
+        # Batch without aging — advance_turn() is called once after all events
         for event in changes.events:
             if event.description:
-                self.context_assembler.record_event(event.description, event.impact)
+                # Prefer per-event character/location from LLM, fall back to passed-in values
+                event_char = event.character or character_name
+                event_loc = event.location or current_location
+                self.context_assembler.record_event(
+                    event.description, event.impact,
+                    character=event_char,
+                    location=event_loc,
+                    age_existing=False,
+                )
                 self.vault.append_to_session_log(
                     session_number,
                     f"| | {event.description} | {event.impact} | |"
                 )
+                # Update character location tracking from movement events
+                if event.type == "movement" and event_loc and event_char and self._storyteller:
+                    self._storyteller.set_character_location(event_char, event_loc)
+        # Age all entries once per chronicler pass (not per event)
+        if changes.events:
+            self.context_assembler.history.advance_turn()
 
         # 2. Update party members (flat fields from CharacterUpdate)
         for update in changes.character_updates:
-            # Build dict of non-None fields (excluding 'name')
-            update_dict = update.model_dump(exclude={"name"}, exclude_none=True)
+            # Build dict of non-None fields (excluding 'name' and 'inventory_changes')
+            update_dict = update.model_dump(exclude={"name", "inventory_changes"}, exclude_none=True)
             if update.name and update_dict:
                 self.vault.update_party_member(update.name, update_dict)
                 logger.info(f"Updated party member {update.name}: {update_dict}")
+
+            # Apply inventory changes to the character sheet body
+            if update.name and update.inventory_changes:
+                for inv in update.inventory_changes:
+                    if inv.new_quantity is not None:
+                        self.vault.update_inventory(update.name, inv.item, inv.new_quantity)
+                    elif inv.change != 0:
+                        # Fallback: if new_quantity not given, just log a warning
+                        logger.warning(
+                            f"Inventory change for {update.name} {inv.item} "
+                            f"(change={inv.change}) missing new_quantity — skipped"
+                        )
 
         # 3. Update NPCs (uses string dispositions enforced by Pydantic)
         for update in changes.npc_updates:
@@ -270,6 +319,21 @@ Respond with ONLY the JSON extraction. No other text."""
                 time_of_day=changes.world_clock.time_of_day or '',
                 session=session_number
             )
+            # Update character location if the clock includes a location change
+            if changes.world_clock.current_location and self._storyteller:
+                if character_name:
+                    self._storyteller.set_character_location(
+                        character_name, changes.world_clock.current_location
+                    )
+                else:
+                    # No specific character — whole party moved
+                    self._storyteller.set_location(changes.world_clock.current_location)
+
+        # 8. Update character locations from location_updates
+        if self._storyteller:
+            for loc_update in changes.location_updates:
+                if loc_update.name and character_name:
+                    self._storyteller.set_character_location(character_name, loc_update.name)
 
         logger.info(f"Chronicler applied all changes for session {session_number}")
 

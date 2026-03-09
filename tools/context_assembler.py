@@ -31,12 +31,15 @@ logger = logging.getLogger('ContextAssembler')
 
 class MemoryEntry:
     """A single event/fact in the conversation history with a weighted impact score."""
-    
-    def __init__(self, text: str, impact: int = 5, turns_ago: int = 0, timestamp: float = 0.0):
+
+    def __init__(self, text: str, impact: int = 5, turns_ago: int = 0, timestamp: float = 0.0,
+                 character: str = None, location: str = None):
         self.text = text
         self.base_impact = impact  # 1-10 scale
         self.turns_ago = turns_ago
         self.timestamp = timestamp or time.time()
+        self.character = character    # Which character this event involves
+        self.location = location      # Where this event happened
     
     @property
     def score(self) -> float:
@@ -57,7 +60,8 @@ class MemoryEntry:
         return self.base_impact * (decay_factor ** self.turns_ago)
     
     def __repr__(self) -> str:
-        return f"MemoryEntry(score={self.score:.1f}, turns_ago={self.turns_ago}, text='{self.text[:50]}...')"
+        tag = f" [{self.character}]" if self.character else ""
+        return f"MemoryEntry(score={self.score:.1f}, turns_ago={self.turns_ago}{tag}, text='{self.text[:50]}...')"
 
 
 class ConversationHistory:
@@ -68,19 +72,25 @@ class ConversationHistory:
     def __init__(self):
         self.entries: List[MemoryEntry] = []
     
-    def add_event(self, text: str, impact: int = 5, age_existing: bool = True):
+    def add_event(self, text: str, impact: int = 5, age_existing: bool = True,
+                  character: str = None, location: str = None):
         """Add a new event to history.
 
         Args:
             text: Event description.
             impact: Base importance score (1-10).
             age_existing: If True (default), all existing entries age by 1 turn.
-                Set to False in queue mode — use advance_turn() per resolve instead.
+                Set to False in queue mode or batched chronicler writes.
+            character: Character name this event involves (for filtering).
+            location: Location where this event happened (for spatial context).
         """
         if age_existing:
             for entry in self.entries:
                 entry.turns_ago += 1
-        self.entries.append(MemoryEntry(text=text, impact=impact, turns_ago=0))
+        self.entries.append(MemoryEntry(
+            text=text, impact=impact, turns_ago=0,
+            character=character, location=location,
+        ))
 
     def advance_turn(self):
         """Age all entries by 1 turn without adding a new event.
@@ -101,18 +111,44 @@ class ConversationHistory:
         return active[:max_entries]
     
     def format_for_prompt(self, max_entries: int = 15) -> str:
-        """Format the relevant history as a string for injection into a prompt."""
+        """Format the relevant history as a string for injection into a prompt.
+
+        Groups events by location when multiple locations are active,
+        and tags events with character names when available.
+        """
         relevant = self.get_relevant_history(max_entries)
         if not relevant:
             return "No prior events in memory."
-        
-        lines = []
-        for entry in relevant:
-            # Show score as a visual indicator of importance
-            importance = "🔴" if entry.score >= 7 else "🟡" if entry.score >= 4 else "⚪"
-            lines.append(f"  {importance} {entry.text}")
-        
-        return "\n".join(lines)
+
+        # Check if we have multiple active locations
+        locations = set(e.location for e in relevant if e.location)
+
+        if len(locations) > 1:
+            # Group by location for spatial clarity
+            lines = []
+            for loc in sorted(locations):
+                loc_entries = [e for e in relevant if e.location == loc]
+                lines.append(f"  **At {loc}:**")
+                for entry in loc_entries:
+                    importance = "\U0001f534" if entry.score >= 7 else "\U0001f7e1" if entry.score >= 4 else "\u26aa"
+                    char_tag = f"[{entry.character}] " if entry.character else ""
+                    lines.append(f"    {importance} {char_tag}{entry.text}")
+            # Add unlocated events
+            unlocated = [e for e in relevant if not e.location]
+            if unlocated:
+                for entry in unlocated:
+                    importance = "\U0001f534" if entry.score >= 7 else "\U0001f7e1" if entry.score >= 4 else "\u26aa"
+                    char_tag = f"[{entry.character}] " if entry.character else ""
+                    lines.append(f"  {importance} {char_tag}{entry.text}")
+            return "\n".join(lines)
+        else:
+            # Single location or no location data — flat list
+            lines = []
+            for entry in relevant:
+                importance = "\U0001f534" if entry.score >= 7 else "\U0001f7e1" if entry.score >= 4 else "\u26aa"
+                char_tag = f"[{entry.character}] " if entry.character else ""
+                lines.append(f"  {importance} {char_tag}{entry.text}")
+            return "\n".join(lines)
     
     def clear(self):
         """Clear all history."""
@@ -130,6 +166,8 @@ class ConversationHistory:
                 "base_impact": e.base_impact,
                 "turns_ago": e.turns_ago,
                 "timestamp": e.timestamp,
+                "character": e.character,
+                "location": e.location,
             }
             for e in self.entries
         ]
@@ -165,6 +203,7 @@ class ConversationHistory:
                 MemoryEntry(
                     text=e['text'], impact=e['base_impact'],
                     turns_ago=e['turns_ago'], timestamp=e.get('timestamp', 0.0),
+                    character=e.get('character'), location=e.get('location'),
                 )
                 for e in data
             ]
@@ -211,18 +250,36 @@ class ContextAssembler:
     # Context Building
     # ------------------------------------------------------------------
     
-    def build_storyteller_context(self, current_location: Optional[str] = None, query: Optional[str] = None) -> str:
+    def build_storyteller_context(self, current_location: Optional[str] = None,
+                                   query: Optional[str] = None,
+                                   character_locations: Optional[Dict[str, str]] = None) -> str:
         """Build the full context string for the Storyteller agent.
-        
-        This is injected as the system instruction, replacing hardcoded prompts.
+
+        Args:
+            current_location: Primary/fallback location name.
+            query: Player action text for reference lookups.
+            character_locations: Dict mapping character names to their current locations.
+                When the party is split, this provides spatial awareness for all groups.
         """
         sections = []
-        
+
         # 1. Party State (always included)
         sections.append(self._build_party_section())
-        
-        # 2. Current Location + NPCs present
-        if current_location:
+
+        # 2. Current Location(s) + NPCs present
+        if character_locations and len(set(character_locations.values())) > 1:
+            # Party is split — build context for ALL active locations
+            seen_locations = set()
+            for char_name, loc in character_locations.items():
+                if loc and loc not in seen_locations:
+                    seen_locations.add(loc)
+                    sections.append(self._build_location_section(loc))
+            # Add character-location mapping so the AI knows who is where
+            mapping_lines = ["## Party Locations (SPLIT PARTY)"]
+            for char_name, loc in character_locations.items():
+                mapping_lines.append(f"- **{char_name}** is at: {loc}")
+            sections.append("\n".join(mapping_lines))
+        elif current_location:
             sections.append(self._build_location_section(current_location))
         
         # 3. Active Quests
@@ -410,11 +467,15 @@ class ContextAssembler:
     # ------------------------------------------------------------------
     
     def _build_party_section(self, detailed: bool = False) -> str:
-        """Build the party state section."""
+        """Build the party state section.
+
+        When detailed=True (Rules Lawyer), includes full character sheet body
+        (stats, abilities, spells, inventory) so agents can see actual modifiers.
+        """
         party = self.vault.get_party_state()
         if not party:
             return "## Party\nNo party data available."
-        
+
         lines = ["## Party"]
         for member in party:
             lines.append(member['summary'])
@@ -428,8 +489,12 @@ class ContextAssembler:
                 loh = fm.get('lay_on_hands_pool', 0)
                 if loh is not None:
                     lines.append(f"Lay on Hands Pool: {loh}")
+                # Include full character sheet body (stats, abilities, spells, inventory)
+                body = member.get('body', '')
+                if body:
+                    lines.append(body.strip())
             lines.append("")
-        
+
         return "\n".join(lines)
     
     def _build_location_section(self, location_name: str) -> str:
@@ -508,15 +573,27 @@ class ContextAssembler:
         """True if StateManager is connected and usable."""
         return self.state_manager is not None and self.state_manager.is_connected
 
-    async def build_storyteller_context_async(self, current_location: Optional[str] = None, query: Optional[str] = None) -> str:
+    async def build_storyteller_context_async(self, current_location: Optional[str] = None,
+                                               query: Optional[str] = None,
+                                               character_locations: Optional[Dict[str, str]] = None) -> str:
         """Async version of build_storyteller_context — prefers StateManager for mechanical data."""
         sections = []
 
         # 1. Party State — prefer DB for HP/conditions accuracy
         sections.append(await self._build_party_section_async())
 
-        # 2. Current Location + NPCs — vault for prose, DB for NPC status
-        if current_location:
+        # 2. Current Location(s) + NPCs — vault for prose, DB for NPC status
+        if character_locations and len(set(character_locations.values())) > 1:
+            seen_locations = set()
+            for char_name, loc in character_locations.items():
+                if loc and loc not in seen_locations:
+                    seen_locations.add(loc)
+                    sections.append(await self._build_location_section_async(loc))
+            mapping_lines = ["## Party Locations (SPLIT PARTY)"]
+            for char_name, loc in character_locations.items():
+                mapping_lines.append(f"- **{char_name}** is at: {loc}")
+            sections.append("\n".join(mapping_lines))
+        elif current_location:
             sections.append(await self._build_location_section_async(current_location))
 
         # 3. Active Quests — prefer DB
@@ -753,18 +830,27 @@ class ContextAssembler:
     # Public API for event tracking
     # ------------------------------------------------------------------
     
-    def record_event(self, text: str, impact: int = 5):
+    def record_event(self, text: str, impact: int = 5, character: str = None,
+                     location: str = None, age_existing: bool = True):
         """Record a new event in the conversation history.
-        
+
         Impact scale (same as Chronicler output):
           10 = Combat result, major revelation
            8 = NPC interaction, significant choice
            6 = Important discovery, moderate consequence
            4 = Movement, exploration
            2 = Flavor, ambient detail
+
+        Args:
+            text: Event description.
+            impact: Base importance score (1-10).
+            character: Character name involved (for per-character context).
+            location: Where this event happened (for spatial grouping).
+            age_existing: If False, don't age other entries (use for batched writes).
         """
-        self.history.add_event(text, impact)
-        logger.info(f"Recorded event (impact={impact}): {text[:80]}")
+        self.history.add_event(text, impact, age_existing=age_existing,
+                               character=character, location=location)
+        logger.info(f"Recorded event (impact={impact}, char={character}): {text[:80]}")
     
     def set_query(self, query: str):
         """Store the latest player action for reference lookups."""

@@ -79,10 +79,12 @@ class PlayerStatusView(discord.ui.View):
             "- \"How can I sneak past the guards?\"\n"
             "- \"What spells would help here?\"\n"
             "- \"Help me come up with a cool move\"\n\n"
-            "**Committing an action:**\n"
-            "`!commit <your action>` — sends it to the Game Table\n\n"
-            "**Your brainstorming is private.** Only committed actions "
-            "are visible to other players.\n\n"
+            "**Crafting an action:**\n"
+            "`!craft <rough idea>` — the AI helps you write a vivid, "
+            "mechanically clear action. Refine it back and forth, then "
+            "copy the final version to the Game Table.\n\n"
+            "**Your brainstorming is private.** Only what you paste in "
+            "the Game Table is visible to other players.\n\n"
             "**Queue Mode:** When the DM enables queue mode, messages "
             "here become secret actions instead of brainstorming."
         )
@@ -263,10 +265,12 @@ class PlayerCog(commands.Cog, name="Player Console"):
                 "**Ask anything** about your character's abilities, spells, "
                 "tactics, or what you could do in the current situation. "
                 "The advisor knows your character sheet and the game state.\n\n"
-                "**When you're ready**, commit your action to the Game Table:\n"
-                "`!commit I flip a coin to Durnan and ask about factions`\n\n"
-                "Your brainstorming stays private. Only committed actions "
-                "appear in the Game Table."
+                "**Craft an action:**\n"
+                "`!craft I want to sneak past the guards`\n"
+                "The AI writes a vivid, game-ready version. Refine it back "
+                "and forth, then copy the final text to the Game Table.\n\n"
+                "Your brainstorming is **private** — only what you post in "
+                "the Game Table is visible to other players."
             ),
             color=discord.Color.dark_purple(),
         )
@@ -283,6 +287,43 @@ class PlayerCog(commands.Cog, name="Player Console"):
             f"(user={user_id}, thread={thread.id})"
         )
 
+
+    @commands.command(name="craft")
+    async def craft_cmd(self, ctx, *, description: str):
+        """Craft a polished action message with AI help.
+
+        Usage (in whisper thread): !craft I want to sneak behind the guard
+        The AI drafts a vivid, mechanically clear version. Reply normally to refine.
+        """
+        if not self.queue.is_player_thread(ctx.channel.id):
+            await ctx.send("Use this in your private console (`/whisper` thread).")
+            return
+
+        from tools.player_identity import resolve_from_message_author
+        character_name = resolve_from_message_author(ctx.author) or ctx.author.display_name
+
+        from bot.client import player_advisor, gemini_limiter, _send_chunked
+
+        if not character_name or not player_advisor.client:
+            await ctx.send(
+                "Can't find your character sheet. Make sure you're in "
+                "`PLAYER_MAP` and try again."
+            )
+            return
+
+        # Wrap with [CRAFT MODE] tag so the advisor activates crafting behavior
+        crafting_prompt = f"[CRAFT MODE] Here's my rough idea: {description}"
+
+        try:
+            await gemini_limiter.acquire()
+            async with ctx.typing():
+                advice = await player_advisor.advise(
+                    ctx.channel.id, character_name, crafting_prompt
+                )
+            await _send_chunked(ctx.channel, advice)
+        except Exception as e:
+            logger.error(f"Craft command failed: {e}", exc_info=True)
+            await ctx.send("Something went wrong. Try rephrasing your idea.")
 
     @commands.command(name="commit")
     async def commit_cmd(self, ctx, *, action: str):

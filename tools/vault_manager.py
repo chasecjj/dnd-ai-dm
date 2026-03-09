@@ -185,11 +185,12 @@ class VaultManager:
     
     def get_party_state(self) -> List[Dict[str, Any]]:
         """Read all party member files and return their frontmatter + key body sections.
-        
+
         Returns a list of dicts, each with keys:
             - frontmatter: the YAML frontmatter dict
             - file: relative path
-            - summary: condensed text for context assembly
+            - summary: condensed text for context assembly (header + HP/AC + conditions)
+            - body: full markdown body (stats, abilities, spells, inventory, personality)
         """
         party = []
         for fpath in self.list_files(self.PARTY):
@@ -206,7 +207,8 @@ class VaultManager:
             party.append({
                 'frontmatter': fm,
                 'file': fpath,
-                'summary': '\n'.join(summary_lines)
+                'summary': '\n'.join(summary_lines),
+                'body': body,
             })
         return party
     
@@ -239,6 +241,46 @@ class VaultManager:
         logger.warning(f"Party member not found: {name}")
         return False
     
+    def update_inventory(self, name: str, item: str, new_quantity: int) -> bool:
+        """Update an inventory item's quantity in the character sheet body.
+
+        Looks for lines like "- Javelin (5)" and updates to "- Javelin (4)".
+        If new_quantity is 0, changes to "- Javelin (0)".
+
+        Args:
+            name: Character name.
+            item: Item name (e.g., "Javelin", "Arrow").
+            new_quantity: New quantity to set.
+
+        Returns:
+            True if updated, False if character or item not found.
+        """
+        import re
+        for fpath in self.list_files(self.PARTY):
+            fm, body = self.read_file(fpath)
+            if fm.get('name', '').lower() != name.lower():
+                continue
+
+            # Match "- Item (N)" pattern, case-insensitive on item name
+            pattern = re.compile(
+                r'^(- ' + re.escape(item) + r')\s*\((\d+)\)',
+                re.IGNORECASE | re.MULTILINE
+            )
+            match = pattern.search(body)
+            if match:
+                old_line = match.group(0)
+                new_line = f"{match.group(1)} ({max(0, new_quantity)})"
+                body = body.replace(old_line, new_line, 1)
+                self.write_file(fpath, fm, body)
+                logger.info(f"Inventory updated: {name} {item} -> ({new_quantity})")
+                return True
+
+            logger.warning(f"Inventory item '{item}' not found in {name}'s sheet")
+            return False
+
+        logger.warning(f"Party member not found for inventory update: {name}")
+        return False
+
     # ------------------------------------------------------------------
     # NPC Operations
     # ------------------------------------------------------------------
@@ -353,22 +395,30 @@ class VaultManager:
                 with open(full_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                 # Insert into the Key Events table (before the next ## section)
-                if "## Key Events" in content and "## Combat Encounters" in content:
-                    # Find the insertion point: just before ## Combat Encounters
-                    insert_idx = content.index("## Combat Encounters")
-                    content = content[:insert_idx] + f"{event_entry}\n\n" + content[insert_idx:]
-                elif "## Key Events" in content:
-                    # Find the next ## after Key Events
+                if "## Key Events" in content:
                     key_events_idx = content.index("## Key Events")
-                    rest = content[key_events_idx + len("## Key Events"):]
+                    # Skip the "## Key Events" line itself
+                    line_end = content.find("\n", key_events_idx)
+                    search_start = line_end + 1 if line_end > 0 else key_events_idx + len("## Key Events")
+                    rest = content[search_start:]
+                    # Find the NEXT ## heading after Key Events (any heading)
                     next_section = rest.find("\n## ")
-                    if next_section > 0:
-                        abs_idx = key_events_idx + len("## Key Events") + next_section
-                        content = content[:abs_idx] + f"\n{event_entry}" + content[abs_idx:]
+                    if next_section >= 0:
+                        abs_idx = search_start + next_section
+                        content = content[:abs_idx] + f"\n{event_entry}\n" + content[abs_idx:]
                     else:
-                        content += f"\n{event_entry}"
+                        # No section after Key Events — try to find it without leading newline
+                        # (handles case where Key Events is followed directly by ## on next line)
+                        next_section_bare = rest.find("## ")
+                        # Only match if it's at the start of a line
+                        if next_section_bare >= 0 and (next_section_bare == 0 or rest[next_section_bare - 1] == '\n'):
+                            abs_idx = search_start + next_section_bare
+                            content = content[:abs_idx] + f"{event_entry}\n\n" + content[abs_idx:]
+                        else:
+                            # Truly no next section — insert after the table header
+                            content = content[:search_start] + rest + f"\n{event_entry}"
                 else:
-                    # Fallback: append to end
+                    # No Key Events section at all — append to end
                     content += f"\n{event_entry}"
                 with open(full_path, 'w', encoding='utf-8') as f:
                     f.write(content)

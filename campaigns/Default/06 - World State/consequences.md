@@ -58,6 +58,34 @@ Consequences are ripple effects from party decisions. The Chronicler agent write
   **impact:** 6
   **notes:** The Storyteller should consider how the local authorities or other patrons react to this event.
 
+
+- **trigger:** session >= 2
+  **event:** The bartender may provide Kallisar with information if he is paid enough.
+  **caused_by:** "Kallisar attempting to bribe the bartender."
+  **impact:** 6
+  **notes:** DM should determine the price and the quality of the information.
+
+
+- **trigger:** session >= 2
+  **event:** Willum may be intimidated or offended by Victor's question.
+  **caused_by:** "Victor questioning Willum."
+  **impact:** 4
+  **notes:** DM should determine Willum's reaction.
+
+
+- **trigger:** session >= 2
+  **event:** The party may encounter dangerous individuals or creatures in the tunnels beneath the old fish market.
+  **caused_by:** "Kallisar bribing the barkeep for information about the tunnels."
+  **impact:** 7
+  **notes:** DM guidance: The tunnels are rumored to contain things best left undisturbed.
+
+
+- **trigger:** session >= 2
+  **event:** Victor's actions may alienate the party and/or attract unwanted attention.
+  **caused_by:** "Victor attempting to attack Willum."
+  **impact:** 7
+  **notes:** The party's reaction to Victor's actions will determine the severity of the consequences.
+
 ## Resolved
 - **trigger:** session >= 2
   **event:** The troll attacks the party and other patrons in the Yawning Portal.

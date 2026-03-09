@@ -47,13 +47,21 @@ async def chronicler_node(
         if character_name:
             player_input = f"[{character_name}]: {player_input}"
 
+        # Resolve location for this character (split-party aware)
+        current_location = (
+            storyteller.get_character_location(character_name)
+            if character_name
+            else storyteller._current_location
+        )
+
         await gemini_limiter.acquire()
         changes = await chronicler.process_exchange(
             player_action=player_input,
             rules_response=rules_text,
             story_response=state.get("narrative", ""),
             session_number=state.get("session", 0),
-            current_location=storyteller._current_location,
+            current_location=current_location,
+            character_name=character_name,
         )
         context_assembler.save_checkpoint()
 

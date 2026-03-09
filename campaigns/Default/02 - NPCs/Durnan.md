@@ -5,10 +5,10 @@ race: Human
 role: Retired Adventurer, Owner of the Yawning Portal
 location: '[[Yawning Portal]]'
 faction: none
-disposition: hostile
+disposition: neutral
 alive: true
 first_seen_session: null
-last_seen_session: 2
+last_seen_session: 0
 tags:
 - npc
 - key_npc
@@ -76,3 +76,6 @@ Durnan is watching the situation closely.
 
 ### Session 2 Update
 Observed Kallisar with an unreadable expression.
+
+### Session 0 Update
+Durnan remains unimpressed by the party's antics.

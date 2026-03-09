@@ -11,13 +11,87 @@ tags:
 # Session 0
 
 ## Summary
-Amidst the boisterous atmosphere of the Yawning Portal, an unsettling whisper drew the attention of the party, leading to a tense encounter with the tavern's watchful proprietor, Durnan. Chaos erupted as a monstrous troll emerged from the depths of the well, prompting a swift and decisive response from Victor Saltzpyre, who vanquished the beast. The victory was short-lived, however, as the party's eccentric behavior, including Sigfried's unsavory exploration of the environment and Kallisar's magical mishaps, alienated the tavern's patrons, culminating in a disturbing act of self-mutilation. The session concluded with Sigfried tunneling into the sewers beneath Waterdeep, while the ominous figure of Balthur, revealed as a main antagonist, retreated to a foreboding castle, leaving the party to ponder the mysteries that lie ahead.
+Amidst the Yawning Portal's raucous atmosphere, the party's investigation of unsettling whispers near the well led to a chaotic troll encounter, swiftly ended by Victor. Their eccentric behavior, however, alienated the tavern's patrons, culminating in a disturbing act of self-mutilation. Sigfried's unsanitary explorations and Kallisar's magical mishaps added to the unease. The session concluded with Sigfried tunneling into the sewers beneath Waterdeep, while the ominous figure of Balthur, revealed as a main antagonist, retreated to a foreboding castle, leaving the party to ponder the mysteries that lie ahead.
 
 
 ## Key Events
 | Time | Event | Impact | NPCs Involved |
 |------|-------|--------|---------------|
 | | | | |
+
+| | Kallisar asks Durnan to cook the Gibbering Mouther, Durnan refuses. | 2 | |
+
+| | Sigfried asks Durnan for a quest; Durnan says quests are earned. | 4 | |
+
+| | Hadrian buys Durnan a round of drinks. | 2 | |
+
+| | Victor does pushups. | 2 | |
+
+| | The party attempts to recruit adventurers and impress a dwarf named Bruenor at the Yawning Portal. | 4 | |
+
+| | Sigfried heals Victor for 10 hit points using Cure Wounds. | 5 | |
+
+| | Kallisar attempts to persuade others to join the party. | 4 | |
+
+| | Victor scans the tavern, looking for someone. | 2 | |
+
+| | Durnan asks if the party is going down the well. | 4 | |
+
+| | Kallisar waits for her enchantment to take hold. | 2 | |
+
+| | Victor attempts to recruit a squire but is reminded to roll for persuasion. | 4 | |
+
+| | Sigfried leaves the tavern to urinate on the building. | 2 | |
+
+| | Hadrian asks Bruenor about his experience. | 4 | |
+
+| | Sigfried challenges Bruenor to an Indian leg wrestle. | 4 | |
+
+| | Hadrian attempts to recruit Bruenor. | 4 | |
+
+| | Victor attempts to recruit a stablehand. | 4 | |
+
+| | Kallisar attempts to sway the Yawning Portal's patrons with honeyed words. | 2 | |
+
+| | Sigfried attempts to charm a youth, but the youth resists the enchantment. | 4 | |
+
+| | Hadrian attempts to negotiate with Bruenor for proof of the quest's worth. | 4 | |
+
+| | Victor and Kallisar attempt to recruit a youth with warnings and cursed trinkets. | 4 | |
+
+| | Sigfried attempts to persuade a youth named Willum, Victor interrupts with an energy drink, and Hadrian attempts to gain information about Willum's map. | 4 | |
+
+| | Sigfried drops a torch down the well to gauge its depth. | 4 | |
+
+| | Kallisar attempts to gather information from the bartender about secret entrances to the dungeon. | 6 | |
+
+| | Hadrian compares Willum's map with Bruenor and tells a humorous story. | 4 | |
+
+| | Victor attempts to intimidate Willum into joining the quest. | 4 | |
+
+| | Kallisar attempts to bribe the bartender for information about the tunnels. | 4 | |
+
+| | Hadrian listens to Willum and Bruenor's conversation. | 2 | |
+
+| | Sigfried drinks an ale. | 2 | |
+
+| | Victor questions Willum about his opinion of adventurers. | 4 | |
+
+| | Victor clarifies the meaning of a racial slur and questions Willum about its use. | 4 | |
+
+| | Sigfried attempts to jump on Willum's back for a piggyback ride but fails. | 2 | |
+
+| | Kallisar bribes the barkeep with a magical bathroom key for information about tunnels. | 6 | |
+
+| | Hadrian asks Bruenor to accompany the party to the docks, and Bruenor agrees. | 4 | |
+
+| | Kallisar successfully uses Persuasion to get a lead on Fingers Finnigan, who may know about the smuggler tunnels. | 6 | |
+
+| | Victor Saltzpyre directs Willum to shout a racial slur, creating tension within the party and confusion for Willum. | 8 | |
+
+| | Sigfried attempts to intimidate Willum with a threat of a 'wet willie'. | 2 | |
+
+| | Victor Saltzpyre attempts to attack Willum in an alley, creating a tense situation. | 8 | |
 
 ## Combat Encounters
 _Details of any combat: initiative order, notable rolls, outcomes._

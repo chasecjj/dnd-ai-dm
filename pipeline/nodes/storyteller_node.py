@@ -35,8 +35,20 @@ async def storyteller_node(state: GameState, *, storyteller, **_kwargs) -> dict:
         if state.get("dm_context"):
             player_input += f"\n\n[DM Context (private, weave naturally): {state['dm_context']}]"
 
-        # Enforcement gating: if Rules Lawyer says invalid, frame the attempt
-        if rules_ruling and rules_ruling.get("valid") is False:
+        # Normalize rules_ruling: batched rounds return a list, solo returns a dict
+        if isinstance(rules_ruling, list):
+            # Check if ANY ruling in the batch is invalid
+            invalid = [r for r in rules_ruling if r.get("valid") is False]
+            if invalid:
+                reasons = "; ".join(r.get("result", "Unknown") for r in invalid)
+                enforcement_note = (
+                    "\n\n[ENFORCEMENT: The Rules Lawyer ruled some actions INVALID. "
+                    f"Reasons: {reasons}. "
+                    "Narrate those CHARACTER ATTEMPTS but do NOT grant the desired outcomes. "
+                    "Redirect to proper mechanics. Stay immersive — never break character.]"
+                )
+                player_input += enforcement_note
+        elif rules_ruling and rules_ruling.get("valid") is False:
             enforcement_note = (
                 "\n\n[ENFORCEMENT: The Rules Lawyer ruled this action INVALID. "
                 f"Reason: {rules_ruling.get('result', 'Unknown')}. "

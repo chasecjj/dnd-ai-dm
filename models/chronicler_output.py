@@ -18,6 +18,8 @@ class EventEntry(BaseModel):
     description: str
     impact: int = Field(default=5, ge=1, le=10)
     type: str = "flavor"
+    character: Optional[str] = None   # Which character this event involves
+    location: Optional[str] = None    # Where this event happened
 
     @field_validator("type")
     @classmethod
@@ -35,6 +37,14 @@ class EventEntry(BaseModel):
         return v.lower()
 
 
+class InventoryChange(BaseModel):
+    """A single inventory item quantity change."""
+
+    item: str  # Item name (e.g., "Javelin", "Arrow")
+    change: int  # Delta (negative = consumed, positive = gained)
+    new_quantity: Optional[int] = None  # Resulting quantity after change
+
+
 class CharacterUpdate(BaseModel):
     """Partial update to a player character's mechanical state."""
 
@@ -43,6 +53,7 @@ class CharacterUpdate(BaseModel):
     conditions: Optional[List[str]] = None
     spell_slots_used: Optional[int] = None
     lay_on_hands_pool: Optional[int] = None
+    inventory_changes: Optional[List[InventoryChange]] = None
     # Allow extra fields for flexibility (e.g. temp_hp, death_saves)
     model_config = {"extra": "allow"}
 

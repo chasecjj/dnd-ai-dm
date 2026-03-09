@@ -128,10 +128,11 @@ class AdminCog(commands.Cog, name="Admin Console"):
 
         # Header line
         location = getattr(self.storyteller, '_current_location', 'Unknown')
+        separator = "\u2500" * 40
         embed.description = (
             f"**Session {session_num}** | {location}\n"
             f"Queue Mode: **{mode_str}** | Console: **{ooc_str}** | Foundry: {foundry_str}\n"
-            f"\u2500" * 40
+            f"{separator}"
         )
 
         # Queue section — cap at 5 displayed actions to prevent embed overflow
@@ -508,7 +509,7 @@ class AdminCog(commands.Cog, name="Admin Console"):
         await _send_chunked(game_table, opening)
 
         # Add to context memory so the AI remembers the opening
-        self.context_assembler.history.add(
+        self.context_assembler.history.add_event(
             text=f"[Session {session_num} opened] {location} — party introduced.",
             impact=8,
         )
@@ -517,6 +518,128 @@ class AdminCog(commands.Cog, name="Admin Console"):
             f"Opening scene posted to {game_table.mention}!", ephemeral=True
         )
         logger.info(f"Session {session_num} opened with /open command")
+
+    # ------------------------------------------------------------------
+    # Level-Up — Milestone-based advancement
+    # ------------------------------------------------------------------
+    @app_commands.command(
+        name="levelup",
+        description="Level up the party or a specific character (milestone)",
+    )
+    @app_commands.describe(character="Character name, or 'all' for the whole party")
+    async def levelup_cmd(self, interaction: discord.Interaction, character: str = "all"):
+        """Apply a milestone level-up and post a player guide to the Game Table."""
+        await interaction.response.defer(ephemeral=True)
+
+        from tools.level_up import apply_level_up, build_guide_prompt
+
+        # Determine who to level up
+        party = self.vault.get_party_state()
+        if character.lower() == "all":
+            names = [m["frontmatter"]["name"] for m in party]
+        else:
+            # Find closest match
+            names = [character]
+
+        session_num = self.context_assembler.current_session
+
+        # Apply level-ups
+        summaries = []
+        failed = []
+        for name in names:
+            result = apply_level_up(self.vault, name, session_number=session_num)
+            if result:
+                summaries.append(result)
+            else:
+                failed.append(name)
+
+        if not summaries:
+            await interaction.followup.send(
+                "No characters could be leveled up. Check class/level support.",
+                ephemeral=True,
+            )
+            return
+
+        # Generate player guide via Gemini
+        guide_prompt = build_guide_prompt(summaries)
+        guide_text = None
+
+        try:
+            from tools.rate_limiter import gemini_limiter
+            await gemini_limiter.acquire()
+            response = await self.bot.gemini_client.aio.models.generate_content(
+                model=self.bot.model_id,
+                contents=[{"role": "user", "parts": [{"text": guide_prompt}]}],
+                config={"temperature": 0.8},
+            )
+            guide_text = response.text if response.text else None
+        except Exception as e:
+            logger.error(f"Level-up guide generation failed: {e}", exc_info=True)
+
+        # Post to Game Table
+        game_table = self.get_game_table_channel()
+        if game_table:
+            # Header
+            names_str = ", ".join(f"**{s['name']}**" for s in summaries)
+            new_levels = set(s["new_level"] for s in summaries)
+            level_str = ", ".join(str(lv) for lv in sorted(new_levels))
+            header = f"\n{'=' * 40}\n**LEVEL UP!** {names_str} advance to **Level {level_str}**!\n{'=' * 40}"
+            await game_table.send(header)
+
+            if guide_text:
+                from bot.client import _send_chunked
+                await _send_chunked(game_table, guide_text)
+            else:
+                # Fallback: mechanical summary
+                for s in summaries:
+                    text = (
+                        f"**{s['name']}** ({s['class']} {s['new_level']}): "
+                        f"+{s['hp_gain']} HP (max {s['new_hp_max']})"
+                    )
+                    if s["features"]:
+                        text += f"\nNew: {', '.join(s['features'])}"
+                    if s["choices"]:
+                        text += "\n**Choices needed** -- check with the DM!"
+                    await game_table.send(text)
+
+        # Add to context memory
+        self.context_assembler.history.add_event(
+            text=f"[Level Up] Party advanced to Level {level_str}. "
+                 f"Characters: {', '.join(s['name'] for s in summaries)}.",
+            impact=8,
+        )
+
+        # DM report
+        dm_summary = f"Leveled up {len(summaries)} character(s):\n"
+        for s in summaries:
+            dm_summary += (
+                f"- **{s['name']}** -> Lv{s['new_level']}: "
+                f"+{s['hp_gain']} HP (max {s['new_hp_max']})"
+            )
+            if s.get("spell_slots_max") is not None:
+                dm_summary += f", {s['spell_slots_max']} spell slots"
+            if s.get("lay_on_hands_pool"):
+                dm_summary += f", LoH {s['lay_on_hands_pool']}"
+            if s["choices"]:
+                dm_summary += f" -- {len(s['choices'])} choice(s) pending"
+            dm_summary += "\n"
+        if failed:
+            dm_summary += f"\nFailed: {', '.join(failed)} (unsupported class/level)"
+
+        await interaction.followup.send(dm_summary, ephemeral=True)
+        logger.info(f"Level-up complete: {[s['name'] for s in summaries]}")
+
+    @levelup_cmd.autocomplete('character')
+    async def levelup_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        party = self.vault.get_party_state()
+        names = ["all"] + [m["frontmatter"]["name"] for m in party]
+        return [
+            app_commands.Choice(name=n, value=n)
+            for n in names
+            if current.lower() in n.lower()
+        ][:25]
 
     async def send_dm_roll_prompt(self, action, roll_type: str, formula: str, dc: int | None):
         """Send an inline roll button to the console thread for the DM's character.

@@ -137,7 +137,7 @@ These are the project's architectural invariants and must be followed:
 
 **Rate limiting**: Token bucket in `tools/rate_limiter.py`. Pre-configured instances: `gemini_limiter` (15 tokens, 0.25/s = ~15/min), `discord_limiter` (5 tokens, 1.0/s), `foundry_limiter` (10 tokens, 2.0/s). All async — `await limiter.acquire()` sleeps when bucket is empty.
 
-**Context assembler memory decay**: `tools/context_assembler.py` uses weighted scoring: `score = impact × 0.85^turns_ago`. Impact is 1–10; critical events (10) persist ~15+ turns, flavor (2) fades after ~5 turns. Entries below threshold (1.5) are pruned, capped at 20 per context.
+**Context assembler memory decay**: `tools/context_assembler.py` uses weighted scoring: `score = impact × 0.85^turns_ago`. Impact is 1–10; critical events (10) persist ~15+ turns, flavor (2) fades after ~5 turns. Entries below threshold (1.5) are pruned, capped at 20 per context. The chronicler records events with `age_existing=False` and calls `advance_turn()` once per pass — this prevents multi-player rounds from over-aging history. `MemoryEntry` carries optional `character` and `location` fields for per-character context grouping. The storyteller tracks per-character locations via `_character_locations` dict for split-party awareness.
 
 ## Environment Variables
 
@@ -145,11 +145,7 @@ Configured in `.env`: `DISCORD_BOT_TOKEN`, `GEMINI_API_KEY`, `FOUNDRY_API_KEY`, 
 
 ## Development Notes
 
-- **Test baseline:** 14 pre-existing failures in `test_blind_prep` (7), `test_cartographer` (7), `test_scene_classifier` (1 error). These are mock/fixture issues unrelated to core game logic. The 20 passing tests (`test_vault_models`, `test_vault_concurrency`, `test_campaign_manager`, `test_blind_prep` imports, `test_cartographer` imports) are the real regression gate.
-- `docs/` contains documentation: `GETTING_STARTED.md`, `DM_GUIDE.md` (Admin Guide), `PLAYER_GUIDE.md`, `CAMPAIGN_SETUP.md`, `SESSION_WALKTHROUGH.md`
-- `ENHANCEMENT_PLAN.md` is the unified development roadmap (replaces old `COMPLETION_PLAN.md`)
-- Rate limiting is DONE (`tools/rate_limiter.py`) — do not re-implement
-- System uses the **admin-assisted AI DM paradigm**: AI is the DM, human is the admin
-- `docs/index.html` contains a generated architecture diagram
-- IDE type checkers will show false positives for `discord`, `google`, `aiohttp`, `bot.client` imports — these are from unconfigured search roots, not real errors
-- `pyrightconfig.json` is configured for Python 3.14 with extra paths for module resolution
+- **Test baseline:** 14 pre-existing failures in `test_blind_prep`/`test_cartographer`/`test_scene_classifier` (mock/fixture issues). 162 passing tests are the regression gate.
+- `docs/` — GETTING_STARTED, DM_GUIDE (Admin), PLAYER_GUIDE, CAMPAIGN_SETUP, SESSION_WALKTHROUGH
+- `ENHANCEMENT_PLAN.md` — unified dev roadmap. Rate limiting is DONE — do not re-implement
+- System paradigm: **AI is the DM, human is the admin**. `pyrightconfig.json` targets Python 3.14.

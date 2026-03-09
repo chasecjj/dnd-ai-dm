@@ -49,9 +49,53 @@ Your tone:
 - Mention relevant abilities, spells, and features the character actually has
 - Help phrase actions in a way that's engaging and in-character
 
-When the player has decided on an action, suggest clear wording they can use with:
-  !commit <their action>
-This sends the action to the Game Table for the DM to resolve.
+When the player has decided on an action, remind them to copy the text and paste it
+in the Game Table channel for the DM to resolve.
+
+ACTION CRAFTING (triggered by [CRAFT MODE] or when a player describes an action to take):
+When a player wants to craft an action message, help them build a polished version:
+
+1. Take their rough idea and write a vivid, in-character action (2-4 sentences).
+2. Balance FLAVOR with MECHANICAL CLARITY — the DM's AI parses these messages, so the
+   intent must be unambiguous. "I attack with my longsword" is clear; "I do something
+   cool with my weapon" is not. Include: what ability/spell/weapon is used, who/what is
+   targeted, and any relevant modifiers or resources spent.
+3. Reference specific abilities, spells, or items from their character sheet when they fit.
+   If the player says "I want to do something sneaky," check their sheet — do they have
+   Stealth proficiency? Cunning Action? Invisibility? Suggest the best mechanical fit.
+4. Present the draft clearly with this EXACT format:
+
+   **Draft:**
+   > [The crafted action text goes here in a Discord quote block.
+   > Keep it to 2-4 vivid sentences.]
+
+   **Mechanics:** [Brief note — attack type, saving throw, spell slot cost, etc.]
+
+5. After presenting the draft, ask if they want to adjust anything — tone, tactics,
+   specific abilities, more/less dramatic, etc.
+6. On refinement requests, present the FULL updated draft in the same format (not just
+   the changed part). The player needs to be able to copy the complete action.
+7. When they're happy with it, say: "Looks good! Copy the text above and paste it
+   in the Game Table."
+
+CRAFTING EXAMPLES:
+
+Player: "I want to attack the big demon"
+Bad draft: "I attack the demon." (too vague, no flavor)
+Good draft:
+> Victor steps forward, faith steeling his nerves against the towering glabrezu. He grips
+> his longsword in both hands and brings it down in a powerful overhead strike aimed at the
+> fiend's exposed flank, calling on divine strength to guide the blow.
+Mechanics: Melee attack with longsword (1d20+5 to hit, 1d10+3 slashing). Player may choose
+to use Divine Smite after hitting (+2d8 radiant, costs 1 spell slot).
+
+Player: "I want to be sneaky and steal from the guard"
+Good draft (for a Rogue):
+> Hadrian adjusts his hood, blending into the crowd of dockworkers shuffling past the
+> distracted guard. As he passes close, his fingers dart to the guard's belt pouch with
+> practiced ease, palming whatever coins he can grab before slipping back into the throng.
+Mechanics: Sleight of Hand check (DEX, with Expertise if proficient). May need Stealth
+check first to approach unnoticed.
 """
 
 
@@ -67,7 +111,11 @@ class PlayerAdvisorAgent:
         self._conversations: dict[int, list] = {}  # thread_id -> message history
 
     def _build_character_context(self, character_name: str) -> str:
-        """Build character-specific context for the advisor."""
+        """Build character-specific context for the advisor.
+
+        Includes the full character sheet body (stats, abilities, spells,
+        inventory, personality) so the advisor can reference actual modifiers.
+        """
         party = self.vault.get_party_state()
         char_data = None
         for member in party:
@@ -78,16 +126,12 @@ class PlayerAdvisorAgent:
         if not char_data:
             return f"## Your Character: {character_name}\n(No character sheet found in vault)"
 
-        fm = char_data['frontmatter']
         lines = [f"## Your Character: {character_name}", char_data['summary']]
 
-        for key in ['skills', 'features', 'spells', 'equipment', 'proficiencies',
-                     'languages', 'saving_throws', 'attacks']:
-            val = fm.get(key)
-            if val:
-                if isinstance(val, list):
-                    val = ", ".join(str(v) for v in val)
-                lines.append(f"**{key.replace('_', ' ').title()}:** {val}")
+        # Include full character sheet body (stats table, abilities, spells, inventory, personality)
+        body = char_data.get('body', '')
+        if body:
+            lines.append(body.strip())
 
         return "\n".join(lines)
 

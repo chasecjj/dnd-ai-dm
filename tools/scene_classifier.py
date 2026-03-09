@@ -100,10 +100,15 @@ async def classify_scene_changes(
 
     # Include rules context if available (helps detect combat)
     rules_context = ""
-    if rules_json and isinstance(rules_json, dict):
-        mechanic = rules_json.get("mechanic_used", "")
-        if mechanic:
-            rules_context = f"\n\nRules Lawyer mechanic used: {mechanic}"
+    if rules_json:
+        if isinstance(rules_json, list):
+            mechanics = [r.get("mechanic_used", "") for r in rules_json if isinstance(r, dict) and r.get("mechanic_used")]
+            if mechanics:
+                rules_context = f"\n\nRules Lawyer mechanics used: {', '.join(mechanics)}"
+        elif isinstance(rules_json, dict):
+            mechanic = rules_json.get("mechanic_used", "")
+            if mechanic:
+                rules_context = f"\n\nRules Lawyer mechanic used: {mechanic}"
 
     user_prompt = f"""## Narrative to Analyze
 {narrative}

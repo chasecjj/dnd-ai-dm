@@ -32,6 +32,7 @@ from tools.player_identity import init_player_map, resolve_from_message_author, 
 from tools.turn_collector import TurnCollector, PendingMessage
 from tools.dice_roller import parse_and_roll, format_roll_detail
 from tools.content_filter import filter_content
+from tools.combat_tracker import CombatTracker
 from agents.tools.foundry_tool import FoundryClient
 
 # Agents — Live DM Team
@@ -137,6 +138,11 @@ turn_collector = TurnCollector(window_seconds=45, expected_players=len(PLAYER_MA
 auto_roll_enabled: bool = True
 
 # ---------------------------------------------------------------------------
+# Combat Tracker — Initiative, rounds, and monster turns
+# ---------------------------------------------------------------------------
+combat_tracker = CombatTracker()
+
+# ---------------------------------------------------------------------------
 # Agents — Live DM Team (Game Table channel)
 # ---------------------------------------------------------------------------
 board_monitor = BoardMonitorAgent(gemini_client, foundry=foundry_client)
@@ -144,7 +150,7 @@ rules_lawyer = RulesLawyerAgent(gemini_client, context_assembler, model_id=MODEL
 storyteller = StorytellerAgent(gemini_client, context_assembler, model_id=MODEL_ID)
 foundry_architect = FoundryArchitectAgent(gemini_client, foundry=foundry_client, model_id=MODEL_ID)
 message_router = MessageRouterAgent(gemini_client, context_assembler, model_id=MODEL_ID)
-chronicler = ChroniclerAgent(gemini_client, vault, context_assembler, model_id=MODEL_ID)
+chronicler = ChroniclerAgent(gemini_client, vault, context_assembler, model_id=MODEL_ID, storyteller=storyteller)
 player_advisor = PlayerAdvisorAgent(gemini_client, context_assembler, vault, model_id=MODEL_ID)
 
 # ---------------------------------------------------------------------------
@@ -330,6 +336,14 @@ async def _handle_game_table(message, user_input: str):
         user_input = f"[{character_name}]: {user_input}"
         logger.info(f"Player identified: {message.author.name} -> {character_name}")
 
+    # Track player action in combat
+    if combat_tracker.in_combat and character_name:
+        combat_tracker.record_player_action(character_name)
+
+    # If in combat and monsters don't go first, append monster turn to player batch
+    if combat_tracker.in_combat and not combat_tracker.monsters_go_first():
+        user_input += combat_tracker.get_monster_turn_prompt()
+
     # Auto-roll dice if enabled (pre-analyze + roll before pipeline)
     dice_results = None
     if auto_roll_enabled and character_name:
@@ -343,11 +357,17 @@ async def _handle_game_table(message, user_input: str):
             logger.warning(f"Auto-roll failed, continuing without dice: {e}")
 
     # Build the initial state and invoke the pipeline
+    # Use per-character location if available, fall back to global
+    current_loc = (
+        storyteller.get_character_location(character_name)
+        if character_name
+        else storyteller._current_location
+    )
     initial_state = {
         "player_input": user_input,
         "character_name": character_name,
         "session": current_session,
-        "current_location": storyteller._current_location,
+        "current_location": current_loc,
         "dice_results": dice_results,
     }
 
@@ -426,6 +446,29 @@ async def _handle_game_table(message, user_input: str):
             else:
                 logger.info("Scene change detected but Foundry not connected — skipping.")
 
+        # --- Combat tracking: detect start/end from scene changes ---
+        scene_changes_dict = result.get("scene_changes") or {}
+        if scene_changes_dict.get("combat_started") and not combat_tracker.in_combat:
+            party = vault.get_party_state()
+            monsters_desc = ", ".join(scene_changes_dict.get("monsters_introduced", [])) or "enemies"
+            init_order = combat_tracker.start_combat(party, monsters_desc)
+            await message.channel.send(f"\u2694\ufe0f {init_order}")
+
+            if combat_tracker.monsters_go_first():
+                await _generate_monster_turn(message.channel)
+
+        if scene_changes_dict.get("combat_ended") and combat_tracker.in_combat:
+            end_msg = combat_tracker.end_combat()
+            await message.channel.send(end_msg)
+
+        # Advance combat round if all players acted
+        if combat_tracker.in_combat and combat_tracker.all_players_acted():
+            round_header = combat_tracker.advance_round()
+            await message.channel.send(round_header)
+
+            if combat_tracker.monsters_go_first():
+                await _generate_monster_turn(message.channel)
+
         # Error surfacing (pipeline nodes log their own errors, but surface fatal ones)
         if result.get("error"):
             logger.error(f"Pipeline returned error: {result['error']}")
@@ -436,6 +479,59 @@ async def _handle_game_table(message, user_input: str):
             f"[on_message] Delivery error for {message.author}:\n"
             f"Content: {user_input[:200]}\n{traceback.format_exc()}"
         )
+
+
+# ---------------------------------------------------------------------------
+# Monster Turn Generator — Standalone enemy action when monsters go first
+# ---------------------------------------------------------------------------
+async def _generate_monster_turn(channel):
+    """Generate a standalone monster turn via the Storyteller.
+
+    Called when enemies have higher initiative and act before players.
+    Sends the monster turn narrative directly to the channel.
+    """
+    if not combat_tracker.in_combat:
+        return
+
+    prompt = combat_tracker.get_monster_first_prompt()
+    vault_context = context_assembler.build_storyteller_context(storyteller._current_location)
+
+    full_prompt = f"""## Current World State (from vault)
+{vault_context}
+
+---
+
+## This Turn
+**Monster Turn (enemies act first — higher initiative)**
+{prompt}
+
+Narrate the enemies' actions seamlessly. Do NOT include any headings or meta-text."""
+
+    try:
+        from agents.storyteller import STORYTELLER_IDENTITY
+        from google import genai as _genai
+        await gemini_limiter.acquire()
+        async with channel.typing():
+            response = await gemini_client.aio.models.generate_content(
+                model=MODEL_ID,
+                contents=full_prompt,
+                config=_genai.types.GenerateContentConfig(
+                    system_instruction=STORYTELLER_IDENTITY,
+                    temperature=0.8,
+                ),
+            )
+            narrative = response.text if response.text else ""
+
+        if narrative:
+            await _send_chunked(channel, narrative)
+            # Record to history
+            context_assembler.history.add_event(
+                text=f"[Monster turn] {combat_tracker.monsters_desc} acted (round {combat_tracker.current_round}).",
+                impact=5,
+            )
+            logger.info(f"Monster-first turn generated (round {combat_tracker.current_round})")
+    except Exception as e:
+        logger.error(f"Monster turn generation failed: {e}", exc_info=True)
 
 
 # ---------------------------------------------------------------------------
@@ -471,13 +567,17 @@ async def _auto_roll_for_actions(actions_list):
             await gemini_limiter.acquire()
             pre_analysis = await rules_lawyer.pre_analyze(user_input, char_name)
 
-            if not pre_analysis.get("needs_roll") or not pre_analysis.get("rolls"):
+            has_player_rolls = pre_analysis.get("rolls")
+            has_target_saves = pre_analysis.get("target_saves")
+
+            if not pre_analysis.get("needs_roll") or (not has_player_rolls and not has_target_saves):
                 continue
 
             char_rolls = []
             char_summary_parts = []
 
-            for roll_spec in pre_analysis["rolls"]:
+            # --- Player rolls (ability checks, attacks, damage) ---
+            for roll_spec in (pre_analysis.get("rolls") or []):
                 roll_type = roll_spec.get("roll_type", "Check")
                 formula = roll_spec.get("formula", "1d20")
                 dc = roll_spec.get("dc")
@@ -511,6 +611,33 @@ async def _auto_roll_for_actions(actions_list):
                     dc_tag = f" (DC {dc} {'✓' if passed else '✗'})"
                 char_summary_parts.append(
                     f"{roll_type} `{formula}` = **{total}**{crit_tag}{dc_tag}"
+                )
+
+            # --- Target saves (monster/NPC rolls against player spell DC) ---
+            for save_spec in (pre_analysis.get("target_saves") or []):
+                save_type = save_spec.get("save_type", "Save")
+                dc = save_spec.get("dc")
+                reason = save_spec.get("reason", "")
+
+                # Roll 1d20 for the target (no modifier — AI adjudicates contextually)
+                result = parse_and_roll("1d20")
+                total = result["total"]
+
+                char_rolls.append({
+                    "type": f"Target {save_type} Save",
+                    "result": total,
+                    "dc": dc,
+                    "is_target_save": True,
+                })
+
+                # Build display string
+                dc_tag = ""
+                if dc and isinstance(total, int):
+                    passed = total >= dc
+                    dc_tag = f" DC {dc} {'✓' if passed else '✗'}"
+                char_summary_parts.append(
+                    f"Target {save_type} Save `1d20` = **{total}** ({dc_tag})" if dc_tag
+                    else f"Target {save_type} Save `1d20` = **{total}**"
                 )
 
             if char_rolls:
@@ -707,7 +834,17 @@ async def _resolve_auto_batch(pending_messages: list):
         prefix = f"[{pm.character_name}]" if pm.character_name else "[Unknown]"
         combined_parts.append(f"{prefix}: {pm.user_input}")
 
+        # Track player actions in combat
+        if combat_tracker.in_combat and pm.character_name:
+            combat_tracker.record_player_action(pm.character_name)
+
     batched_input = "\n".join(combined_parts)
+
+    # If in combat and monsters DON'T go first, append monster turn to player batch
+    # (If monsters go first, their turn was already generated at round start)
+    if combat_tracker.in_combat and not combat_tracker.monsters_go_first():
+        batched_input += combat_tracker.get_monster_turn_prompt()
+
     logger.info(f"Auto-batch resolving {len(pending_messages)} messages:\n{batched_input}")
 
     # Auto-roll dice for all actions in the batch
@@ -753,6 +890,31 @@ async def _resolve_auto_batch(pending_messages: list):
             _ambient = bot.get_cog("Ambient")
             if _ambient:
                 asyncio.create_task(_ambient.post_story_hook(game_table_channel, narrative))
+
+        # --- Combat tracking: detect start/end from scene changes ---
+        scene_changes = result.get("scene_changes") or {}
+        if scene_changes.get("combat_started") and not combat_tracker.in_combat:
+            party = vault.get_party_state()
+            monsters_desc = ", ".join(scene_changes.get("monsters_introduced", [])) or "enemies"
+            init_order = combat_tracker.start_combat(party, monsters_desc)
+            await game_table_channel.send(f"\u2694\ufe0f {init_order}")
+
+            # If monsters go first, generate their turn immediately
+            if combat_tracker.monsters_go_first():
+                await _generate_monster_turn(game_table_channel)
+
+        if scene_changes.get("combat_ended") and combat_tracker.in_combat:
+            end_msg = combat_tracker.end_combat()
+            await game_table_channel.send(end_msg)
+
+        # Advance combat round if all players acted
+        if combat_tracker.in_combat and combat_tracker.all_players_acted():
+            round_header = combat_tracker.advance_round()
+            await game_table_channel.send(round_header)
+
+            # If monsters go first in the new round, generate their turn now
+            if combat_tracker.monsters_go_first():
+                await _generate_monster_turn(game_table_channel)
 
         # Advance conversation history decay once per batch
         context_assembler.history.advance_turn()
@@ -961,6 +1123,11 @@ async def on_message(message):
     elif is_player_thread:
         # Player private thread — brainstorm mode with advisor
         logger.info(f"[ROUTING] → player_thread path for {message.author.name}")
+
+        # Skip bot command messages — they're handled by PlayerCog (!craft, !commit)
+        if user_input.startswith("!"):
+            return
+
         ambient_cog = bot.get_cog("Ambient")
         if ambient_cog:
             ambient_cog.record_activity()
