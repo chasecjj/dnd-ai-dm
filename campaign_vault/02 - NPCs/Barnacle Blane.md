@@ -1,11 +1,14 @@
 ---
+type: npc
 name: Barnacle Blane
 race: Human (Variant)
-class: Dockworker/Fence
+role: Dockworker/Fence
 location: Near the docks, often around the Briny Bazaar or Dead Man's Pinch
 faction: Unaffiliated (but has dealings with both Zhentarim and Xanathar Guild)
-disposition: Neutral
+disposition: neutral
 status: alive
+first_seen_session: null
+auto_generated: false
 tags:
 - gruff
 - one-eyed
@@ -14,6 +17,7 @@ tags:
 - fence
 - shady
 ---
+# Barnacle Blane
 ## Description
 Blane is a powerfully built man, despite a slight stoop. He's missing his left eye, replaced by a milky white scar that pulls at the corner of his mouth, giving him a perpetual sneer.
 
@@ -27,4 +31,6 @@ Blane used to be a member of the Zhentarim, but was betrayed and left for dead. 
 Blane's knowledge of the docks and connections to both the Zhentarim and Xanathar Guild could make him a valuable, if dangerous, source of information. His past connection to the Zhentarim puts him at odds with Liss and potentially Torvin.
 
 ## Plot Hooks
-["Blane needs someone to 'relocate' some goods before the City Watch finds them, offering a cut of the profits.", 'Blane knows something about a recent Zhentarim operation gone wrong and is willing to share information in exchange for a favor (potentially involving Liss Umbero).', 'Blane is looking for information on who betrayed him years ago, and believes the party might be able to help him uncover the truth.']
+- Blane needs someone to 'relocate' some goods before the City Watch finds them, offering a cut of the profits.
+- Blane knows something about a recent Zhentarim operation gone wrong and is willing to share information in exchange for a favor (potentially involving Liss Umbero).
+- Blane is looking for information on who betrayed him years ago, and believes the party might be able to help him uncover the truth.

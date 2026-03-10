@@ -2,6 +2,9 @@
 Rules Lawyer Node — Validates game mechanics and produces a structured ruling.
 
 Wraps the existing RulesLawyerAgent. Only runs if needs_rules_lawyer is True.
+
+Solo guardrails include death alternatives (Phase 1.2) — when a solo PC
+reaches 0 HP, the rules lawyer should recommend alternatives to death.
 """
 
 import logging
@@ -23,10 +26,21 @@ async def rules_node(state: GameState, *, rules_lawyer, context_assembler, **_kw
         return {"rules_ruling": None}
 
     try:
-        context_assembler.set_query(state["player_input"])
+        action_input = state["player_input"]
+        if state.get("is_solo"):
+            action_input += (
+                "\n[SOLO SESSION: No XP/leveling, no spending shared party "
+                "resources, no killing named campaign NPCs. Minor items/gold OK."
+                "\nDEATH ALTERNATIVE: If this action would reduce the PC to 0 HP, "
+                "do NOT declare them dead. Instead recommend one of: capture, "
+                "debilitating injury, debt to a rescuer, a curse/mark, or divine "
+                "intervention with cost. Include the alternative in your ruling.]"
+            )
+
+        context_assembler.set_query(action_input)
         await gemini_limiter.acquire()
         ruling = await rules_lawyer.process_request(
-            state["player_input"],
+            action_input,
             state.get("board_context", ""),
             dice_results=state.get("dice_results"),
         )

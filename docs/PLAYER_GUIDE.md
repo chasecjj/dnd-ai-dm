@@ -155,6 +155,67 @@ You'll notice the difference — Auto Mode feels like a conversation, Queue Mode
 | `!recap 3` | Shows the recap from session 3 |
 | `!pc Frognar` | Look up a character's stats |
 
+### Solo Adventures
+
+| Command | What it does |
+|---------|-------------|
+| `/solo` | Start a solo adventure in a private thread |
+| `/solo_end` | End your solo adventure |
+| `/solo_undo` | Rewind your last solo turn |
+
+### System
+
+| Command | What it does |
+|---------|-------------|
+| `/bot-status` | Show bot health and pipeline stats |
+| `/solo-sessions` | List active solo adventures |
+
+---
+
+## Solo Adventures (Between Sessions)
+
+Want to explore the world, talk to NPCs, or run side quests on your own between group sessions? Use the `/solo` command.
+
+### Starting a Solo Adventure
+
+1. Type `/solo` in any text channel
+2. The bot creates a private thread: "*YourCharacterName's Solo Adventure*"
+3. The AI generates an opening scene based on your character's current location
+4. Type actions just like in Game Table — the AI responds as your personal DM
+
+### Commands in Solo Mode
+
+| Command | What it does |
+|---------|-------------|
+| `/solo` | Start a solo adventure (creates private thread) |
+| `/solo_end` | End your solo adventure (summary + thread archived) |
+| `/solo_undo` | Rewind your last turn and try something different |
+
+### What You Can Do in Solo Mode
+
+- Explore locations, talk to NPCs, gather information
+- Run small personal side quests
+- Develop your character's backstory and relationships
+- Acquire minor items and gold
+- Engage in small-scale combat (1-3 enemies)
+
+### What You Can't Do in Solo Mode
+
+- Gain XP or level up (that's for group sessions)
+- Kill major named NPCs from the campaign
+- Advance the main campaign plot
+- Acquire powerful magical items
+
+### Undo
+
+Made a choice you regret? Type `/solo_undo` to rewind your last turn. The AI forgets what happened and you can try a different approach. You can only undo once per turn — no chaining undos.
+
+### Tips for Solo Play
+
+- **Solo play builds your character.** The AI learns your character's personality, fears, goals, and relationships during solo sessions. This carries over into group play for richer narration.
+- **Time is frozen.** The world clock doesn't advance during solo play. The AI uses phrases like "Later that evening..." instead of specific dates. Your DM reconciles timeline at the next group session.
+- **You can have a solo session while others do too.** Multiple players can run solo adventures concurrently in separate threads.
+
 ---
 
 ## Secret Actions

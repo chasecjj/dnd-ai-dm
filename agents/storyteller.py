@@ -50,8 +50,38 @@ Style:
 - When NPCs speak, use distinctive voices. Quote them directly.
 - Never break the 4th wall. Never mention game mechanics in the narrative.
 
+SCENE DESCRIPTION POLICY (critical — follow this exactly):
+- When context says "[SAME LOCATION]": Do NOT re-describe the environment, tavern,
+  scenery, or atmosphere. The players already know where they are. Focus entirely on
+  the action, dialogue, NPC reactions, and consequences of what just happened.
+- When the context includes a full location description (Description, Current State,
+  Notable Features): This is a NEW LOCATION. Paint the scene with full sensory detail
+  on this turn only.
+- For within-location movement (e.g., bar to back room, street to alley): Briefly
+  describe the transition and the new sub-area. Don't re-describe the whole building.
+- When a new NPC enters: Introduce THEM with a short sensory impression. Don't
+  re-describe the surrounding environment.
+- Never open a response by re-describing the environment the players are already in.
+  Open with action, reaction, or dialogue instead.
+
+PASSIVE ACTION POLICY:
+- If a player's action is passive (watching, waiting, sitting, doing nothing, standing
+  guard, observing without interacting), keep the response to one or two sentences.
+- Do NOT invent events, encounters, or environmental flavor to fill the silence. If
+  nothing is happening to or around that character, a brief acknowledgment is enough.
+  Example: "Hadrian leans back, eyes scanning the room." — done.
+- In group/batch turns where multiple players act: focus narration on the ACTIVE
+  players. Mention the passive character only in passing or not at all — they chose
+  to watch, so let the spotlight stay on the players doing things.
+- The world does NOT need to entertain a passive character. Stillness is a valid
+  narrative state. Do not manufacture drama for someone who chose inaction.
+- Exception: if Due Consequences, NPC arrivals, combat, or other world events ARE
+  happening around the passive character, narrate those normally — the character
+  chose to watch, not to be invisible. React to the world, not the non-action.
+
 Output Format:
 One to three paragraphs of immersive narration. NO JSON. Only prose.
+For passive/non-actions with nothing happening: one or two sentences is enough.
 """
 
 
@@ -64,6 +94,8 @@ class StorytellerAgent:
         self.model_id = model_id
         self._current_location: Optional[str] = None
         self._character_locations: Dict[str, str] = {}  # character_name -> location
+        self._described_locations: Dict[str, str] = {}  # character -> last_described_location
+        self._first_turn: bool = True  # First turn always gets full description
 
     def set_location(self, location: str):
         """Update the default location (sets all characters to this location)."""
@@ -87,24 +119,90 @@ class StorytellerAgent:
     def active_locations(self) -> Dict[str, str]:
         """Get the full character-location map."""
         return dict(self._character_locations)
-    
-    async def process_request(self, user_action: str, mechanics_json: Dict[str, Any]) -> str:
+
+    def _compute_new_locations(self) -> set:
+        """Determine which locations need full description this turn.
+
+        Compares current character locations against what was last described.
+        Returns a set of location names that should get full prose.
+        On ``_first_turn``, every current location counts as new.
+        """
+        if self._first_turn:
+            # First turn — describe everything
+            if self._character_locations:
+                return set(self._character_locations.values())
+            return {self._current_location} if self._current_location else set()
+
+        current_map: Dict[str, str] = {}
+        if self._character_locations:
+            current_map = dict(self._character_locations)
+        elif self._current_location:
+            current_map = {"__party__": self._current_location}
+
+        new_locs: set = set()
+        for key, loc in current_map.items():
+            prev = self._described_locations.get(key)
+            if prev != loc:
+                new_locs.add(loc)
+        return new_locs
+
+    def _mark_locations_described(self):
+        """Record current character→location mapping as 'already described'.
+
+        Called after a successful narration so the next turn can detect changes.
+        """
+        if self._character_locations:
+            self._described_locations = dict(self._character_locations)
+        elif self._current_location:
+            self._described_locations = {"__party__": self._current_location}
+        self._first_turn = False
+
+    def reset_location_tracking(self):
+        """Clear described-location state. Call on session start."""
+        self._described_locations.clear()
+        self._first_turn = True
+
+    async def process_request(self, user_action: str, mechanics_json: Dict[str, Any],
+                              solo_character: Optional[str] = None,
+                              solo_history=None,
+                              solo_directives: Optional[list] = None,
+                              solo_recap: Optional[str] = None) -> str:
         """Generate narrative response from a player action and rules ruling.
-        
+
         Args:
             user_action: The raw player action text.
             mechanics_json: The Rules Lawyer's mechanical ruling.
-        
+            solo_character: If set, use solo context (single character focus).
+            solo_history: Per-session ConversationHistory for solo isolation.
+            solo_directives: List of narrative directive strings (oracle, chaos, threads, etc.).
+            solo_recap: Session recap text for context.
+
         Returns:
             String of immersive narrative prose.
         """
         logger.info(f"Generating narrative for action: {user_action}")
-        
-        # Build dynamic context from the vault (with split-party awareness)
-        vault_context = self.context.build_storyteller_context(
-            self._current_location,
-            character_locations=self._character_locations if self._character_locations else None,
-        )
+
+        # Determine which locations are new (need full prose vs. brief)
+        new_locations = self._compute_new_locations()
+
+        # Build dynamic context from the vault
+        if solo_character:
+            # Solo mode: single character focus, filtered history
+            vault_context = self.context.build_solo_storyteller_context(
+                character_name=solo_character,
+                location=self._current_location or "Unknown",
+                new_locations=new_locations,
+                history=solo_history,
+                solo_directives=solo_directives,
+                recap=solo_recap,
+            )
+        else:
+            # Normal: full party, split-party awareness
+            vault_context = self.context.build_storyteller_context(
+                self._current_location,
+                character_locations=self._character_locations if self._character_locations else None,
+                new_locations=new_locations,
+            )
         
         # Build the user-facing prompt (dynamic parts)
         prompt = f"""## Current World State (from vault)
@@ -130,6 +228,7 @@ Narrate what happens. Incorporate any Due Consequences naturally if present abov
                     temperature=0.8,  # Balanced: creative but consistent
                 )
             )
+            self._mark_locations_described()
             return response.text
         except Exception as e:
             logger.error(f"Storyteller generation failed: {e}", exc_info=True)
@@ -184,6 +283,7 @@ currently is and what they were doing. Set the mood for tonight's session."""
                     temperature=0.8,
                 )
             )
+            self._mark_locations_described()
             return response.text
         except Exception as e:
             logger.error(f"Recap generation failed: {e}", exc_info=True)

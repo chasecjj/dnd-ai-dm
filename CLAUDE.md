@@ -60,6 +60,8 @@ The bot operates in two modes. **Auto Mode is primary** (`auto_roll_enabled = Tr
 - `bot/cogs/admin_cog.py` — `/console` slash command, dashboard embed builder, console refresh logic
 - `bot/views/admin_views.py` — 13 persistent buttons, modals (DMEvent, Annotate, RollRequest, MonsterRoll, PostToTable), ActionSelectView
 - `bot/cogs/player_cog.py` — `/whisper` slash command for player private threads, secret actions
+- `bot/cogs/solo_cog.py` — `/solo`, `/solo_end`, `/solo_undo` slash commands for between-session adventures
+- `bot/cogs/monitoring_cog.py` — `/bot-status` system health, `/solo-sessions` active adventures
 - `bot/client.py: handle_batch_resolve()` — processes curated action batches through the pipeline with two-phase commit (confirm_batch/restore_batch)
 
 **Queue Mode flow:** Player message → `QueuedAction` created → ⏳ reaction → admin reviews in console → Analyze (Rules Lawyer pre-pass) → Players roll dice → admin clicks Resolve → `handle_batch_resolve()` → narrative posted.
@@ -75,6 +77,43 @@ Discord messages route by channel ID (see `on_message()` in `bot/client.py`):
 - **Moderator Log** (`MODERATOR_LOG_CHANNEL_ID`) → receives rules details and debug output
 - **Player private threads** (created via `/whisper`) → queue as secret actions
 - **DM Console thread** (created via `/console`) → admin controls, DM's own character rolls
+- **Solo adventure threads** (created via `/solo`) → solo pipeline with single-character context
+
+### Solo Mode (Between-Session Adventures)
+
+Players can run 1-on-1 adventures between group sessions via `/solo`. Each session runs in a private thread with the full AI DM pipeline but single-character context. Multiple concurrent solo sessions are supported.
+
+**Key constraints:** World clock is frozen (no time advances), no XP/leveling, no killing named campaign NPCs, no major campaign plot changes. Minor items, gold, and NPC relationships persist.
+
+**Key files:**
+- `tools/solo_session.py` — `SoloSession`, `SoloTurnSnapshot`, `SoloSessionManager` (pure Python, no Discord imports)
+- `bot/cogs/solo_cog.py` — `/solo`, `/solo_end`, `/solo_undo` slash commands
+- `bot/client.py: _handle_solo_message()` — solo pipeline handler (reuses `game_pipeline` with `is_solo=True`)
+
+**Undo system:** Single-turn undo via `/solo_undo`. Restores conversation history and location; marks the undone turn in the solo log. Prompt-level only (small DB side effects from chronicler are acceptable).
+
+**Solo logs:** `00 - Session Log/Solo/{CharacterName}_Solo_S{NNN}.md` — turn-by-turn logs with player input and DM narrative. Undone turns marked `[UNDONE]` but preserved.
+
+**Guardrails:** Appended to storyteller, rules lawyer, and chronicler prompts when `is_solo=True`. Chronicler clock-freeze has a belt-and-suspenders check (prompt + code null-out of world_clock).
+
+### Character Knowledge System
+
+The Chronicler extracts personality traits, backstory fragments, fears, goals, and relationship changes from player actions during both solo and group play. Dual-written to MongoDB (`character_knowledge` collection) and vault (`08 - Character Knowledge/{name}.md`).
+
+**Key files:**
+- `models/character_knowledge.py` — `CharacterInsight` + `CharacterKnowledge` Pydantic schemas
+- `models/chronicler_output.py` — `character_insights: List[CharacterInsight]` field on `ChroniclerOutput`
+- `tools/context_assembler.py: _build_character_knowledge_section()` — feeds accumulated knowledge into storyteller context
+
+### Pipeline Monitoring
+
+In-memory metrics tracking for pipeline health, exposed via `/bot-status` slash command.
+
+**Key files:**
+- `tools/pipeline_metrics.py` — `PipelineMetrics` class (singleton `pipeline_metrics`). Tracks request counts, solo/group split, latency history (deque-bounded), per-node latency, error types (Counter). Same module-level singleton pattern as rate limiters.
+- `pipeline/graph.py` — `_timed_node()` wrapper records per-node latency transparently via `functools.wraps`. Composes with `functools.partial()` so LangGraph doesn't know timing is happening.
+- `bot/cogs/monitoring_cog.py` — `/bot-status` (system health embed) and `/solo-sessions` (active solo adventures). Both ephemeral, available to all users.
+- `bot/client.py` — Request-level timing around `game_pipeline.ainvoke()` in both `_handle_game_table` and `_handle_solo_message`.
 
 ### GameState Fields
 
@@ -86,6 +125,7 @@ Discord messages route by channel ID (see `on_message()` in `bot/client.py`):
 - `board_context`, `rules_ruling`, `narrative`, `scene_changes` — per-node outputs
 - `chronicler_done`, `session`, `current_location`, `error`, `direct_reply` — control/metadata
 - `dm_context`, `dice_results`, `is_batched` — queue mode fields (DM annotations, actual roll results, multi-action flag)
+- `is_solo` — solo mode flag (between-session 1-on-1 adventures, frozen clock, single-character context)
 
 ### Foundry VTT Integration
 
@@ -100,8 +140,9 @@ Foundry V11+ schema quirks: `background.src` (not `img`), `environment.darknessL
 ```text
 Default/
 ├── 00 - Session Log/    # Turn-by-turn prose logs
+│   └── Solo/            # Solo adventure logs per character
 ├── 01 - Party/          # PC character files
-├── 02 - NPCs/           # NPC dossiers
+├── 02 - NPCs/           # NPC dossiers (auto-created by Chronicler)
 ├── 03 - Locations/      # Location descriptions
 ├── 04 - Quests/         # Active/ and Completed/ subdirs
 │   ├── Active/
@@ -109,6 +150,7 @@ Default/
 ├── 05 - Factions/
 ├── 06 - World State/    # Clock, consequences
 ├── 07 - Lore/
+├── 08 - Character Knowledge/  # AI-extracted personality/backstory insights
 └── Assets/              # Maps/, Tokens/
 ```
 
@@ -129,7 +171,7 @@ These are the project's architectural invariants and must be followed:
 
 **Agent constructor pattern**: All agents take `(client, context_assembler, vault=None, foundry=None, model_id=None)`. Default model is `gemini-2.0-flash`. Temperature: 0.1 for logic agents, 0.9 for creative agents.
 
-**Pipeline node pattern**: Async functions with signature `async def node_name(state: GameState, *, agent=None, **kwargs) -> dict`. Return partial dicts — LangGraph merges them into GameState. Agents are bound via `functools.partial()` in `graph.py`.
+**Pipeline node pattern**: Async functions with signature `async def node_name(state: GameState, *, agent=None, **kwargs) -> dict`. Return partial dicts — LangGraph merges them into GameState. Agents are bound via `functools.partial()` in `graph.py`. All nodes are wrapped with `_timed_node()` for per-node latency tracking.
 
 **Pydantic validation**: `Field()` + `field_validator()` for constraints. `model_validate_json()` for parsing LLM outputs. All validators use `@classmethod` decorator.
 
@@ -145,7 +187,7 @@ Configured in `.env`: `DISCORD_BOT_TOKEN`, `GEMINI_API_KEY`, `FOUNDRY_API_KEY`, 
 
 ## Development Notes
 
-- **Test baseline:** 14 pre-existing failures in `test_blind_prep`/`test_cartographer`/`test_scene_classifier` (mock/fixture issues). 162 passing tests are the regression gate.
+- **Test baseline:** 14 pre-existing failures in `test_blind_prep`/`test_cartographer`/`test_scene_classifier` (mock/fixture issues). 228 passing tests are the regression gate.
 - `docs/` — GETTING_STARTED, DM_GUIDE (Admin), PLAYER_GUIDE, CAMPAIGN_SETUP, SESSION_WALKTHROUGH
 - `ENHANCEMENT_PLAN.md` — unified dev roadmap. Rate limiting is DONE — do not re-implement
 - System paradigm: **AI is the DM, human is the admin**. `pyrightconfig.json` targets Python 3.14.

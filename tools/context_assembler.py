@@ -252,7 +252,8 @@ class ContextAssembler:
     
     def build_storyteller_context(self, current_location: Optional[str] = None,
                                    query: Optional[str] = None,
-                                   character_locations: Optional[Dict[str, str]] = None) -> str:
+                                   character_locations: Optional[Dict[str, str]] = None,
+                                   new_locations: Optional[set] = None) -> str:
         """Build the full context string for the Storyteller agent.
 
         Args:
@@ -260,6 +261,9 @@ class ContextAssembler:
             query: Player action text for reference lookups.
             character_locations: Dict mapping character names to their current locations.
                 When the party is split, this provides spatial awareness for all groups.
+            new_locations: Set of location names that need full description.
+                Locations NOT in this set get a brief version (name + NPCs only).
+                ``None`` means full descriptions everywhere (backward-compatible).
         """
         sections = []
 
@@ -273,14 +277,20 @@ class ContextAssembler:
             for char_name, loc in character_locations.items():
                 if loc and loc not in seen_locations:
                     seen_locations.add(loc)
-                    sections.append(self._build_location_section(loc))
+                    if new_locations is None or loc in new_locations:
+                        sections.append(self._build_location_section(loc))
+                    else:
+                        sections.append(self._build_brief_location_section(loc))
             # Add character-location mapping so the AI knows who is where
             mapping_lines = ["## Party Locations (SPLIT PARTY)"]
             for char_name, loc in character_locations.items():
                 mapping_lines.append(f"- **{char_name}** is at: {loc}")
             sections.append("\n".join(mapping_lines))
         elif current_location:
-            sections.append(self._build_location_section(current_location))
+            if new_locations is None or current_location in new_locations:
+                sections.append(self._build_location_section(current_location))
+            else:
+                sections.append(self._build_brief_location_section(current_location))
         
         # 3. Active Quests
         sections.append(self._build_quest_section())
@@ -319,6 +329,138 @@ class ContextAssembler:
 
         return "\n\n---\n\n".join(sections)
     
+    def build_solo_storyteller_context(
+        self,
+        character_name: str,
+        location: str,
+        new_locations: Optional[set] = None,
+        query: Optional[str] = None,
+        history: Optional['ConversationHistory'] = None,
+        solo_directives: Optional[List[str]] = None,
+        recap: Optional[str] = None,
+    ) -> str:
+        """Build context for a solo session -- single character focus.
+
+        Args:
+            character_name: The solo adventurer's name.
+            location: Current location.
+            new_locations: Set of locations needing full description.
+            query: Player action text for reference/lorebook lookups.
+            history: Per-session ConversationHistory (Phase 0.1). Falls back to
+                global self.history if not provided (backward compatibility).
+            solo_directives: List of narrative directive strings to inject
+                (oracle, chaos, threads, NPCs, factions).
+            recap: Session recap text to inject at the top.
+        """
+        sections = []
+
+        # 0. Session recap (Phase 1.1)
+        if recap:
+            sections.append(f"## Session Recap\n{recap}")
+
+        # 1. Solo character only (not full party)
+        sections.append(self._build_single_character_section(character_name))
+
+        # 2. Location
+        if new_locations is None or location in (new_locations or set()):
+            sections.append(self._build_location_section(location))
+        else:
+            sections.append(self._build_brief_location_section(location))
+
+        # 3. Quests
+        sections.append(self._build_quest_section())
+
+        # 4. Clock
+        sections.append(self._build_clock_section())
+
+        # 5. History (character-filtered, using per-session history if provided)
+        sections.append(self._build_solo_history_section(character_name, history=history))
+
+        # 6. Character knowledge (always included in solo)
+        knowledge = self._build_character_knowledge_section(character_name)
+        if knowledge:
+            sections.append(knowledge)
+
+        # 7. Solo narrative directives (oracle, chaos, threads, NPCs, factions)
+        if solo_directives:
+            directive_block = "\n".join(solo_directives)
+            sections.append(f"## Solo Narrative Directives\n{directive_block}")
+
+        # 8. Lorebook
+        lore_query = query or self._last_query
+        if lore_query:
+            lore_entries = self.lorebook.search(lore_query)
+            for entry in lore_entries:
+                sections.append(f"## Lorebook: {entry.name}\n{entry.content[:800]}")
+
+        # 9. Reference excerpts
+        ref_query = query or self._last_query
+        if ref_query:
+            refs = self._build_reference_section(ref_query, mode='lore')
+            if refs:
+                sections.append(refs)
+
+        return "\n\n---\n\n".join(sections)
+
+    def _build_single_character_section(self, character_name: str) -> str:
+        """Build a party section for a single character (solo mode)."""
+        party = self.vault.get_party_state()
+        for member in party:
+            if member['frontmatter'].get('name', '').lower() == character_name.lower():
+                lines = ["## Solo Character"]
+                lines.append(member['summary'])
+                body = member.get('body', '')
+                if body:
+                    lines.append(body.strip())
+                return "\n".join(lines)
+        return f"## Solo Character\n**{character_name}** (no character data found)"
+
+    def _build_solo_history_section(self, character_name: str,
+                                     history: Optional['ConversationHistory'] = None) -> str:
+        """Build history section filtered to a single character's events.
+
+        Args:
+            character_name: Filter to events involving this character.
+            history: Per-session history (Phase 0.1). Falls back to global if not provided.
+        """
+        source = history or self.history
+        relevant = source.get_relevant_history()
+        # Include events for this character or general (no character tag)
+        filtered = [
+            e for e in relevant
+            if e.character is None
+            or e.character.lower() == character_name.lower()
+        ]
+        if not filtered:
+            return "## Recent Events\nNo prior events in memory."
+
+        lines = ["## Recent Events (solo -- character-filtered)"]
+        for entry in filtered:
+            importance = "\U0001f534" if entry.score >= 7 else "\U0001f7e1" if entry.score >= 4 else "\u26aa"
+            lines.append(f"  {importance} {entry.text}")
+        return "\n".join(lines)
+
+    def _build_character_knowledge_section(self, character_name: str) -> str:
+        """Build a section from accumulated character knowledge.
+
+        Reads the character knowledge vault file and returns a formatted section,
+        truncated to ~1500 chars to fit context budget.
+        """
+        knowledge_path = os.path.join(
+            self.vault.CHARACTER_KNOWLEDGE, f"{character_name}.md"
+        )
+        result = self.vault.read_file(knowledge_path)
+        if not result:
+            return ""
+
+        fm, body = result
+        if not body or not body.strip():
+            return ""
+
+        # Truncate to fit context budget
+        truncated = body.strip()[:1500]
+        return f"## Character Knowledge: {character_name}\n{truncated}"
+
     def build_rules_lawyer_context(self, query: Optional[str] = None) -> str:
         """Build context for the Rules Lawyer — focused on mechanics."""
         sections = []
@@ -525,6 +667,35 @@ class ContextAssembler:
         
         return "\n".join(lines)
     
+    def _build_brief_location_section(self, location_name: str) -> str:
+        """Build a condensed location section for locations already described.
+
+        Omits Description, Current State, and Notable Features prose.
+        Still includes NPCs present so the AI knows who's around.
+        """
+        result = self.vault.get_location(location_name)
+        display_name = location_name
+        if result:
+            fm, _ = result
+            display_name = fm.get('name', location_name)
+
+        lines = [
+            f"## Current Location: {display_name}",
+            "[SAME LOCATION — already described. Focus on action/reaction, not environment.]",
+        ]
+
+        npcs = self.vault.get_npcs_at_location(location_name)
+        if npcs:
+            lines.append("\n### NPCs Present")
+            for npc in npcs:
+                npc_fm = npc['frontmatter']
+                disposition = npc_fm.get('disposition', 'unknown')
+                npc_status = npc_fm.get('status', 'alive')
+                display_status = "DEAD" if npc_status == 'dead' else disposition
+                lines.append(f"- **{npc_fm.get('name', '?')}** ({npc_fm.get('role', '?')}) — {display_status}")
+
+        return "\n".join(lines)
+
     def _build_quest_section(self) -> str:
         """Build the active quests section."""
         quests = self.vault.get_active_quests()
@@ -575,8 +746,14 @@ class ContextAssembler:
 
     async def build_storyteller_context_async(self, current_location: Optional[str] = None,
                                                query: Optional[str] = None,
-                                               character_locations: Optional[Dict[str, str]] = None) -> str:
-        """Async version of build_storyteller_context — prefers StateManager for mechanical data."""
+                                               character_locations: Optional[Dict[str, str]] = None,
+                                               new_locations: Optional[set] = None) -> str:
+        """Async version of build_storyteller_context — prefers StateManager for mechanical data.
+
+        Args:
+            new_locations: Set of location names needing full description.
+                ``None`` means full descriptions everywhere (backward-compatible).
+        """
         sections = []
 
         # 1. Party State — prefer DB for HP/conditions accuracy
@@ -588,13 +765,19 @@ class ContextAssembler:
             for char_name, loc in character_locations.items():
                 if loc and loc not in seen_locations:
                     seen_locations.add(loc)
-                    sections.append(await self._build_location_section_async(loc))
+                    if new_locations is None or loc in new_locations:
+                        sections.append(await self._build_location_section_async(loc))
+                    else:
+                        sections.append(self._build_brief_location_section(loc))
             mapping_lines = ["## Party Locations (SPLIT PARTY)"]
             for char_name, loc in character_locations.items():
                 mapping_lines.append(f"- **{char_name}** is at: {loc}")
             sections.append("\n".join(mapping_lines))
         elif current_location:
-            sections.append(await self._build_location_section_async(current_location))
+            if new_locations is None or current_location in new_locations:
+                sections.append(await self._build_location_section_async(current_location))
+            else:
+                sections.append(self._build_brief_location_section(current_location))
 
         # 3. Active Quests — prefer DB
         sections.append(await self._build_quest_section_async())

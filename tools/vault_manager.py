@@ -86,6 +86,8 @@ class VaultManager:
     FACTIONS = "05 - Factions"
     WORLD_STATE = "06 - World State"
     LORE = "07 - Lore"
+    SOLO_LOG = "00 - Session Log/Solo"
+    CHARACTER_KNOWLEDGE = "08 - Character Knowledge"
     TEMPLATES = "_templates"
     
     def __init__(self, vault_path: str = "campaign_vault"):
@@ -458,26 +460,30 @@ class VaultManager:
                 # Insert into the Key Events table (before the next ## section)
                 if "## Key Events" in content:
                     key_events_idx = content.index("## Key Events")
-                    # Skip the "## Key Events" line itself
+                    # Skip the "## Key Events" heading line
                     line_end = content.find("\n", key_events_idx)
                     search_start = line_end + 1 if line_end > 0 else key_events_idx + len("## Key Events")
                     rest = content[search_start:]
-                    # Find the NEXT ## heading after Key Events (any heading)
-                    next_section = rest.find("\n## ")
-                    if next_section >= 0:
-                        abs_idx = search_start + next_section
-                        content = content[:abs_idx] + f"\n{event_entry}\n" + content[abs_idx:]
-                    else:
-                        # No section after Key Events — try to find it without leading newline
-                        # (handles case where Key Events is followed directly by ## on next line)
-                        next_section_bare = rest.find("## ")
-                        # Only match if it's at the start of a line
-                        if next_section_bare >= 0 and (next_section_bare == 0 or rest[next_section_bare - 1] == '\n'):
-                            abs_idx = search_start + next_section_bare
-                            content = content[:abs_idx] + f"{event_entry}\n\n" + content[abs_idx:]
+                    # Skip past the table header row and separator row
+                    # (| Time | Event | ... and |------|-------| ...)
+                    table_rows_start = 0
+                    for line in rest.split("\n"):
+                        stripped = line.strip()
+                        if stripped.startswith("|") and ("---" in stripped or "Event" in stripped or "Impact" in stripped):
+                            table_rows_start = rest.find(line) + len(line) + 1
                         else:
-                            # Truly no next section — insert after the table header
-                            content = content[:search_start] + rest + f"\n{event_entry}"
+                            break
+                    # Find the NEXT ## heading after Key Events content
+                    next_section = re.search(r'^## ', rest[table_rows_start:], re.MULTILINE)
+                    if next_section:
+                        abs_idx = search_start + table_rows_start + next_section.start()
+                        content = content[:abs_idx] + f"{event_entry}\n\n" + content[abs_idx:]
+                    else:
+                        # No next section — append after existing Key Events content
+                        # Find end of last table row in the Key Events section
+                        lines = rest.rstrip().split("\n")
+                        insert_after = search_start + len(rest.rstrip())
+                        content = content[:insert_after] + f"\n{event_entry}" + content[insert_after:]
                 else:
                     # No Key Events section at all — append to end
                     content += f"\n{event_entry}"
@@ -565,9 +571,191 @@ class VaultManager:
         return new_session
 
     # ------------------------------------------------------------------
+    # Solo Session Logging
+    # ------------------------------------------------------------------
+
+    def append_to_solo_log(
+        self,
+        character_name: str,
+        session_number: int,
+        turn_number: int,
+        player_input: str,
+        narrative: str,
+        undone: bool = False,
+        log_path: str = None,
+    ) -> bool:
+        """Append a turn to the solo adventure log.
+
+        Creates the file if it doesn't exist. Marks undone turns with [UNDONE].
+
+        Args:
+            character_name: The solo adventurer.
+            session_number: Campaign session number.
+            turn_number: Turn counter.
+            player_input: What the player said.
+            narrative: What the AI responded.
+            undone: If True, mark this as an undone turn.
+            log_path: Optional explicit log path (relative to vault root).
+                      If provided, overrides the default naming convention.
+
+        Returns:
+            True on success, False on failure.
+        """
+        if log_path:
+            rel_path = log_path
+        else:
+            filename = f"{character_name}_Solo_S{session_number:03d}.md"
+            rel_path = os.path.join(self.SOLO_LOG, filename)
+        full_path = self._resolve(rel_path)
+
+        try:
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+
+            if not os.path.exists(full_path):
+                # Create with frontmatter
+                header = (
+                    f"---\n"
+                    f"type: solo_session_log\n"
+                    f"character: {character_name}\n"
+                    f"campaign_session: {session_number}\n"
+                    f"started: {datetime.now().isoformat(timespec='seconds')}\n"
+                    f"---\n"
+                    f"## Solo Adventure Log\n\n"
+                )
+                with open(full_path, 'w', encoding='utf-8') as f:
+                    f.write(header)
+
+            # Build the turn entry
+            undone_tag = " [UNDONE]" if undone else ""
+            entry = (
+                f"### Turn {turn_number}{undone_tag}\n"
+                f"**Player:** {player_input}\n"
+                f"**DM:** {narrative}\n\n"
+            )
+
+            with open(full_path, 'a', encoding='utf-8') as f:
+                f.write(entry)
+
+            logger.info(
+                f"Solo log: {character_name} turn {turn_number}"
+                f"{' (undone)' if undone else ''}"
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error writing solo log: {e}")
+            return False
+
+    def get_latest_solo_log(self, character_name: str) -> Optional[str]:
+        """Find and return the content of the most recent solo log for a character.
+
+        Args:
+            character_name: The solo adventurer's name.
+
+        Returns:
+            File content as string, or None if no solo log exists.
+        """
+        solo_dir = os.path.join(self.vault_path, self.SOLO_LOG)
+        if not os.path.isdir(solo_dir):
+            return None
+
+        prefix = f"{character_name}_Solo_S"
+        matching = [
+            f for f in os.listdir(solo_dir)
+            if f.startswith(prefix) and f.endswith(".md") and "_merge" not in f
+        ]
+        if not matching:
+            return None
+
+        matching.sort(reverse=True)  # Most recent first
+        latest_path = os.path.join(solo_dir, matching[0])
+
+        try:
+            with open(latest_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        except (OSError, UnicodeDecodeError) as e:
+            logger.warning(f"Failed to read solo log {latest_path}: {e}")
+            return None
+
+    # ------------------------------------------------------------------
+    # Character Knowledge
+    # ------------------------------------------------------------------
+
+    def append_character_insight(
+        self,
+        character_name: str,
+        observation: str,
+        category: str,
+        session: int,
+    ) -> bool:
+        """Append a character insight to the knowledge file.
+
+        Creates the file if it doesn't exist. Appends under the correct
+        ## Category heading.
+
+        Args:
+            character_name: Character name.
+            observation: What was observed.
+            category: One of: personality, backstory, relationship, goal, fear, habit, preference.
+            session: Session number where this was observed.
+
+        Returns:
+            True on success.
+        """
+        filename = f"{character_name}.md"
+        rel_path = os.path.join(self.CHARACTER_KNOWLEDGE, filename)
+        full_path = self._resolve(rel_path)
+
+        try:
+            os.makedirs(os.path.dirname(full_path), exist_ok=True)
+
+            if not os.path.exists(full_path):
+                # Create with frontmatter
+                header = (
+                    f"---\n"
+                    f"type: character_knowledge\n"
+                    f"character: {character_name}\n"
+                    f"---\n"
+                    f"# {character_name} -- Character Knowledge\n\n"
+                )
+                with open(full_path, 'w', encoding='utf-8') as f:
+                    f.write(header)
+
+            # Read current content
+            with open(full_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Find or create the category heading
+            heading = f"## {category.capitalize()}"
+            entry = f"- (S{session}) {observation}\n"
+
+            if heading in content:
+                # Append after the heading section
+                idx = content.index(heading) + len(heading)
+                # Find end of line
+                line_end = content.find("\n", idx)
+                if line_end >= 0:
+                    content = content[:line_end + 1] + entry + content[line_end + 1:]
+                else:
+                    content += "\n" + entry
+            else:
+                # Add new heading at the end
+                content += f"\n{heading}\n{entry}"
+
+            with open(full_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+
+            logger.info(
+                f"Character insight: {character_name} [{category}] {observation[:60]}"
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Error writing character insight: {e}")
+            return False
+
+    # ------------------------------------------------------------------
     # World Clock
     # ------------------------------------------------------------------
-    
+
     def read_world_clock(self) -> Dict[str, Any]:
         """Read the current in-game date/time."""
         fm, _ = self.read_file(os.path.join(self.WORLD_STATE, "clock.md"))

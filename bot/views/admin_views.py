@@ -800,6 +800,7 @@ class AdminConsoleView(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
 
         self.admin_cog.queue.enable_queue_mode()
+        self.admin_cog.storyteller.reset_location_tracking()
 
         # Activate ambient cog for the session
         ambient = self.admin_cog.bot.get_cog("Ambient")
@@ -870,6 +871,30 @@ class AdminConsoleView(discord.ui.View):
         if ambient:
             ambient.set_session_active(False)
 
+        # Session wrapup: clean log, create missing NPCs, consolidate NPC notes
+        wrapup_msg = ""
+        try:
+            from tools.session_wrapup import run_session_wrapup
+            wrapup_results = await run_session_wrapup(
+                client=self.admin_cog.storyteller.client,
+                vault=self.admin_cog.vault,
+                context_assembler=self.admin_cog.context_assembler,
+                state_manager=self.admin_cog.bot.state_manager,
+                session_number=session_num,
+            )
+            parts = []
+            if wrapup_results.get("log_cleaned"):
+                parts.append("log cleaned")
+            if wrapup_results.get("npcs_created"):
+                parts.append(f"{wrapup_results['npcs_created']} NPC(s) created")
+            if wrapup_results.get("npcs_consolidated"):
+                parts.append(f"{wrapup_results['npcs_consolidated']} NPC(s) consolidated")
+            if parts:
+                wrapup_msg = " Wrapup: " + ", ".join(parts) + "."
+            logger.info(f"Session wrapup: {wrapup_results}")
+        except Exception as e:
+            logger.error(f"Session wrapup failed (non-blocking): {e}", exc_info=True)
+
         # Increment session number and update context
         self.admin_cog.queue.disable_queue_mode()
         new_session = self.admin_cog.vault.increment_session()
@@ -881,7 +906,7 @@ class AdminConsoleView(discord.ui.View):
         await self.admin_cog.refresh_console()
         await interaction.followup.send(
             f"Session {session_num} ended. Summary saved. "
-            f"Next session: {new_session}. Queue mode disabled.",
+            f"Next session: {new_session}. Queue mode disabled.{wrapup_msg}",
             ephemeral=True,
         )
 

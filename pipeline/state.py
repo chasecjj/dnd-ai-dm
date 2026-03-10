@@ -49,5 +49,9 @@ class GameState(TypedDict, total=False):
     dm_context: Optional[str]
     dice_results: Optional[Dict[str, Dict[str, Any]]]
     is_batched: bool
+    # Solo mode — between-session 1-on-1 adventures
+    is_solo: bool
+    _solo_thread_id: Optional[int]  # Thread ID for looking up per-session state
+    _chronicler_output: Optional[Dict[str, Any]]  # Chronicler output for solo post-processing
     # Sync fields — carries character sync results through the pipeline
     sync_report: Optional[Dict[str, Any]]

@@ -22,7 +22,7 @@ Grizzled, battle-scarred retired adventurer. Owns and operates the [[Yawning Por
 A legendary former adventurer who explored the depths of Undermountain. Now runs the tavern that sits atop its entrance — the famous well in the center of the common room.
 
 ## Party Relationship
-Not yet met.
+Met during Session 0. Suspicious of the party — particularly Hadrian's snooping near the well and Victor's aggressive behavior. Generally unimpressed by the group's antics but tolerated them as paying customers. Refused Kallisar's request to cook the Gibbering Mouther. Told the party that quests are earned, not given.
 
 ## DM Notes
 - Key NPC for Dragon Heist. Bridge between the tavern and the dungeon below.

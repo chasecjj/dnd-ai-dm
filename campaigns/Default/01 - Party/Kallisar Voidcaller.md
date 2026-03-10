@@ -14,7 +14,7 @@ spell_slots_max: 1
 lay_on_hands_pool: 0
 tags:
 - party
-pronouns: ''
+pronouns: he/him
 foundry_uuid: null
 ---
 # Kallisar Voidcaller

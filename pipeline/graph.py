@@ -10,9 +10,12 @@ Usage:
     result = await pipeline.ainvoke(initial_state)
 """
 
+import time
 import logging
-from functools import partial
+from functools import partial, wraps
 from typing import Dict, Any
+
+from tools.pipeline_metrics import pipeline_metrics
 
 from pipeline.state import GameState
 from pipeline.nodes.router_node import router_node
@@ -66,6 +69,17 @@ def _route_after_board(state: dict) -> str:
     return "end"
 
 
+def _timed_node(name: str, fn):
+    """Wrap an async node function with per-node latency tracking."""
+    @wraps(fn)
+    async def wrapper(state, **kwargs):
+        start = time.monotonic()
+        result = await fn(state, **kwargs)
+        pipeline_metrics.record_node(name, time.monotonic() - start)
+        return result
+    return wrapper
+
+
 def build_game_pipeline(agents: Dict[str, Any]):
     """Build and compile the Game Table LangGraph pipeline.
 
@@ -82,27 +96,27 @@ def build_game_pipeline(agents: Dict[str, Any]):
             "LangGraph is not installed. Run: pip install langgraph langchain-core"
         )
 
-    # Bind agents into node functions via partial application
-    _router = partial(router_node, message_router=agents["message_router"])
-    _board = partial(board_monitor_node, board_monitor=agents["board_monitor"],
+    # Bind agents into node functions via partial application, wrapped with timing
+    _router = _timed_node("router", partial(router_node, message_router=agents["message_router"]))
+    _board = _timed_node("board", partial(board_monitor_node, board_monitor=agents["board_monitor"],
                      vault_manager=agents.get("vault_manager"),
-                     state_manager=agents.get("state_manager"))
-    _rules = partial(rules_node, rules_lawyer=agents["rules_lawyer"], context_assembler=agents["context_assembler"])
-    _story = partial(storyteller_node, storyteller=agents["storyteller"])
-    _scene = partial(
+                     state_manager=agents.get("state_manager")))
+    _rules = _timed_node("rules", partial(rules_node, rules_lawyer=agents["rules_lawyer"], context_assembler=agents["context_assembler"]))
+    _story = _timed_node("storyteller", partial(storyteller_node, storyteller=agents["storyteller"]))
+    _scene = _timed_node("scene_sync", partial(
         scene_sync_node,
         storyteller=agents["storyteller"],
         gemini_client=agents["gemini_client"],
         model_id=agents["model_id"],
-    )
-    _chron = partial(
+    ))
+    _chron = _timed_node("chronicler", partial(
         chronicler_node,
         chronicler=agents["chronicler"],
         context_assembler=agents["context_assembler"],
         storyteller=agents["storyteller"],
         vault_manager=agents.get("vault_manager"),
         foundry_client=agents.get("foundry_client"),
-    )
+    ))
 
     # Build the graph
     graph = StateGraph(GameState)

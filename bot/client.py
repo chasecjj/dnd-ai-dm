@@ -14,6 +14,13 @@ import asyncio
 import logging
 import traceback
 from collections import deque
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def _nullcontext():
+    """Async no-op context manager (fallback when no processing lock exists)."""
+    yield
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -33,6 +40,8 @@ from tools.turn_collector import TurnCollector, PendingMessage
 from tools.dice_roller import parse_and_roll, format_roll_detail
 from tools.content_filter import filter_content
 from tools.combat_tracker import CombatTracker
+from tools.solo_session import SoloSessionManager
+from tools.pipeline_metrics import pipeline_metrics
 from agents.tools.foundry_tool import FoundryClient
 
 # Agents — Live DM Team
@@ -105,7 +114,7 @@ if not GEMINI_API_KEY:
 else:
     gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
-MODEL_ID = "gemini-2.0-flash"
+MODEL_ID = "gemini-2.5-flash"
 MODEL_ID_HEAVY = "gemini-2.5-pro"
 
 # ---------------------------------------------------------------------------
@@ -144,10 +153,15 @@ auto_roll_enabled: bool = True
 combat_tracker = CombatTracker()
 
 # ---------------------------------------------------------------------------
+# Solo Session Manager — 1-on-1 between-session adventures
+# ---------------------------------------------------------------------------
+solo_manager = SoloSessionManager()
+
+# ---------------------------------------------------------------------------
 # Agents — Live DM Team (Game Table channel)
 # ---------------------------------------------------------------------------
 board_monitor = BoardMonitorAgent(gemini_client, foundry=foundry_client)
-rules_lawyer = RulesLawyerAgent(gemini_client, context_assembler, model_id=MODEL_ID_HEAVY)
+rules_lawyer = RulesLawyerAgent(gemini_client, context_assembler, model_id=MODEL_ID)
 storyteller = StorytellerAgent(gemini_client, context_assembler, model_id=MODEL_ID_HEAVY)
 foundry_architect = FoundryArchitectAgent(gemini_client, foundry=foundry_client, model_id=MODEL_ID)
 message_router = MessageRouterAgent(gemini_client, context_assembler, model_id=MODEL_ID)
@@ -259,6 +273,8 @@ bot.turn_collector = turn_collector
 bot.action_queue = action_queue
 bot.auto_roll_enabled = auto_roll_enabled
 bot.player_advisor = player_advisor
+bot.solo_manager = solo_manager
+bot.pipeline_metrics = pipeline_metrics
 
 
 # ---------------------------------------------------------------------------
@@ -374,17 +390,25 @@ async def _handle_game_table(message, user_input: str):
 
     # Pipeline invocation with single retry on failure
     result = None
+    _pipeline_start = time.monotonic()
     for _attempt in range(2):
         try:
             async with _pipeline_semaphore:
                 async with message.channel.typing():
                     result = await game_pipeline.ainvoke(initial_state)
+            pipeline_metrics.record_request(
+                time.monotonic() - _pipeline_start, is_solo=False, success=True
+            )
             break  # Success
         except Exception as pipeline_err:
             if _attempt == 0:
                 logger.warning(f"Pipeline attempt 1 failed, retrying: {pipeline_err}")
                 await asyncio.sleep(1)
             else:
+                pipeline_metrics.record_request(
+                    time.monotonic() - _pipeline_start, is_solo=False,
+                    success=False, error_type="pipeline_error",
+                )
                 logger.error(f"Pipeline failed after retry: {pipeline_err}", exc_info=True)
                 await send_to_moderator_log(
                     f"[Game Table] Pipeline failed after retry for {message.author}:\n"
@@ -483,6 +507,268 @@ async def _handle_game_table(message, user_input: str):
 
 
 # ---------------------------------------------------------------------------
+# Solo Session Pipeline Handler
+# ---------------------------------------------------------------------------
+async def _handle_solo_message(message, user_input: str):
+    """Handle messages in a solo adventure thread.
+
+    Reuses the game_pipeline but with solo-specific context:
+    - Per-session history isolation (Phase 0.1)
+    - Processing lock prevents concurrent corruption (Phase 0.2)
+    - Oracle grading for graduated outcomes (Phase 1.3)
+    - Chaos factor tension escalation (Phase 2.1)
+    - Thread/NPC/faction post-processing (Phase 2.2-3.1)
+    - Narrative directive coordination (Phase 2.4)
+    """
+    session = solo_manager.get_session(message.channel.id)
+    if not session:
+        return
+
+    # Acquire per-session processing lock (Phase 0.2)
+    processing_lock = solo_manager.get_processing_lock(message.channel.id)
+    if processing_lock and processing_lock.locked():
+        await message.channel.send(
+            "*One moment — still weaving the threads of your last action...*"
+        )
+        return
+
+    character_name = session.character_name
+    logger.info(f"[Solo] {character_name}: {user_input}")
+
+    async with processing_lock if processing_lock else _nullcontext():
+        # Content filter
+        user_input, was_filtered = filter_content(user_input)
+        if was_filtered:
+            await send_to_moderator_log(
+                f"[Solo Filter] Filtered input from {message.author}: {message.content[:200]}"
+            )
+
+        # Get per-session history (Phase 0.1)
+        session_history = solo_manager.get_history(message.channel.id)
+
+        # Snapshot current state for undo (uses per-session history)
+        history_snapshot = [
+            {
+                "text": e.text,
+                "base_impact": e.base_impact,
+                "turns_ago": e.turns_ago,
+                "timestamp": e.timestamp,
+                "character": e.character,
+                "location": e.location,
+            }
+            for e in (session_history.entries if session_history else [])
+        ]
+
+        from tools.solo_session import SoloTurnSnapshot
+
+        turn_number = session.turn_count + 1
+        session.push_snapshot(SoloTurnSnapshot(
+            turn_number=turn_number,
+            history_snapshot=history_snapshot,
+            location_before=session.current_location,
+            player_input=user_input,
+        ))
+
+        # Auto-roll dice
+        dice_results = None
+        if auto_roll_enabled:
+            try:
+                dice_results, roll_summary = await _auto_roll_for_actions(
+                    [(character_name, f"[{character_name}]: {user_input}")]
+                )
+                if roll_summary:
+                    await message.channel.send(f"\U0001f3b2 {' | '.join(roll_summary)}")
+            except Exception as e:
+                logger.warning(f"Solo auto-roll failed: {e}")
+
+        # Build initial state
+        initial_state = {
+            "player_input": f"[{character_name}]: {user_input}",
+            "character_name": character_name,
+            "session": session.session_number,
+            "current_location": session.current_location,
+            "dice_results": dice_results,
+            "is_solo": True,
+            "_solo_thread_id": message.channel.id,
+        }
+
+        # Pipeline invocation with retry
+        result = None
+        _pipeline_start = time.monotonic()
+        for _attempt in range(2):
+            try:
+                async with _pipeline_semaphore:
+                    async with message.channel.typing():
+                        result = await game_pipeline.ainvoke(initial_state)
+                pipeline_metrics.record_request(
+                    time.monotonic() - _pipeline_start, is_solo=True, success=True
+                )
+                break
+            except Exception as pipeline_err:
+                if _attempt == 0:
+                    logger.warning(f"Solo pipeline attempt 1 failed: {pipeline_err}")
+                    await asyncio.sleep(1)
+                else:
+                    pipeline_metrics.record_request(
+                        time.monotonic() - _pipeline_start, is_solo=True,
+                        success=False, error_type="pipeline_error",
+                    )
+                    logger.error(f"Solo pipeline failed after retry: {pipeline_err}", exc_info=True)
+                    await message.channel.send(
+                        "*The threads of fate tangle momentarily... Try again in a moment!*"
+                    )
+                    return
+
+        if result is None:
+            return
+
+        # Deliver narrative
+        narrative = result.get("narrative", "")
+        if not narrative:
+            narrative = "*The moment passes quietly...*"
+
+        if len(narrative) > 2000:
+            for i in range(0, len(narrative), 2000):
+                await message.channel.send(narrative[i : i + 2000])
+        else:
+            await message.channel.send(narrative)
+
+        # Store narrative in snapshot for undo reference
+        if session.last_snapshot:
+            session.last_snapshot.narrative = narrative
+
+        # Update session state
+        await solo_manager.increment_turn(message.channel.id)
+
+        # Track location changes from scene_changes
+        scene_changes = result.get("scene_changes") or {}
+        if scene_changes.get("location_changed") and scene_changes.get("new_location"):
+            session.current_location = scene_changes["new_location"]
+            storyteller.set_character_location(character_name, session.current_location)
+
+        # Log turn to vault
+        vault.append_to_solo_log(
+            character_name=character_name,
+            session_number=session.session_number,
+            turn_number=turn_number,
+            player_input=user_input,
+            narrative=narrative,
+            log_path=getattr(session, 'solo_log_path', None),
+        )
+
+        # --- Solo post-processing (Phases 2.1-3.1) ---
+        await _solo_post_process(session, result, turn_number)
+
+        if result.get("error"):
+            logger.error(f"Solo pipeline error: {result['error']}")
+
+
+async def _solo_post_process(session, pipeline_result: dict, turn_number: int):
+    """Post-process pipeline results for solo-specific tracking.
+
+    Updates chaos factor, extracts threads and NPCs from chronicler output,
+    and adjusts session state. Non-blocking — errors are logged and swallowed.
+    """
+    try:
+        from tools.solo_engine import ChaosTracker
+        from tools.solo_world import (
+            ThreadTracker, SoloNPCRegistry, FactionTracker,
+            extract_threads_from_chronicler, extract_npcs_from_chronicler,
+        )
+
+        # Rebuild trackers from session state
+        chaos = ChaosTracker(factor=session.chaos_factor)
+        threads = ThreadTracker.from_list(session.active_threads)
+        npcs = SoloNPCRegistry.from_list(session.encountered_npcs)
+        factions = FactionTracker.from_list(session.factions)
+
+        # Use actual chronicler output for assessment (populated by chronicler node)
+        chronicler_data = pipeline_result.get("_chronicler_output") or {}
+        # Also include scene_changes which flow separately through the pipeline
+        if "scene_changes" not in chronicler_data:
+            chronicler_data["scene_changes"] = pipeline_result.get("scene_changes") or {}
+
+        # Chaos assessment — adjust factor based on what happened
+        direction = chaos.assess_chronicler_output(chronicler_data)
+        if direction != "none":
+            chaos.adjust(direction)
+
+        # Thread extraction — heuristic scan of narrative + chronicler output
+        narrative = pipeline_result.get("narrative", "")
+        thread_candidates = extract_threads_from_chronicler(
+            chronicler_data, narrative, turn_number
+        )
+        for candidate in thread_candidates:
+            threads.add_thread(candidate["title"], turn_number, candidate.get("priority", 5))
+        threads.check_dormancy(turn_number)
+
+        # NPC extraction from chronicler output
+        npc_data = extract_npcs_from_chronicler(chronicler_data, turn_number)
+        for npc in npc_data:
+            npcs.register(
+                name=npc["name"], turn=turn_number,
+                disposition=npc.get("disposition", "neutral"),
+                location=npc.get("location", ""),
+                motivation=npc.get("motivation", ""),
+            )
+
+        # Faction tick
+        factions.tick(turn_number)
+
+        # Consequence tracking — scan narrative for consequence-related content
+        # (prompt-first: consequences are managed by the LLM, we just track them)
+
+        # Write updated state back to session
+        session.chaos_factor = chaos.factor
+        session.active_threads = threads.to_list()
+        session.encountered_npcs = npcs.to_list()
+        session.factions = factions.to_list()
+
+    except Exception as e:
+        logger.warning(f"Solo post-processing error (non-blocking): {e}")
+
+
+async def _solo_session_timeout_checker():
+    """Background task: auto-end solo sessions idle >2 hours (Phase 3.2b).
+
+    Runs every 30 minutes. Logs timeout to vault and moderator log.
+    """
+    await bot.wait_until_ready()
+    while not bot.is_closed():
+        try:
+            timed_out = solo_manager.get_timed_out_sessions()
+            for session in timed_out:
+                logger.info(
+                    f"Solo session timeout: {session.character_name} "
+                    f"(thread={session.thread_id}, idle since {session.last_activity})"
+                )
+                # Log timeout in vault
+                vault.append_to_solo_log(
+                    character_name=session.character_name,
+                    session_number=session.session_number,
+                    turn_number=session.turn_count + 1,
+                    player_input="[Session Timeout]",
+                    narrative="*The adventure fades as the hero's attention wanders elsewhere...*",
+                    log_path=getattr(session, 'solo_log_path', None),
+                )
+                # End the session
+                await solo_manager.end_session(session.thread_id)
+                # Notify moderator log
+                try:
+                    await send_to_moderator_log(
+                        f"[Solo] {session.character_name}'s solo session auto-ended "
+                        f"(timeout after {solo_manager.SESSION_TIMEOUT_HOURS}h idle, "
+                        f"{session.turn_count} turns)"
+                    )
+                except Exception:
+                    pass
+        except Exception as e:
+            logger.warning(f"Solo timeout checker error: {e}")
+
+        await asyncio.sleep(1800)  # Check every 30 minutes
+
+
+# ---------------------------------------------------------------------------
 # Monster Turn Generator — Standalone enemy action when monsters go first
 # ---------------------------------------------------------------------------
 async def _generate_monster_turn(channel):
@@ -495,7 +781,10 @@ async def _generate_monster_turn(channel):
         return
 
     prompt = combat_tracker.get_monster_first_prompt()
-    vault_context = context_assembler.build_storyteller_context(storyteller._current_location)
+    vault_context = context_assembler.build_storyteller_context(
+        storyteller._current_location,
+        new_locations=set(),
+    )
 
     full_prompt = f"""## Current World State (from vault)
 {vault_context}
@@ -988,8 +1277,14 @@ async def on_ready():
     # Async-connect StateManager (MongoDB) — non-blocking, degrades gracefully
     if await state_manager.connect():
         logger.info("StateManager connected — DB-backed context active.")
+        # Restore active solo sessions from MongoDB (Phase 2.0)
+        solo_manager._state_manager = state_manager
+        await solo_manager.restore_active()
     else:
         logger.warning("StateManager unavailable — running in vault-only mode.")
+
+    # Start solo session timeout checker (Phase 3.2b)
+    bot.loop.create_task(_solo_session_timeout_checker())
 
     # Async-connect Foundry VTT — non-blocking, degrades gracefully
     if foundry_client.api_key:
@@ -1102,6 +1397,15 @@ async def on_message(message):
             else:
                 await _handle_game_table(message, user_input)
         return  # Don't fall through to other handlers
+
+    # Check if this is a solo adventure thread (before player thread check)
+    is_solo_thread = (
+        isinstance(message.channel, discord.Thread)
+        and solo_manager.is_solo_thread(message.channel.id)
+    )
+    if is_solo_thread:
+        await _handle_solo_message(message, user_input)
+        return
 
     # Check if this message is in a player's private console thread
     is_player_thread = (
@@ -1259,6 +1563,8 @@ async def load_cogs():
     await bot.load_extension("bot.cogs.player_cog")
     await bot.load_extension("bot.cogs.sync_cog")
     await bot.load_extension("bot.cogs.ambient_cog")
+    await bot.load_extension("bot.cogs.solo_cog")
+    await bot.load_extension("bot.cogs.monitoring_cog")
     logger.info("All Cogs loaded.")
 
 
@@ -1272,9 +1578,77 @@ async def main():
         await foundry_client.close()
 
 
+def _acquire_lockfile() -> bool:
+    """Acquire a PID lockfile to prevent multiple bot instances.
+
+    Returns True if the lock was acquired (safe to start).
+    Returns False if another instance is already running.
+    Uses only stdlib — no psutil dependency.
+    """
+    import subprocess
+
+    lockfile = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".bot.lock")
+
+    if os.path.exists(lockfile):
+        try:
+            with open(lockfile, "r") as f:
+                old_pid = int(f.read().strip())
+
+            # Check if that PID is still a running bot process (Windows-only)
+            try:
+                result = subprocess.run(
+                    ["powershell", "-Command",
+                     f"(Get-CimInstance Win32_Process -Filter \"ProcessId={old_pid}\").CommandLine"],
+                    capture_output=True, text=True, timeout=5,
+                )
+                cmdline = (result.stdout or "").lower()
+                if "orchestration/main.py" in cmdline or "bot/client" in cmdline:
+                    print(f"ERROR: Bot is already running (PID {old_pid}).")
+                    print(f"  Kill it first:  taskkill /PID {old_pid} /F")
+                    print(f"  Or delete the lockfile:  {lockfile}")
+                    return False
+            except (subprocess.TimeoutExpired, OSError):
+                pass  # Can't check — assume stale
+
+            # Stale lockfile — old process is gone or not the bot
+            logger.info(f"Removing stale lockfile (PID {old_pid} no longer running)")
+        except (ValueError, OSError):
+            pass  # Corrupt lockfile — overwrite it
+
+    # Write our PID
+    try:
+        with open(lockfile, "w") as f:
+            f.write(str(os.getpid()))
+    except OSError as e:
+        logger.warning(f"Could not write lockfile: {e}")
+
+    return True
+
+
+def _release_lockfile():
+    """Remove the PID lockfile on shutdown."""
+    lockfile = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".bot.lock")
+    try:
+        if os.path.exists(lockfile):
+            with open(lockfile, "r") as f:
+                stored_pid = int(f.read().strip())
+            # Only remove if it's OUR lockfile
+            if stored_pid == os.getpid():
+                os.remove(lockfile)
+    except (ValueError, OSError):
+        pass
+
+
 def run():
     """Synchronous entry point for scripts."""
     if not DISCORD_TOKEN:
         print("Error: DISCORD_BOT_TOKEN not found via os.getenv")
         return
-    asyncio.run(main())
+
+    if not _acquire_lockfile():
+        return
+
+    try:
+        asyncio.run(main())
+    finally:
+        _release_lockfile()

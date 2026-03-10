@@ -86,7 +86,14 @@ You must respond with ONLY valid JSON matching this exact schema. No markdown, n
     "Event text of a due consequence that was addressed in this exchange"
   ],
   "location_updates": [],
-  "world_clock": null
+  "world_clock": null,
+  "character_insights": [
+    {
+      "character_name": "Character Name",
+      "observation": "What was revealed about this character through their actions/dialogue",
+      "category": "personality|backstory|relationship|goal|fear|habit|preference"
+    }
+  ]
 }
 
 IMPACT SCALE:
@@ -109,6 +116,14 @@ INVENTORY TRACKING (critical):
 - Track ALL consumable usage: thrown weapons, arrows, spell components with cost, potions, gold spent.
 
 NPC STATUS VALUES: "alive", "dead", "missing", "unknown" (use status instead of alive boolean).
+
+CHARACTER INSIGHTS (important for solo sessions, useful for group too):
+- Extract personality traits, backstory fragments, fears, goals, and relationship
+  changes REVEALED through the character's actions and dialogue this turn.
+- Only record what was DEMONSTRATED or STATED, not assumptions.
+- Categories: personality, backstory, relationship, goal, fear, habit, preference
+- Keep observations concise and specific (one sentence each).
+- These build a persistent character profile that enriches future AI responses.
 
 NEW NPC DETECTION:
 - If the narrative introduces a NAMED NPC who is NOT in the "NPCs Present" context,
@@ -151,7 +166,7 @@ If nothing changed in a category, omit it or use null.
     
     async def process_exchange(self, player_action: str, rules_response: str, story_response: str,
                                session_number: int, current_location: str = None,
-                               character_name: str = None) -> Dict[str, Any]:
+                               character_name: str = None, is_solo: bool = False) -> Dict[str, Any]:
         """Process a game exchange and update the vault.
 
         Args:
@@ -202,10 +217,16 @@ Respond with ONLY the JSON extraction. No other text."""
                         f"{len(changes.character_updates)} char updates, "
                         f"{len(changes.new_consequences)} consequences")
 
+            # Solo safety net: suppress world clock updates
+            if is_solo and changes.world_clock is not None:
+                logger.info("Solo session: suppressing world_clock update")
+                changes.world_clock = None
+
             # Apply validated changes to the vault
             await self._apply_changes(changes, session_number,
                                       character_name=character_name,
-                                      current_location=current_location)
+                                      current_location=current_location,
+                                      is_solo=is_solo)
 
             return changes.model_dump()
 
@@ -222,7 +243,8 @@ Respond with ONLY the JSON extraction. No other text."""
             return {}
     
     async def _apply_changes(self, changes: ChroniclerOutput, session_number: int,
-                             character_name: str = None, current_location: str = None):
+                             character_name: str = None, current_location: str = None,
+                             is_solo: bool = False):
         """Apply validated ChroniclerOutput to the vault files.
 
         Args:
@@ -230,21 +252,25 @@ Respond with ONLY the JSON extraction. No other text."""
             session_number: Current session number.
             character_name: The acting character (for memory tagging).
             current_location: Where this action happened (for memory tagging).
+            is_solo: If True, skip global history writes (solo uses per-session history).
         """
 
         # 1. Record events in conversation history
+        # Solo sessions skip global history — they use per-session history on the manager.
+        # This prevents concurrent solos from corrupting each other's context.
         # Batch without aging — advance_turn() is called once after all events
         for event in changes.events:
             if event.description:
                 # Prefer per-event character/location from LLM, fall back to passed-in values
                 event_char = event.character or character_name
                 event_loc = event.location or current_location
-                self.context_assembler.record_event(
-                    event.description, event.impact,
-                    character=event_char,
-                    location=event_loc,
-                    age_existing=False,
-                )
+                if not is_solo:
+                    self.context_assembler.record_event(
+                        event.description, event.impact,
+                        character=event_char,
+                        location=event_loc,
+                        age_existing=False,
+                    )
                 self.vault.append_to_session_log(
                     session_number,
                     f"| | {event.description} | {event.impact} | |"
@@ -253,7 +279,7 @@ Respond with ONLY the JSON extraction. No other text."""
                 if event.type == "movement" and event_loc and event_char and self._storyteller:
                     self._storyteller.set_character_location(event_char, event_loc)
         # Age all entries once per chronicler pass (not per event)
-        if changes.events:
+        if changes.events and not is_solo:
             self.context_assembler.history.advance_turn()
 
         # 2. Update party members (flat fields from CharacterUpdate)
@@ -377,6 +403,16 @@ Respond with ONLY the JSON extraction. No other text."""
             for loc_update in changes.location_updates:
                 if loc_update.name and character_name:
                     self._storyteller.set_character_location(character_name, loc_update.name)
+
+        # 9. Apply character insights (dual-write: vault + MongoDB)
+        if changes.character_insights:
+            for insight in changes.character_insights:
+                self.vault.append_character_insight(
+                    character_name=insight.character_name,
+                    observation=insight.observation,
+                    category=insight.category,
+                    session=session_number,
+                )
 
         logger.info(f"Chronicler applied all changes for session {session_number}")
 

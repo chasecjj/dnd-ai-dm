@@ -47,12 +47,21 @@ async def chronicler_node(
         if character_name:
             player_input = f"[{character_name}]: {player_input}"
 
+        # Solo session: freeze the world clock
+        if state.get("is_solo"):
+            player_input += (
+                "\n[SOLO SESSION: Do NOT emit a world_clock update. "
+                "Time is frozen during solo play.]"
+            )
+
         # Resolve location for this character (split-party aware)
         current_location = (
             storyteller.get_character_location(character_name)
             if character_name
             else storyteller._current_location
         )
+
+        is_solo = state.get("is_solo", False)
 
         await gemini_limiter.acquire()
         changes = await chronicler.process_exchange(
@@ -62,8 +71,13 @@ async def chronicler_node(
             session_number=state.get("session", 0),
             current_location=current_location,
             character_name=character_name,
+            is_solo=is_solo,
         )
-        context_assembler.save_checkpoint()
+        # Solo sessions use per-session history — don't write to global checkpoint.
+        # Global checkpoint is for group play campaign state only.
+        # Solo events merge into campaign state at /solo_end.
+        if not is_solo:
+            context_assembler.save_checkpoint()
 
         # Post-sync: push character HP changes to Foundry
         post_sync_results = []
@@ -93,6 +107,9 @@ async def chronicler_node(
         result = {"chronicler_done": True}
         if sync_report:
             result["sync_report"] = sync_report
+        # Pass chronicler output through state for solo post-processing
+        if changes and state.get("is_solo"):
+            result["_chronicler_output"] = changes
         return result
 
     except Exception as e:

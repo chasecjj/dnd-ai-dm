@@ -237,5 +237,34 @@ Without MongoDB, the bot runs in "vault-only mode" — all state lives in the Ob
 MongoDB adds:
 - Faster mechanical state queries (HP, conditions, quest status)
 - Separate mechanical vs narrative truth stores
+- Character knowledge persistence (personality insights from solo/group play)
 
 To enable: set `MONGODB_URI` in your `.env`. The bot connects automatically on startup and falls back to vault-only if unavailable.
+
+---
+
+## Campaign Vault Structure
+
+The bot auto-creates this directory structure for each campaign:
+
+```text
+campaign_vault/
+├── 00 - Session Log/          # Turn-by-turn prose logs
+│   └── Solo/                  # Solo adventure logs per character
+├── 01 - Party/                # PC character files
+├── 02 - NPCs/                 # NPC dossiers (auto-created during play)
+├── 03 - Locations/            # Location descriptions
+├── 04 - Quests/
+│   ├── Active/                # Current quests
+│   └── Completed/             # Finished quests
+├── 05 - Factions/             # Organizations and their standings
+├── 06 - World State/          # Clock, consequences
+├── 07 - Lore/                 # Lorebook entries
+├── 08 - Character Knowledge/  # AI-extracted personality/backstory insights
+├── Assets/                    # Maps/, Tokens/
+└── _templates/                # File templates for each vault type
+```
+
+**New directories:**
+- `00 - Session Log/Solo/` — Solo adventure logs, one file per character per campaign session
+- `08 - Character Knowledge/` — AI-extracted personality traits, backstory fragments, goals, and relationship insights. Written by the Chronicler during both solo and group play.

@@ -27,3 +27,9 @@ Thumbs.db
 
 # Agent workspace
 .agent/
+
+# Runtime
+.bot.lock
+
+# Web project (standalone, separate repo)
+web_project/

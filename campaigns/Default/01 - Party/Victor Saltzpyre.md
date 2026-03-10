@@ -1,7 +1,7 @@
 ---
 type: party_member
 name: Victor Saltzpyre
-player: Ember
+player: SonOfThunder
 race: Human
 class: Paladin
 level: 1
@@ -14,7 +14,7 @@ spell_slots_max: 2
 lay_on_hands_pool: 5
 tags:
 - party
-pronouns: ''
+pronouns: he/him
 foundry_uuid: null
 ---
 # Victor Saltzpyre

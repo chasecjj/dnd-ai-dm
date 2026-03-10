@@ -29,7 +29,7 @@ class WorldClock(BaseModel):
 class Consequence(BaseModel):
     """A delayed world event that triggers at a future session."""
 
-    trigger_session: int = Field(ge=0)
+    trigger_session: Optional[int] = Field(default=None, ge=0)
     event: str
     impact: int = Field(default=5, ge=1, le=10)
     notes: str = ""

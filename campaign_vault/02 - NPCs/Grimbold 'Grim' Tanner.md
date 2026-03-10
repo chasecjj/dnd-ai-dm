@@ -1,17 +1,21 @@
 ---
+type: npc
 name: Grimbold 'Grim' Tanner
 race: Human (Variant)
-class: Warehouse Guard
+role: Warehouse Guard
 location: The Sunken Keg Warehouse
 faction: Unaffiliated (claims neutrality, but accepts coin from various sources)
-disposition: Hostile
+disposition: hostile
 status: alive
+first_seen_session: null
+auto_generated: false
 tags:
 - guard
 - mercenary
 - suspicious
 - Dock Ward
 ---
+# Grimbold 'Grim' Tanner
 ## Description
 Grimbold is a burly man with a shaved head and a network of scars crisscrossing his arms. He wears patched leather armor and constantly chews on a piece of driftwood.
 
@@ -25,4 +29,6 @@ Grimbold is secretly in debt to the Xanathar Guild, owing them a substantial sum
 His 'neutrality' makes him a potential point of contact or conflict for both the Zhentarim and the Xanathar Guild. The Sunken Keg Warehouse is near the Whispering Crates, so there could be past conflicts with Zhentarim guards.
 
 ## Plot Hooks
-['The party might need access to the Sunken Keg Warehouse and must negotiate (or fight) their way past Grim.', "The Zhentarim, knowing of Grim's reputation for taking coin, might approach the party to 'persuade' Grim to look the other way during a clandestine operation.", "The Xanathar Guild might contact the party to collect Grim's debt, offering a cut of the 'take' if they succeed."]
+- The party might need access to the Sunken Keg Warehouse and must negotiate (or fight) their way past Grim.
+- The Zhentarim, knowing of Grim's reputation for taking coin, might approach the party to 'persuade' Grim to look the other way during a clandestine operation.
+- The Xanathar Guild might contact the party to collect Grim's debt, offering a cut of the 'take' if they succeed.

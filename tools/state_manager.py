@@ -346,6 +346,58 @@ class StateManager:
         return result.modified_count > 0
 
     # ------------------------------------------------------------------
+    # Character Knowledge
+    # ------------------------------------------------------------------
+
+    async def append_character_insights(
+        self, character_name: str, insights: list, session: int
+    ) -> bool:
+        """Append character insights to MongoDB.
+
+        Args:
+            character_name: Character name.
+            insights: List of dicts with observation, category fields.
+            session: Session number.
+
+        Returns:
+            True on success.
+        """
+        self._require_connection()
+        try:
+            for insight in insights:
+                await self._db.character_knowledge.update_one(
+                    {"character_name": character_name},
+                    {
+                        "$push": {
+                            "observations": {
+                                "observation": insight.get("observation", ""),
+                                "category": insight.get("category", "personality"),
+                                "session": session,
+                            }
+                        },
+                        "$set": {"last_updated_session": session},
+                        "$setOnInsert": {"character_name": character_name},
+                    },
+                    upsert=True,
+                )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to append character insights: {e}")
+            return False
+
+    async def get_character_knowledge(
+        self, character_name: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get accumulated character knowledge."""
+        self._require_connection()
+        doc = await self._db.character_knowledge.find_one(
+            {"character_name": {"$regex": f"^{re.escape(character_name)}$", "$options": "i"}}
+        )
+        if doc:
+            doc.pop("_id", None)
+        return doc
+
+    # ------------------------------------------------------------------
     # Events (append-only log)
     # ------------------------------------------------------------------
 

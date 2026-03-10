@@ -195,14 +195,16 @@ role: Tavern Owner
 location: "[[The Yawning Portal]]"
 faction: ""
 disposition: neutral
-alive: true
+status: alive
 first_seen_session: 1
 last_seen_session: 1
 tags: [npc]
 ---
 ```
 
-You don't need to create every NPC up front. The AI generates NPC entries during play when new characters appear — the Chronicler writes them to the vault automatically.
+> **Note:** The `role` field replaces the older `class` field (which conflicted with D&D character class). Use `role` for the NPC's occupation or function (e.g., "Tavern Owner", "City Guard Captain", "Merchant"). The `status` field replaces the older `alive` boolean — valid values are `alive`, `dead`, `missing`, `unknown`.
+
+You don't need to create every NPC up front. **The Chronicler auto-creates NPC files** during play when new characters appear in narration. Auto-created NPCs get standardized frontmatter with all required fields populated from context. You can always edit the generated files to add more detail.
 
 ---
 
@@ -348,3 +350,6 @@ The Chronicler updates `disposition_to_party` and `reputation` as the party inte
 - **Use `!prep` before sessions.** It generates encounter ideas, NPC motivations, and potential complications based on current campaign state.
 - **Check `_templates/` for file formats.** Every vault file type has a template showing the expected frontmatter fields.
 - **Wiki-links (`[[Name]]`) matter.** They create connections between vault files that the Context Assembler uses to pull related information.
+- **NPC template fields have been updated.** Use `role` (not `class`) for occupation and `status: alive` (not `alive: true`). Run `scripts/normalize_vault.py` to migrate existing vault files to the new format.
+- **Character knowledge builds automatically.** During play, the Chronicler extracts personality insights and saves them to `08 - Character Knowledge/`. These feed into future storyteller context for more personalized narration.
+- **Solo adventure logs** are saved to `00 - Session Log/Solo/`. Players can run `/solo` between sessions for 1-on-1 adventures that build character knowledge without advancing the campaign timeline.

@@ -11,6 +11,8 @@ Zero partial corruption is possible.
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 
+from models.character_knowledge import CharacterInsight
+
 
 class EventEntry(BaseModel):
     """A single event extracted from the exchange."""
@@ -146,7 +148,7 @@ class ClockUpdate(BaseModel):
 class ConsequenceEntry(BaseModel):
     """A new delayed consequence to add to the queue."""
 
-    trigger_session: int = Field(ge=0)
+    trigger_session: Optional[int] = Field(default=None, ge=0)
     event: str
     caused_by: str = ""
     impact: int = Field(default=5, ge=1, le=10)
@@ -169,3 +171,4 @@ class ChroniclerOutput(BaseModel):
     world_clock: Optional[ClockUpdate] = None
     new_consequences: List[ConsequenceEntry] = []
     resolved_consequences: List[str] = []
+    character_insights: List[CharacterInsight] = []

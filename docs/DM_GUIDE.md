@@ -12,6 +12,11 @@ The AI is the Dungeon Master. It narrates scenes, adjudicates rules, tracks stat
 |---------|-------|-------------|
 | `/console` | Any text channel | Opens your private Admin Console thread |
 | `/whisper` | Any text channel | *(Players use this)* Creates a player's private action thread |
+| `/solo` | Any text channel | *(Players use this)* Starts a solo adventure in a private thread |
+| `/solo_end` | Solo thread | *(Players use this)* Ends their solo adventure |
+| `/solo_undo` | Solo thread | *(Players use this)* Rewinds last solo turn |
+| `/bot-status` | Any text channel | System health overview (ephemeral) |
+| `/solo-sessions` | Any text channel | Lists active solo adventures (ephemeral) |
 
 ### `!` Commands (type in any channel)
 
@@ -331,3 +336,76 @@ If you also play a character:
 - **Monster rolls before Resolve.** Roll monster attacks/damage before clicking Resolve so the AI has all information for narration.
 - **The console thread persists.** Close and reopen with `/console` without losing state.
 - **If the pipeline crashes:** Actions are automatically restored to the queue. Check Moderator Log for errors, then try resolving again.
+
+---
+
+## Solo Mode (Between-Session Adventures)
+
+Players can run 1-on-1 adventures between group sessions using the `/solo` command. Each session runs in a private thread with the full AI pipeline but single-character context.
+
+### How It Works
+
+1. Player types `/solo` in any channel
+2. Bot creates a private thread: "*CharacterName's Solo Adventure*"
+3. AI generates an opening scene based on the character's current location
+4. Player interacts directly with the AI DM — no admin intervention needed
+5. Everything is logged to `00 - Session Log/Solo/`
+
+### Guardrails
+
+Solo mode enforces these constraints automatically (via prompt injection into the storyteller, rules lawyer, and chronicler):
+
+- **No leveling or XP** — progression is reserved for group sessions
+- **No killing named campaign NPCs** — protects shared narrative
+- **No major campaign plot changes** — keeps the group story intact
+- **World clock is frozen** — time doesn't advance, AI uses relative phrases ("Later that evening...")
+- **No major magical items** — minor consumables and gold are OK
+- **Small-scale combat only** — 1-3 enemies, personal stakes
+
+### Monitoring Solo Sessions
+
+- `/solo-sessions` — Lists all active solo adventures with character name, thread link, location, turn count, and elapsed time
+- `/bot-status` — Shows total solo request count in pipeline stats
+- Solo turns appear in the moderator log with `[SOLO]` prefix
+- Solo logs are saved to `00 - Session Log/Solo/{CharacterName}_Solo_S{NNN}.md`
+
+### Undo
+
+Players can type `/solo_undo` to rewind their last turn. This:
+- Restores conversation history to before the undone turn
+- Resets location if the turn caused movement
+- Marks the turn as `[UNDONE]` in the solo log (preserved for review)
+- Can only undo once — no chaining undos
+
+### Character Knowledge
+
+During solo (and group) play, the Chronicler extracts personality traits, backstory fragments, goals, fears, and relationship changes from player actions. These are:
+- Saved to `08 - Character Knowledge/{CharacterName}.md` in the vault
+- Stored in MongoDB's `character_knowledge` collection
+- Fed back into future storyteller context for richer, more personalized narration
+
+This means solo play actively builds the AI's understanding of each character, which carries over into group sessions.
+
+---
+
+## System Monitoring
+
+### `/bot-status`
+
+Shows an ephemeral embed with full system health. Available to all users.
+
+**System Components** — connection status for Discord (with latency), Gemini (with rate limiter tokens), MongoDB (connected/vault-only), and Foundry VTT (connected/disconnected).
+
+**Pipeline Stats** — total requests (group/solo split), success rate, average latency, last request timing, slowest node, and per-node latency averages (router, board, rules, storyteller, scene_sync, chronicler).
+
+**Errors** — breakdown by error type (pipeline_error, gemini_timeout, etc.).
+
+**Color coding** — embed border is green (< 5% errors), yellow (5-20%), or red (> 20%).
+
+### `/solo-sessions`
+
+Lists all active solo adventures with character name, thread link, current location, turn count, and elapsed time.
+
+### Auto-NPC Creation
+
+The Chronicler automatically creates NPC vault files when new characters appear in narration. NPCs are saved to `02 - NPCs/` with standardized frontmatter. You don't need to manually create NPC files — the AI handles it during play.

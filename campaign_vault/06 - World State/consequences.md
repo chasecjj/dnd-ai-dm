@@ -86,6 +86,48 @@ Consequences are ripple effects from party decisions. The Chronicler agent write
   **impact:** 7
   **notes:** The party's reaction to Victor's actions will determine the severity of the consequences.
 
+
+- **trigger:** session >= None
+  **event:** Hadrian can investigate a folded piece of parchment dropped by a nervous sailor.
+  **caused_by:** "Hadrian's observation of the docks."
+  **impact:** 6
+  **notes:** The note could contain vital information related to the smuggler or other dockside activities.
+
+
+- **trigger:** session >= None
+  **event:** Grigor, a Xanathar Guild enforcer, is now aware of Hadrian's presence in the alley and is actively searching for him.
+  **caused_by:** "Hadrian making a noise while sneaking."
+  **impact:** 7
+  **notes:** This could lead to combat, a chase, or a tense standoff.
+
+
+- **trigger:** session >= None
+  **event:** Hadrian has discovered that his old acquaintance, Finn, is in deep trouble with the Xanathar Guild.
+  **caused_by:** "Hadrian eavesdropping on Finn and Grigor."
+  **impact:** 6
+  **notes:** This could lead to a new quest to help Finn or further investigate the Xanathar Guild's activities.
+
+
+- **trigger:** session >= None
+  **event:** The party is isolated and disoriented within a mysterious, thick fog that has suddenly appeared in Waterdeep Alley.
+  **caused_by:** "An unknown environmental phenomenon following Hadrian's action."
+  **impact:** 7
+  **notes:** The fog is described as ancient, wrong, and flowing, not drifting. It has muffled sounds and erased the dropped note from sight.
+
+
+- **trigger:** session >= None
+  **event:** Grigor will attack Hadrian unless Hadrian can de-escalate the situation or escape.
+  **caused_by:** "Hadrian's failed bluff attempt on Grigor."
+  **impact:** 7
+  **notes:** Grigor has given Hadrian five seconds to explain himself before attacking.
+
+
+- **trigger:** session >= None
+  **event:** The party will encounter whatever is making the wet, shuffling sound in the alley.
+  **caused_by:** "The sudden fog and darkness obscuring vision and muffling sound."
+  **impact:** 7
+  **notes:** A new, unknown presence is indicated by a wet, shuffling sound deeper in the alley.
+
 ## Resolved
 - **trigger:** session >= 2
   **event:** The troll attacks the party and other patrons in the Yawning Portal.

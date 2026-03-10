@@ -285,3 +285,18 @@ Everything above still works except:
 - `!monster`, `!scene`, `!build`, `!daytime`, `!nighttime` are unavailable
 - Monster Roll button shows "Foundry not connected"
 - The AI still identifies needed rolls — you just need another way to generate them
+
+---
+
+## Between Sessions: Solo Adventures
+
+Between group sessions, players can run solo adventures:
+
+1. Player types `/solo` in any channel
+2. Bot creates a private thread with an opening scene
+3. Player interacts with the AI DM 1-on-1 (exploration, NPC conversations, side quests)
+4. Player types `/solo_end` when done — summary posted, thread archived
+
+Solo sessions have guardrails: no leveling, no killing named NPCs, frozen world clock. But items, gold, NPC relationships, and character development carry over to group sessions.
+
+The DM can check on active solo sessions anytime with `/solo-sessions` or `/bot-status`.
