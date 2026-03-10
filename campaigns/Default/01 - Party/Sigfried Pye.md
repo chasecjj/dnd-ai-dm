@@ -14,7 +14,6 @@ spell_slots_max: 2
 lay_on_hands_pool: 0
 tags:
 - party
-char_class: Bard
 pronouns: ''
 foundry_uuid: null
 ---
