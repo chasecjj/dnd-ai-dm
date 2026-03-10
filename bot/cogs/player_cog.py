@@ -4,9 +4,13 @@ Player Cog — Per-player private console for secret actions and individual deci
 Commands:
   /whisper — creates a private thread for the player
   /import  — import a character sheet from the creation wizard
+  !inventory — show your character's inventory
+  !spells    — show your character's spells and spell slots
+  !sheet     — full character overview (stats, abilities, spells, inventory)
 Players can type actions in their private thread that only the DM sees.
 """
 
+import re
 import logging
 import discord
 from discord import app_commands
@@ -17,6 +21,41 @@ from tools.vault_manager import VaultManager, parse_frontmatter
 from tools.models import PartyMember
 
 logger = logging.getLogger("Player_Cog")
+
+
+def _extract_sheet_section(body: str, section_name: str) -> str | None:
+    """Extract a named section from a character sheet body.
+
+    Handles both '## Section' and bare 'Section' header formats.
+    Returns the section content (without the header), or None if not found.
+    """
+    # Match: optional leading #'s, then the section name, then end of line
+    pattern = rf"^#{0,3}\s*{re.escape(section_name)}\s*$"
+    lines = body.split("\n")
+    start = None
+    for i, line in enumerate(lines):
+        if re.match(pattern, line.strip(), re.IGNORECASE):
+            start = i + 1
+            break
+    if start is None:
+        return None
+
+    # Collect lines until the next header or end of file
+    section_lines = []
+    for line in lines[start:]:
+        stripped = line.strip()
+        # Stop at next header (any level) or bare section header
+        if stripped and (stripped.startswith("#") or (
+            stripped in (
+                "Stats", "Abilities & Features", "Prepared Spells",
+                "Inventory", "Personality", "Bonds & Hooks", "Session Notes",
+            ) and stripped != section_name
+        )):
+            break
+        section_lines.append(line)
+
+    content = "\n".join(section_lines).strip()
+    return content if content else None
 
 
 class PlayerStatusView(discord.ui.View):
@@ -79,6 +118,10 @@ class PlayerStatusView(discord.ui.View):
             "- \"How can I sneak past the guards?\"\n"
             "- \"What spells would help here?\"\n"
             "- \"Help me come up with a cool move\"\n\n"
+            "**Quick Lookups (instant, no AI):**\n"
+            "`!inventory` — see your equipment and items\n"
+            "`!spells` — see your prepared spells and spell slots\n"
+            "`!sheet` — full character overview\n\n"
             "**Crafting an action:**\n"
             "`!craft <rough idea>` — the AI helps you write a vivid, "
             "mechanically clear action. Refine it back and forth, then "
@@ -265,8 +308,8 @@ class PlayerCog(commands.Cog, name="Player Console"):
                 "**Ask anything** about your character's abilities, spells, "
                 "tactics, or what you could do in the current situation. "
                 "The advisor knows your character sheet and the game state.\n\n"
-                "**Craft an action:**\n"
-                "`!craft I want to sneak past the guards`\n"
+                "**Quick lookups:** `!inventory` `!spells` `!sheet`\n"
+                "**Craft an action:** `!craft I want to sneak past the guards`\n\n"
                 "The AI writes a vivid, game-ready version. Refine it back "
                 "and forth, then copy the final text to the Game Table.\n\n"
                 "Your brainstorming is **private** — only what you post in "
@@ -324,6 +367,161 @@ class PlayerCog(commands.Cog, name="Player Console"):
         except Exception as e:
             logger.error(f"Craft command failed: {e}", exc_info=True)
             await ctx.send("Something went wrong. Try rephrasing your idea.")
+
+    def _get_character_data(self, character_name: str) -> dict | None:
+        """Look up a character's vault data by name."""
+        vault = getattr(self.bot, "vault", None)
+        if not vault:
+            return None
+        party = vault.get_party_state()
+        for member in party:
+            if member['frontmatter'].get('name', '').lower() == character_name.lower():
+                return member
+        return None
+
+    @commands.command(name="inventory")
+    async def inventory_cmd(self, ctx):
+        """Show your character's inventory from the vault.
+
+        Usage (in whisper thread): !inventory
+        """
+        if not self.queue.is_player_thread(ctx.channel.id):
+            await ctx.send("Use this in your private console (`/whisper` thread).")
+            return
+
+        from tools.player_identity import resolve_from_message_author
+        character_name = resolve_from_message_author(ctx.author) or ctx.author.display_name
+
+        char_data = self._get_character_data(character_name)
+        if not char_data:
+            await ctx.send(f"No character sheet found for **{character_name}**.")
+            return
+
+        inventory = _extract_sheet_section(char_data.get('body', ''), 'Inventory')
+        if not inventory:
+            await ctx.send("No inventory section found in your character sheet.")
+            return
+
+        embed = discord.Embed(
+            title=f"{character_name}'s Inventory",
+            description=inventory[:4096],
+            color=discord.Color.gold(),
+        )
+        await ctx.send(embed=embed)
+
+    @commands.command(name="spells")
+    async def spells_cmd(self, ctx):
+        """Show your character's prepared spells and spell slots.
+
+        Usage (in whisper thread): !spells
+        """
+        if not self.queue.is_player_thread(ctx.channel.id):
+            await ctx.send("Use this in your private console (`/whisper` thread).")
+            return
+
+        from tools.player_identity import resolve_from_message_author
+        character_name = resolve_from_message_author(ctx.author) or ctx.author.display_name
+
+        char_data = self._get_character_data(character_name)
+        if not char_data:
+            await ctx.send(f"No character sheet found for **{character_name}**.")
+            return
+
+        spells = _extract_sheet_section(char_data.get('body', ''), 'Prepared Spells')
+
+        fm = char_data['frontmatter']
+        slots_used = fm.get('spell_slots_used', 0)
+        slots_max = fm.get('spell_slots_max', 0)
+        loh = fm.get('lay_on_hands_pool', 0)
+
+        embed = discord.Embed(
+            title=f"{character_name}'s Spells",
+            color=discord.Color.blue(),
+        )
+
+        if spells:
+            embed.add_field(name="Prepared Spells", value=spells[:1024], inline=False)
+        else:
+            embed.add_field(name="Prepared Spells", value="_(none)_", inline=False)
+
+        if slots_max > 0:
+            remaining = slots_max - slots_used
+            embed.add_field(
+                name="Spell Slots",
+                value=f"{remaining}/{slots_max} remaining",
+                inline=True,
+            )
+
+        if loh > 0:
+            embed.add_field(
+                name="Lay on Hands",
+                value=f"{loh} HP remaining",
+                inline=True,
+            )
+
+        await ctx.send(embed=embed)
+
+    @commands.command(name="sheet")
+    async def sheet_cmd(self, ctx):
+        """Show a full character overview — stats, abilities, spells, inventory.
+
+        Usage (in whisper thread): !sheet
+        """
+        if not self.queue.is_player_thread(ctx.channel.id):
+            await ctx.send("Use this in your private console (`/whisper` thread).")
+            return
+
+        from tools.player_identity import resolve_from_message_author
+        character_name = resolve_from_message_author(ctx.author) or ctx.author.display_name
+
+        char_data = self._get_character_data(character_name)
+        if not char_data:
+            await ctx.send(f"No character sheet found for **{character_name}**.")
+            return
+
+        fm = char_data['frontmatter']
+        body = char_data.get('body', '')
+
+        embed = discord.Embed(
+            title=f"{character_name} — Character Sheet",
+            description=char_data['summary'],
+            color=discord.Color.dark_purple(),
+        )
+
+        # Stats
+        stats = _extract_sheet_section(body, 'Stats')
+        if stats:
+            embed.add_field(name="Stats", value=stats[:1024], inline=False)
+
+        # Abilities
+        abilities = _extract_sheet_section(body, 'Abilities & Features')
+        if abilities:
+            embed.add_field(name="Abilities & Features", value=abilities[:1024], inline=False)
+
+        # Spells + slots
+        spells = _extract_sheet_section(body, 'Prepared Spells')
+        slots_max = fm.get('spell_slots_max', 0)
+        slots_used = fm.get('spell_slots_used', 0)
+        spell_text = spells or "_(none)_"
+        if slots_max > 0:
+            remaining = slots_max - slots_used
+            spell_text += f"\n**Slots:** {remaining}/{slots_max}"
+        loh = fm.get('lay_on_hands_pool', 0)
+        if loh > 0:
+            spell_text += f"\n**Lay on Hands:** {loh} HP"
+        embed.add_field(name="Spells", value=spell_text[:1024], inline=False)
+
+        # Inventory
+        inventory = _extract_sheet_section(body, 'Inventory')
+        if inventory:
+            embed.add_field(name="Inventory", value=inventory[:1024], inline=False)
+
+        # Personality
+        personality = _extract_sheet_section(body, 'Personality')
+        if personality:
+            embed.add_field(name="Personality", value=personality[:1024], inline=False)
+
+        await ctx.send(embed=embed)
 
     @commands.command(name="commit")
     async def commit_cmd(self, ctx, *, action: str):

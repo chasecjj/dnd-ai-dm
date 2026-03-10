@@ -519,9 +519,9 @@ class ContextAssembler:
             for npc in npcs:
                 npc_fm = npc['frontmatter']
                 disposition = npc_fm.get('disposition', 'unknown')
-                alive = npc_fm.get('alive', True)
-                status = "DEAD" if not alive else disposition
-                lines.append(f"- **{npc_fm.get('name', '?')}** ({npc_fm.get('role', '?')}) — {status}")
+                npc_status = npc_fm.get('status', 'alive')
+                display_status = "DEAD" if npc_status == 'dead' else disposition
+                lines.append(f"- **{npc_fm.get('name', '?')}** ({npc_fm.get('role', '?')}) — {display_status}")
         
         return "\n".join(lines)
     
@@ -695,7 +695,7 @@ class ContextAssembler:
             return self._build_party_section(detailed)
 
     async def _build_location_section_async(self, location_name: str) -> str:
-        """Build location section. Vault for prose, DB for NPC alive/disposition status."""
+        """Build location section. Vault for prose, DB for NPC status/disposition."""
         # Vault provides the rich prose description
         base = self._build_location_section(location_name)
 
@@ -714,10 +714,10 @@ class ContextAssembler:
             for npc in npcs_here:
                 name = npc.get("name", "?")
                 role = npc.get("role", "?")
-                alive = npc.get("alive", True)
+                npc_status = npc.get("status", "alive")
                 disposition = npc.get("disposition", "unknown")
-                status = "DEAD" if not alive else disposition
-                npc_lines.append(f"- **{name}** ({role}) — {status}")
+                display_status = "DEAD" if npc_status == "dead" else disposition
+                npc_lines.append(f"- **{name}** ({role}) — {display_status}")
 
             # If vault base already has an NPC section, replace it
             if "### NPCs Present" in base:

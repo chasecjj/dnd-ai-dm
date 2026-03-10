@@ -12,6 +12,7 @@ from typing import Optional
 from google import genai
 from tools.context_assembler import ContextAssembler
 from tools.vault_manager import VaultManager
+from tools.templates import build_npc_body, build_npc_frontmatter, build_location_body
 
 logger = logging.getLogger('WorldArchitect')
 
@@ -45,57 +46,10 @@ CRITICAL: You are NOT the DM during a live session. You are a creative partner h
 content. Never narrate as if players are present. Speak to the DM as a collaborator.
 """
 
-NPC_TEMPLATE = """---
-name: {name}
-race: {race}
-class: {char_class}
-location: {location}
-faction: {faction}
-disposition: {disposition}
-status: alive
-tags: [{tags}]
----
 
-## Description
-{description}
+# NPC_TEMPLATE and LOCATION_TEMPLATE removed — canonical templates now
+# live in tools/templates.py (single source of truth).
 
-## Personality
-{personality}
-
-## Secret
-{secret}
-
-## Connections
-{connections}
-
-## Plot Hooks
-{hooks}
-"""
-
-LOCATION_TEMPLATE = """---
-name: {name}
-type: {loc_type}
-region: {region}
-status: active
-atmosphere: {atmosphere}
-tags: [{tags}]
----
-
-## Description
-{description}
-
-## Key Features
-{features}
-
-## NPCs Present
-{npcs}
-
-## Secrets
-{secrets}
-
-## Encounter Possibilities
-{encounters}
-"""
 
 
 class WorldArchitectAgent:
@@ -221,24 +175,27 @@ You MUST respond with ONLY a valid JSON object (no markdown, no explanation):
 
             npc_data = json.loads(text)
 
-            # Build vault entry
+            # Build vault entry with canonical format via template module
             npc_name = npc_data.get("name", "Unknown NPC")
-            frontmatter = {
-                "name": npc_name,
-                "race": npc_data.get("race", "Unknown"),
-                "class": npc_data.get("class", "Commoner"),
-                "location": npc_data.get("location", "Unknown"),
-                "faction": npc_data.get("faction", "unaffiliated"),
-                "disposition": npc_data.get("disposition", "neutral"),
-                "status": "alive",
-                "tags": [t.strip() for t in npc_data.get("tags", "").split(",") if t.strip()],
-            }
-            body = (
-                f"## Description\n{npc_data.get('description', '')}\n\n"
-                f"## Personality\n{npc_data.get('personality', '')}\n\n"
-                f"## Secret\n{npc_data.get('secret', '')}\n\n"
-                f"## Connections\n{npc_data.get('connections', '')}\n\n"
-                f"## Plot Hooks\n{npc_data.get('hooks', '')}"
+            tags = [t.strip() for t in npc_data.get("tags", "").split(",") if t.strip()]
+            frontmatter = build_npc_frontmatter(
+                name=npc_name,
+                race=npc_data.get("race", "Unknown"),
+                role=npc_data.get("class", npc_data.get("role", "Commoner")),
+                location=npc_data.get("location", "Unknown"),
+                faction=npc_data.get("faction", "unaffiliated"),
+                disposition=npc_data.get("disposition", "neutral"),
+                auto_generated=False,
+                tags=tags or ["npc"],
+            )
+            body = build_npc_body(
+                name=npc_name,
+                description=npc_data.get("description", ""),
+                personality=npc_data.get("personality", ""),
+                background="_To be developed._",
+                secret=npc_data.get("secret", "_Unknown._"),
+                connections=npc_data.get("connections", "_None established._"),
+                plot_hooks=npc_data.get("hooks", "_None yet._"),
             )
 
             # Save to vault
@@ -248,7 +205,7 @@ You MUST respond with ONLY a valid JSON object (no markdown, no explanation):
 
             return (
                 f"✅ **{npc_name}** created and saved to the vault!\n\n"
-                f"**Race:** {npc_data.get('race')} | **Class:** {npc_data.get('class')}\n"
+                f"**Race:** {npc_data.get('race')} | **Role:** {npc_data.get('class', npc_data.get('role'))}\n"
                 f"**Location:** {npc_data.get('location')} | **Faction:** {npc_data.get('faction')}\n"
                 f"**Disposition:** {npc_data.get('disposition')}\n\n"
                 f"📝 {npc_data.get('description')}\n\n"
@@ -319,19 +276,20 @@ You MUST respond with ONLY a valid JSON object (no markdown, no explanation):
 
             loc_name = loc_data.get("name", "Unknown Location")
             frontmatter = {
-                "name": loc_name,
                 "type": loc_data.get("type", "unknown"),
+                "name": loc_name,
                 "region": loc_data.get("region", "Unknown"),
                 "status": "active",
                 "atmosphere": loc_data.get("atmosphere", "neutral"),
                 "tags": [t.strip() for t in loc_data.get("tags", "").split(",") if t.strip()],
             }
-            body = (
-                f"## Description\n{loc_data.get('description', '')}\n\n"
-                f"## Key Features\n{loc_data.get('features', '')}\n\n"
-                f"## NPCs Present\n{loc_data.get('npcs', 'None yet')}\n\n"
-                f"## Secrets\n{loc_data.get('secrets', '')}\n\n"
-                f"## Encounter Possibilities\n{loc_data.get('encounters', '')}"
+            body = build_location_body(
+                name=loc_name,
+                description=loc_data.get("description", ""),
+                features=loc_data.get("features", ""),
+                npcs=loc_data.get("npcs", "None yet"),
+                secrets=loc_data.get("secrets", ""),
+                encounters=loc_data.get("encounters", ""),
             )
 
             filepath = f"03 - Locations/{loc_name}.md"

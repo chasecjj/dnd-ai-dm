@@ -106,6 +106,7 @@ else:
     gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
 MODEL_ID = "gemini-2.0-flash"
+MODEL_ID_HEAVY = "gemini-2.5-pro"
 
 # ---------------------------------------------------------------------------
 # Campaign Manager & Vault
@@ -132,7 +133,7 @@ action_queue = ActionQueue()
 # ---------------------------------------------------------------------------
 # Turn Collector — Auto Mode batching window
 # ---------------------------------------------------------------------------
-turn_collector = TurnCollector(window_seconds=45, expected_players=len(PLAYER_MAP))
+turn_collector = TurnCollector(window_seconds=60, expected_players=len(PLAYER_MAP))
 
 # Auto-roll toggle — when True, Auto Mode pre-analyzes actions and rolls dice automatically
 auto_roll_enabled: bool = True
@@ -146,8 +147,8 @@ combat_tracker = CombatTracker()
 # Agents — Live DM Team (Game Table channel)
 # ---------------------------------------------------------------------------
 board_monitor = BoardMonitorAgent(gemini_client, foundry=foundry_client)
-rules_lawyer = RulesLawyerAgent(gemini_client, context_assembler, model_id=MODEL_ID)
-storyteller = StorytellerAgent(gemini_client, context_assembler, model_id=MODEL_ID)
+rules_lawyer = RulesLawyerAgent(gemini_client, context_assembler, model_id=MODEL_ID_HEAVY)
+storyteller = StorytellerAgent(gemini_client, context_assembler, model_id=MODEL_ID_HEAVY)
 foundry_architect = FoundryArchitectAgent(gemini_client, foundry=foundry_client, model_id=MODEL_ID)
 message_router = MessageRouterAgent(gemini_client, context_assembler, model_id=MODEL_ID)
 chronicler = ChroniclerAgent(gemini_client, vault, context_assembler, model_id=MODEL_ID, storyteller=storyteller)

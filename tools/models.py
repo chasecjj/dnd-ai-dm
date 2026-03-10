@@ -28,14 +28,15 @@ class NPC(BaseModel):
     """Schema for an NPC file."""
     name: str
     race: str = "Unknown"
-    role: str = Field(alias="class", default="Commoner")
+    role: str = "Commoner"
     location: str = "Unknown"
     faction: str = "unaffiliated"
     disposition: str = "neutral"
     status: str = "alive"
-    alive: bool = True
     tags: List[str] = []
+    first_seen_session: Optional[int] = None
     last_seen_session: Optional[int] = None
+    auto_generated: bool = False
 
     @field_validator('disposition')
     @classmethod
@@ -45,7 +46,15 @@ class NPC(BaseModel):
             return 'neutral'
         return v.lower()
 
-    model_config = {"extra": "allow"}
+    @field_validator('status')
+    @classmethod
+    def validate_status(cls, v):
+        valid = ['alive', 'dead', 'missing', 'unknown']
+        if v.lower() not in valid:
+            return 'alive'
+        return v.lower()
+
+    model_config = {"extra": "allow", "populate_by_name": True}
 
 class Quest(BaseModel):
     """Schema for a Quest file."""

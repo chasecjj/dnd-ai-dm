@@ -39,7 +39,7 @@ class TurnCollector:
     early when all expected players have submitted actions.
 
     Usage:
-        collector = TurnCollector(window_seconds=45, expected_players=3)
+        collector = TurnCollector(window_seconds=60, expected_players=3)
 
         # In on_message handler:
         is_first = await collector.collect(message, char_name, text)

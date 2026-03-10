@@ -47,9 +47,11 @@ class NPCModel(BaseModel):
     location: str = "Unknown"
     faction: str = "unaffiliated"
     disposition: str = "neutral"
-    alive: bool = True
+    status: str = "alive"
     tags: List[str] = []
+    first_seen_session: Optional[int] = None
     last_seen_session: Optional[int] = None
+    auto_generated: bool = False
     notes: str = ""
 
     @field_validator("disposition")
@@ -58,6 +60,14 @@ class NPCModel(BaseModel):
         valid = {"friendly", "neutral", "hostile", "unknown"}
         if v.lower() not in valid:
             return "neutral"
+        return v.lower()
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        valid = {"alive", "dead", "missing", "unknown"}
+        if v.lower() not in valid:
+            return "alive"
         return v.lower()
 
     model_config = {"extra": "allow"}

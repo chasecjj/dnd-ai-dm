@@ -182,7 +182,7 @@ class StateManager:
     async def get_npcs_at_location(self, location: str) -> List[Dict[str, Any]]:
         self._require_connection()
         cursor = self._db.npcs.find(
-            {"location": {"$regex": re.escape(location), "$options": "i"}, "alive": True}
+            {"location": {"$regex": re.escape(location), "$options": "i"}, "status": {"$ne": "dead"}}
         )
         results = []
         async for doc in cursor:
@@ -429,6 +429,16 @@ class StateManager:
                     # New NPC — create with defaults
                     await self.upsert_npc({"name": nu.name, **updates})
                 summary["npcs"] += 1
+
+        # 3b. Create new NPCs in MongoDB
+        for new_npc in output.new_npcs:
+            npc_data = new_npc.model_dump()
+            npc_data["status"] = "alive"
+            npc_data["first_seen_session"] = session
+            npc_data["last_seen_session"] = session
+            npc_data["auto_generated"] = True
+            await self.upsert_npc(npc_data)
+            summary["npcs"] += 1
 
         # 4. Patch quests
         for qu in output.quest_updates:

@@ -29,6 +29,7 @@ else:
 
 from pydantic import ValidationError
 from tools.models import PartyMember, NPC, Quest, Location
+from tools.templates import build_npc_body, build_npc_frontmatter
 
 logger = logging.getLogger('VaultManager')
 
@@ -309,7 +310,67 @@ class VaultManager:
             if fm.get('name', '').lower() == name.lower():
                 return fm, body
         return None
-    
+
+    def create_npc_file(self, npc_data: dict, session_number: int) -> bool:
+        """Create a new NPC vault file from structured data.
+
+        Deduplicates by checking if an NPC with the same name already exists.
+        Validates through the NPC model before writing.
+
+        Args:
+            npc_data: Dict with NPC fields (name, race, role, location, etc.).
+            session_number: Current session number for first_seen/last_seen.
+
+        Returns:
+            True if created, False if already exists or validation failed.
+        """
+        name = npc_data.get("name", "").strip()
+        if not name:
+            logger.warning("create_npc_file called with empty name — skipped")
+            return False
+
+        # Deduplication: skip if NPC already exists
+        if self.get_npc(name):
+            logger.info(f"NPC '{name}' already exists — skipping creation")
+            return False
+
+        # Build canonical frontmatter via template module
+        frontmatter = build_npc_frontmatter(
+            name=name,
+            race=npc_data.get("race", "Unknown"),
+            role=npc_data.get("role", "Commoner"),
+            location=npc_data.get("location", "Unknown"),
+            faction=npc_data.get("faction", "unaffiliated"),
+            disposition=npc_data.get("disposition", "neutral"),
+            first_seen_session=session_number,
+            last_seen_session=session_number,
+            auto_generated=True,
+        )
+
+        # Validate through Pydantic
+        try:
+            model = NPC(**frontmatter)
+            frontmatter["disposition"] = model.disposition
+            frontmatter["status"] = model.status
+        except ValidationError as e:
+            logger.error(f"NPC validation failed for '{name}': {e}")
+            return False
+
+        # Build canonical body via template module
+        body = build_npc_body(
+            name=name,
+            description=npc_data.get("description", "_Physical appearance, mannerisms, voice._"),
+            personality=npc_data.get("personality", "_Key personality traits._"),
+            session_number=session_number,
+            auto_generated=True,
+        )
+
+        filepath = f"{self.NPCS}/{name}.md"
+        success = self.write_file(filepath, frontmatter, body)
+        if success:
+            logger.info(f"Auto-created NPC file: {filepath}")
+        return success
+
     # ------------------------------------------------------------------
     # Location Operations
     # ------------------------------------------------------------------

@@ -63,7 +63,7 @@ class NPCUpdate(BaseModel):
 
     name: str
     disposition: Optional[str] = None
-    alive: Optional[bool] = None
+    status: Optional[str] = None
     location: Optional[str] = None
     last_seen_session: Optional[int] = None
     notes: Optional[str] = None
@@ -77,6 +77,35 @@ class NPCUpdate(BaseModel):
         if v.lower() not in valid:
             return "neutral"
         return v.lower()
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v):
+        if v is None:
+            return v
+        valid = {"alive", "dead", "missing", "unknown"}
+        if v.lower() not in valid:
+            return "alive"
+        return v.lower()
+
+
+class NewNPC(BaseModel):
+    """A new NPC detected during gameplay that needs a vault file."""
+
+    name: str
+    race: str = "Unknown"
+    role: str = "Commoner"
+    location: str = "Unknown"
+    faction: str = "unaffiliated"
+    disposition: str = "neutral"
+    description: str = ""
+    personality: str = ""
+
+    @field_validator("disposition")
+    @classmethod
+    def validate_disposition(cls, v):
+        valid = {"friendly", "neutral", "hostile", "unknown"}
+        return v.lower() if v.lower() in valid else "neutral"
 
 
 class QuestUpdate(BaseModel):
@@ -134,6 +163,7 @@ class ChroniclerOutput(BaseModel):
     events: List[EventEntry] = []
     character_updates: List[CharacterUpdate] = []
     npc_updates: List[NPCUpdate] = []
+    new_npcs: List[NewNPC] = []
     quest_updates: List[QuestUpdate] = []
     location_updates: List[LocationUpdate] = []
     world_clock: Optional[ClockUpdate] = None

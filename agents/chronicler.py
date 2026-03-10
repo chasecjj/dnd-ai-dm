@@ -50,8 +50,20 @@ You must respond with ONLY valid JSON matching this exact schema. No markdown, n
     {
       "name": "NPC Name",
       "disposition": null,
-      "alive": true,
+      "status": "alive",
       "notes": ""
+    }
+  ],
+  "new_npcs": [
+    {
+      "name": "NPC Name",
+      "race": "Race",
+      "role": "Occupation or class",
+      "location": "Where encountered",
+      "faction": "unaffiliated",
+      "disposition": "neutral",
+      "description": "1-2 sentences physical appearance",
+      "personality": "1 sentence key trait"
     }
   ],
   "quest_updates": [
@@ -95,6 +107,17 @@ INVENTORY TRACKING (critical):
 - "change" is the delta: -1 for one consumed, -2 for two consumed, +1 for gained, etc.
 - "new_quantity" is the resulting count. If a character had Javelin (5) and threw 1, new_quantity = 4.
 - Track ALL consumable usage: thrown weapons, arrows, spell components with cost, potions, gold spent.
+
+NPC STATUS VALUES: "alive", "dead", "missing", "unknown" (use status instead of alive boolean).
+
+NEW NPC DETECTION:
+- If the narrative introduces a NAMED NPC who is NOT in the "NPCs Present" context,
+  AND the party DIRECTLY INTERACTED with them (spoke to, traded with, fought),
+  add them to "new_npcs".
+- Do NOT create entries for NPCs merely mentioned in passing or unnamed background characters.
+- Keep description/personality to OBSERVED FACTS only. Do not invent backstory.
+- Set location to where the interaction happened.
+- If unsure whether an NPC already exists, use npc_updates instead — the system deduplicates.
 """
 
 
@@ -262,16 +285,36 @@ Respond with ONLY the JSON extraction. No other text."""
                 fm, body = result
                 if update.disposition:
                     fm['disposition'] = update.disposition
-                if update.alive is not None:
-                    fm['alive'] = update.alive
+                if update.status is not None:
+                    fm['status'] = update.status
                 fm['last_seen_session'] = session_number
                 for fpath in self.vault.list_files(self.vault.NPCS):
                     npc_fm, _ = self.vault.read_file(fpath)
                     if npc_fm.get('name', '').lower() == update.name.lower():
                         if update.notes:
-                            body += f"\n\n### Session {session_number} Update\n{update.notes}"
+                            # Session update consolidation: append to existing
+                            # session heading if one exists, else create new
+                            session_heading = f"### Session {session_number} Update"
+                            if session_heading in body:
+                                # Find the end of this session section (next ### or end)
+                                heading_idx = body.index(session_heading)
+                                after_heading = body[heading_idx + len(session_heading):]
+                                next_heading = after_heading.find("\n### ")
+                                if next_heading >= 0:
+                                    insert_at = heading_idx + len(session_heading) + next_heading
+                                    body = body[:insert_at] + f"\n- {update.notes}" + body[insert_at:]
+                                else:
+                                    body += f"\n- {update.notes}"
+                            else:
+                                body += f"\n\n{session_heading}\n{update.notes}"
                         self.vault.write_file(fpath, fm, body)
                         break
+
+        # 3b. Create new NPCs detected during gameplay
+        for new_npc in changes.new_npcs:
+            success = self.vault.create_npc_file(new_npc.model_dump(), session_number)
+            if success:
+                logger.info(f"Auto-created NPC: {new_npc.name}")
 
         # 4. Update quests
         for update in changes.quest_updates:
