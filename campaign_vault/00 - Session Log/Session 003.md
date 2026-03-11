@@ -104,6 +104,16 @@ _One paragraph overview of what happened._
 
 | | Hadrian pulled a rusted lever, causing a platform to fall and crash into the alley below, creating a loud distraction while he remained hidden. | 8 | |
 
+| | Kallisar sought solitude in a grimy alley within the Dock Ward. | 2 | |
+
+| | Kallisar overheard two figures discussing a package, the 'Sea Serpent' ship, and the Zhentarim. | 6 | |
+
+| | A rat dropped a silver trinket on the ground near Kallisar. | 4 | |
+
+| | Kallisar Voidcaller began a solo adventure at the Waterdeep Docks, seeking solitude after a recent conflict. | 4 | |
+
+| | Kallisar observed a street urchin being assaulted by a sailor, two mysterious cloaked figures, and a woman with a strange instrument, presenting several immediate opportunities. | 6 | |
+
 ## Combat Encounters
 _Details of any combat: initiative order, notable rolls, outcomes._
 

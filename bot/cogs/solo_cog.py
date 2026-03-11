@@ -64,6 +64,19 @@ class SoloCog(commands.Cog, name="Solo"):
                 )
                 return
 
+        # Guard: must be invoked from a text channel, not a thread
+        # Discord threads can't create child threads, so /solo fails if run inside one
+        if isinstance(interaction.channel, discord.Thread):
+            await interaction.response.send_message(
+                "**Solo adventures can't be started from inside a thread!**\n"
+                "Head to a regular text channel (like the one you see in the sidebar) "
+                "and run `/solo` there. The bot will create a private thread for you.\n\n"
+                "*If you're trying to resume a paused session, use `/solo` from any text channel — "
+                "it'll find your saved session automatically!*",
+                ephemeral=True,
+            )
+            return
+
         # Check for existing session (same user)
         existing = self.solo_manager.get_by_user(interaction.user.id)
         if existing:

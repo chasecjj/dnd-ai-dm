@@ -297,6 +297,7 @@ Players can now `/solo_pause` a session and pick it up later with `/solo`. All l
 - **`/solo` resume detection** — after resolving character name, checks for paused session in MongoDB. If found: unarchives original thread, resumes session with full context, posts welcome-back message. If thread is gone: deletes stale paused doc, falls through to create new session
 - **Double-defer fix** — restructured defer logic so `interaction.response.defer()` only fires once regardless of which branch executes (paused vs. fresh start)
 - Updated embed footer to mention `/solo_pause`
+- **Thread-nesting guard** — `/solo` now checks `isinstance(interaction.channel, discord.Thread)` and returns a friendly ephemeral error explaining that solo adventures must be started from a regular text channel, with a tip about resume detection. Prevents `AttributeError: 'Thread' object has no attribute 'create_thread'`
 
 #### What gets preserved on pause
 
