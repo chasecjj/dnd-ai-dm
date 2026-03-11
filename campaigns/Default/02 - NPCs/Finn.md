@@ -42,3 +42,7 @@ _Auto-generated during session 3._
 ### Session 3 Update
 Appears terrified and recognizes Hadrian.
 - Still present, trembling in the fog.
+- Extorting Master Borin for the 'Eye of the Deep'.
+- Is in debt to the Xanathar Guild and was confronted by a bugbear enforcer.
+- Froze with alarm, attention drawn to the noise.
+- Stares at the splintered wood with wide, startled eyes, argument cut short.

@@ -585,8 +585,8 @@ class TestSessionTimeout:
     @pytest.mark.asyncio
     async def test_timeout_old_session(self, manager):
         session = await manager.start_session(100, 200, "Victor", "Docks", 3)
-        # Simulate old activity (3 hours ago)
-        session.last_activity = time.time() - (3 * 3600)
+        # Simulate old activity (25 hours ago — exceeds 24h timeout)
+        session.last_activity = time.time() - (25 * 3600)
         timed_out = manager.get_timed_out_sessions()
         assert len(timed_out) == 1
         assert timed_out[0].character_name == "Victor"
@@ -594,7 +594,7 @@ class TestSessionTimeout:
     @pytest.mark.asyncio
     async def test_touch_prevents_timeout(self, manager):
         session = await manager.start_session(100, 200, "Victor", "Docks", 3)
-        session.last_activity = time.time() - (3 * 3600)
+        session.last_activity = time.time() - (25 * 3600)
         session.touch()  # Update activity
         assert len(manager.get_timed_out_sessions()) == 0
 

@@ -10,11 +10,6 @@ Consequences are ripple effects from party decisions. The Chronicler agent write
 
 ## Pending
 
-- **trigger:** session >= 2
-  **event:** Kallisar will react to Victor's threat, potentially leading to conflict or a change in their relationship.
-  **caused_by:** "Victor threatening Kallisar."
-  **impact:** 6
-  **notes:** DM should consider Kallisar's personality and motivations when determining their response.
 
 - **trigger:** session >= 2
   **event:** Durnan retaliates against Victor for the threat.
@@ -128,7 +123,70 @@ Consequences are ripple effects from party decisions. The Chronicler agent write
   **impact:** 7
   **notes:** A new, unknown presence is indicated by a wet, shuffling sound deeper in the alley.
 
+
+- **trigger:** session >= None
+  **event:** The person Kallisar fleeced has appeared at the Waterdeep Docks, signaling their presence with a specific whistle.
+  **caused_by:** "Kallisar's past actions of fleecing this individual."
+  **impact:** 8
+  **notes:** This is a direct consequence of Kallisar's backstory, now manifesting as a present threat/opportunity.
+
+
+- **trigger:** session >= None
+  **event:** Kallisar has discovered a locket bearing the Xanathar Guild symbol.
+  **caused_by:** "Kallisar's observation and presence at the docks."
+  **impact:** 6
+  **notes:** This could lead to an investigation into the Xanathar Guild or a direct encounter.
+
+
+- **trigger:** session >= None
+  **event:** Kallisar has overheard a suspicious conversation about a shipment and 'the boss' near a warehouse.
+  **caused_by:** "Kallisar's observation and presence at the docks."
+  **impact:** 6
+  **notes:** This could lead to an investigation into smuggling or other illicit activities.
+
+
+- **trigger:** session >= None
+  **event:** The party will encounter the entity making the dragging, chitinous sounds in the fog.
+  **caused_by:** "The mysterious fog and the party's continued presence in the alley."
+  **impact:** 7
+  **notes:** This entity is associated with Grigor's fear and possibly 'him'.
+
+
+- **trigger:** session >= None
+  **event:** The party must decide how to react to the Xanathar Guild bugbear confronting Finn.
+  **caused_by:** "Hadrian's eavesdropping and observation of Finn's predicament."
+  **impact:** 7
+  **notes:** The party is in a position to intervene or observe, potentially drawing the ire of the Xanathar Guild.
+
+
+- **trigger:** session >= None
+  **event:** The party will encounter or be observed by the unknown individual on the opposite warehouse roof.
+  **caused_by:** "Hadrian's presence and observation of the scene."
+  **impact:** 6
+  **notes:** The identity and intentions of the other observer are unknown.
+
+
+- **trigger:** session >= None
+  **event:** The party's cover is blown, and they are now directly targeted by the bugbear, Finn, and the unseen sniper.
+  **caused_by:** "Hadrian's failed stealth check while moving the lever."
+  **impact:** 8
+  **notes:** Immediate confrontation or pursuit is likely.
+
+
+- **trigger:** session >= None
+  **event:** An immediate confrontation or combat is imminent with Grigor and the silhouetted figure.
+  **caused_by:** "Grigor's explicit threat and the sniper's shift in attention."
+  **impact:** 7
+  **notes:** The narrative states 'The moment hangs, taut and fragile, on the verge of shattering.'
+
 ## Resolved
+- **trigger:** session >= 2
+  **event:** Kallisar will react to Victor's threat, potentially leading to conflict or a change in their relationship.
+  **caused_by:** "Victor threatening Kallisar."
+  **impact:** 6
+  **notes:** DM should consider Kallisar's personality and motivations when determining their response.
+  **resolved_session:** 3
+
 - **trigger:** session >= 2
   **event:** The troll attacks the party and other patrons in the Yawning Portal.
   **caused_by:** "The troll emerging from the well."

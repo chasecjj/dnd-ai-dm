@@ -88,14 +88,25 @@ Output ONLY a valid JSON object:
 {
   "needs_roll": true/false,
   "rolls": [
-    {"roll_type": "Attack", "formula": "1d20+5", "dc": null},
-    {"roll_type": "Damage", "formula": "1d8+3", "dc": null}
+    {"roll_type": "Longsword Attack", "formula": "1d20+5", "dc": null},
+    {"roll_type": "Longsword Damage (Slashing)", "formula": "1d8+3", "dc": null}
   ],
   "target_saves": [
     {"save_type": "WIS", "dc": 13, "reason": "Vicious Mockery spell save DC"}
   ],
   "reasoning": "Brief explanation of why these checks are needed"
 }
+
+CRITICAL — roll_type labeling:
+- roll_type MUST be specific and descriptive so the player knows exactly what is being rolled.
+- For ability checks: use the skill or ability name plus the ability abbreviation in parentheses.
+  Examples: "Stealth (DEX)", "Perception (WIS)", "Athletics (STR)", "Persuasion (CHA)",
+  "Investigation (INT)", "Constitution Save (CON)", "Dexterity Save (DEX)".
+- For attack rolls: include the weapon or spell name.
+  Examples: "Longsword Attack", "Shortbow Attack", "Eldritch Blast Attack", "Unarmed Strike".
+- For damage rolls: include the weapon/spell name and damage type.
+  Examples: "Longsword Damage (Slashing)", "Shortbow Damage (Piercing)", "Sneak Attack Damage".
+- NEVER use generic labels like "Check", "Attack", "Damage", or "Ability Check".
 
 Rules:
 - If the action is purely narrative (talking, looking, walking), needs_roll = false, rolls = [], target_saves = [].

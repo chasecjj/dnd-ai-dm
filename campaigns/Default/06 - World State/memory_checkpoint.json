@@ -2,7 +2,7 @@
   {
     "text": "Kallisar asks the bartender about secret entrances to the dungeon. The barkeep hints at smuggler tunnels connecting to the sewers or near the docks.",
     "base_impact": 6,
-    "turns_ago": 13,
+    "turns_ago": 14,
     "timestamp": 1772865275.7,
     "character": null,
     "location": null
@@ -10,7 +10,7 @@
   {
     "text": "Hadrian compares Willum's map with Bruenor's. Bruenor notes they are similar but not identical — Willum's is older.",
     "base_impact": 4,
-    "turns_ago": 12,
+    "turns_ago": 13,
     "timestamp": 1772865761.0,
     "character": null,
     "location": null
@@ -18,7 +18,7 @@
   {
     "text": "Kallisar bribes the barkeep with a magical bathroom key for information about the smuggler tunnels.",
     "base_impact": 6,
-    "turns_ago": 11,
+    "turns_ago": 12,
     "timestamp": 1772866122.0,
     "character": null,
     "location": null
@@ -26,7 +26,7 @@
   {
     "text": "Hadrian asks Bruenor to accompany the party to the docks, and Bruenor agrees in exchange for respect and a share of spoils.",
     "base_impact": 6,
-    "turns_ago": 10,
+    "turns_ago": 11,
     "timestamp": 1772866122.3,
     "character": null,
     "location": null
@@ -34,7 +34,7 @@
   {
     "text": "Kallisar successfully uses Persuasion to get a lead on Fingers Finnigan at the fish market, who may know about the smuggler tunnels.",
     "base_impact": 6,
-    "turns_ago": 8,
+    "turns_ago": 9,
     "timestamp": 1772866391.0,
     "character": null,
     "location": null
@@ -42,7 +42,7 @@
   {
     "text": "The party leaves the Yawning Portal and heads toward the docks and fish market to find Fingers Finnigan.",
     "base_impact": 6,
-    "turns_ago": 7,
+    "turns_ago": 8,
     "timestamp": 1772866662.0,
     "character": null,
     "location": null
@@ -50,65 +50,129 @@
   {
     "text": "Hadrian Goldhammer began a solo investigation at the Waterdeep Docks.",
     "base_impact": 4,
-    "turns_ago": 6,
-    "timestamp": 1773118812.415,
+    "turns_ago": 7,
+    "timestamp": 1773118812.4150894,
     "character": "Hadrian Goldhammer",
     "location": "Waterdeep Docks"
   },
   {
     "text": "Hadrian observed a clandestine meeting, a merchant's argument, and a sailor dropping a mysterious note.",
     "base_impact": 6,
-    "turns_ago": 6,
-    "timestamp": 1773118812.417,
+    "turns_ago": 7,
+    "timestamp": 1773118812.4173806,
     "character": "Hadrian Goldhammer",
     "location": "Waterdeep Docks"
   },
   {
     "text": "Hadrian attempted to sneak and eavesdrop in an alley, discovering Finn in trouble with the Xanathar Guild and alerting Grigor to his presence.",
     "base_impact": 8,
+    "turns_ago": 6,
+    "timestamp": 1773119442.489357,
+    "character": "Hadrian Goldhammer",
+    "location": "Waterdeep Alley"
+  },
+  {
+    "text": "Hadrian made a noise, alerting Grigor to his presence in the alley.",
+    "base_impact": 6,
+    "turns_ago": 6,
+    "timestamp": 1773119442.4958029,
+    "character": "Hadrian Goldhammer",
+    "location": "Waterdeep Alley"
+  },
+  {
+    "text": "Hadrian attempted to subtly draw attention to a dropped note in the alley.",
+    "base_impact": 4,
     "turns_ago": 5,
-    "timestamp": 1773119442.489,
+    "timestamp": 1773120891.175519,
+    "character": "Hadrian Goldhammer",
+    "location": "Waterdeep Alley"
+  },
+  {
+    "text": "A sudden, biting cold and a thick, pearlescent fog engulfed the alley, muffling sounds and obscuring vision.",
+    "base_impact": 8,
+    "turns_ago": 5,
+    "timestamp": 1773120891.183694,
     "character": "Hadrian Goldhammer",
     "location": "Waterdeep Alley"
   },
   {
     "text": "Hadrian attempted to bluff Grigor and Finn by claiming to work for 'the boss,' but Grigor became hostile and threatened him.",
     "base_impact": 8,
-    "turns_ago": 3,
-    "timestamp": 1773121581.457,
+    "turns_ago": 4,
+    "timestamp": 1773121581.457429,
     "character": "Hadrian Goldhammer",
     "location": "Waterdeep Alley"
   },
   {
     "text": "Hadrian successfully bluffed Grigor, suggesting he had inside knowledge from 'the boss' that Grigor lacked.",
     "base_impact": 6,
-    "turns_ago": 2,
-    "timestamp": 1773122205.595,
+    "turns_ago": 3,
+    "timestamp": 1773122205.5952249,
     "character": "Hadrian Goldhammer",
     "location": "Waterdeep Alley"
   },
   {
-    "text": "Gas lamps in the alley suddenly sputtered and extinguished, plunging the area into darkness.",
+    "text": "Gas lamps in the alley suddenly sputtered and extinguished, plunging the area into profound darkness and cold.",
     "base_impact": 6,
-    "turns_ago": 2,
-    "timestamp": 1773122205.602,
+    "turns_ago": 3,
+    "timestamp": 1773122205.6023912,
     "character": "Hadrian Goldhammer",
     "location": "Waterdeep Alley"
   },
   {
-    "text": "Grigor reacted with unease to the sudden darkness, attempting to sound threatening but revealing paranoia.",
+    "text": "Grigor reacted with a mix of snarls and unease to the sudden darkness, attempting to sound threatening but revealing a new edge of paranoia.",
+    "base_impact": 4,
+    "turns_ago": 3,
+    "timestamp": 1773122205.6069202,
+    "character": "Hadrian Goldhammer",
+    "location": "Waterdeep Alley"
+  },
+  {
+    "text": "Hadrian successfully bluffed Grigor into believing the sudden fog was a test from 'the boss', causing Grigor to lower his weapon and become intimidated.",
+    "base_impact": 8,
+    "turns_ago": 2,
+    "timestamp": 1773123270.2639396,
+    "character": "Hadrian Goldhammer",
+    "location": "Waterdeep Alley"
+  },
+  {
+    "text": "Hadrian discovered his Darkvision was useless in the heavy, pearlescent fog, severely limiting his sight.",
     "base_impact": 4,
     "turns_ago": 2,
-    "timestamp": 1773122205.607,
+    "timestamp": 1773123270.2706962,
     "character": "Hadrian Goldhammer",
     "location": "Waterdeep Alley"
   },
   {
-    "text": "Hadrian bluffed Grigor into believing the darkness was a test from 'the boss', causing Grigor to lower his weapon.",
-    "base_impact": 8,
-    "turns_ago": 1,
-    "timestamp": 1773123270.264,
+    "text": "A wet, shuffling sound echoed from deeper in the alley, muffled by the fog.",
+    "base_impact": 6,
+    "turns_ago": 2,
+    "timestamp": 1773123270.2749825,
     "character": "Hadrian Goldhammer",
+    "location": "Waterdeep Alley"
+  },
+  {
+    "text": "Kallisar successfully identified the symbol on the locket as the sigil of the Order of the Gilded Eye, a zealous sect of Helm.",
+    "base_impact": 6,
+    "turns_ago": 1,
+    "timestamp": 1773201441.0915508,
+    "character": "Kallisar Voidcaller",
+    "location": "Waterdeep Alley"
+  },
+  {
+    "text": "A distinct, wet dragging sound followed by a chitinous scrape approached from deeper within the fog-shrouded alley.",
+    "base_impact": 7,
+    "turns_ago": 1,
+    "timestamp": 1773201441.0982192,
+    "character": "Kallisar Voidcaller",
+    "location": "Waterdeep Alley"
+  },
+  {
+    "text": "Grigor became visibly fearful, questioning what the party had brought into the alley as the strange sounds grew closer.",
+    "base_impact": 4,
+    "turns_ago": 1,
+    "timestamp": 1773201441.1028838,
+    "character": "Grigor",
     "location": "Waterdeep Alley"
   }
 ]

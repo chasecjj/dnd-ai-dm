@@ -42,6 +42,68 @@ _One paragraph overview of what happened._
 
 | | A wet, shuffling sound echoed from deeper in the alley, muffled by the fog. | 6 | |
 
+| | Kallisar Voidcaller begins a solo adventure at the Waterdeep Docks, seeking solitude after Victor's racial slur. | 4 | |
+
+| | Kallisar discovers an ornate locket with a stylized eye symbol, which he recognizes as a Xanathar Guild mark. | 6 | |
+
+| | Kallisar overhears a hushed, urgent conversation between two cloaked figures and a sailor about a delayed shipment and 'the boss' near a warehouse. | 6 | |
+
+| | Kallisar hears a specific, jaunty whistle, a private signal from a grifter's crew he once ran with, indicating the presence of the person he fleeced. | 8 | |
+
+| | Kallisar successfully hid in the shadows at the Waterdeep Docks and observed two dockhands exchanging coins and murmuring conspiratorially. | 4 | |
+
+| | Kallisar attempted to identify a symbol on a locket, gaining a vague sense of its historical style but no specific details. | 4 | |
+
+| | Kallisar successfully identified the symbol on the locket as the sigil of the Order of the Gilded Eye, a zealous sect of Helm. | 6 | |
+
+| | A distinct, wet dragging sound followed by a chitinous scrape approached from deeper within the fog-shrouded alley. | 7 | |
+
+| | Grigor became visibly fearful, questioning what the party had brought into the alley as the strange sounds grew closer. | 4 | |
+
+| | Kallisar Voidcaller begins a solo adventure at the Waterdeep Docks, seeking solitude. | 4 | |
+
+| | Kallisar observes a furtive exchange of a suspicious package between two figures near crates. | 6 | |
+
+| | Kallisar hears a muffled cry and scuffle from a narrow alleyway. | 6 | |
+
+| | Kallisar discovers a tarnished silver locket with a broken chain and an unfamiliar symbol half-buried in the muck. | 6 | |
+
+| | Hadrian Goldhammer begins a solo investigation from a warehouse roof at the Waterdeep Docks. | 4 | |
+
+| | Hadrian observes a clandestine exchange of a heavy coffer between two cloaked figures on a pier. | 6 | |
+
+| | Hadrian observes a crowd gathered around a dice game near The Drowned Rat tavern. | 2 | |
+
+| | Hadrian discovers his old mentor, Finn, mugging a well-dressed merchant in an alley below. | 8 | |
+
+| | Hadrian successfully used stealth to approach Finn and a merchant named Master Borin, recalling his past mentorship under Finn. | 5 | |
+
+| | Hadrian overheard Finn extorting Master Borin for an item called the 'Eye of the Deep' in exchange for safe passage. | 6 | |
+
+| | Hadrian recalled information about Finn's independent nature and his current trouble with the Xanathar Guild. | 6 | |
+
+| | A Xanathar Guild bugbear emerged from the fog and confronted Finn, demanding a delivery. | 8 | |
+
+| | Hadrian successfully climbed a warehouse overlooking the bugbear and others, identifying a tactical advantage with a suspended crate of fish. | 6 | |
+
+| | Hadrian discovered a heavy loading crane with a net-wrapped crate of salted fish dangling directly over the bugbear's head, with a release lever nearby. | 6 | |
+
+| | Hadrian noticed a glint from the opposite warehouse roof, indicating another observer is present. | 6 | |
+
+| | Hadrian's Darkvision was ineffective in the heavy fog, preventing him from seeing the third party. | 4 | |
+
+| | Hadrian attempted to stealthily move a lever but caused a loud screech, alerting the bugbear, Finn, and the unseen sniper to his position. | 8 | |
+
+| | Hadrian successfully placed his hand on the lever, preparing an action for a later trigger. | 2 | |
+
+| | Hadrian attempted to use Darkvision to identify a third party but found it ineffective due to the pearlescent fog. | 4 | |
+
+| | Hadrian stealthily moved behind a crane lever, positioning it as cover, and readied his hand on it. | 4 | |
+
+| | The bugbear, Grigor, lost patience and threatened Finn, while the silhouetted figure across the rooftops lowered their spyglass. | 6 | |
+
+| | Hadrian pulled a rusted lever, causing a platform to fall and crash into the alley below, creating a loud distraction while he remained hidden. | 8 | |
+
 ## Combat Encounters
 _Details of any combat: initiative order, notable rolls, outcomes._
 

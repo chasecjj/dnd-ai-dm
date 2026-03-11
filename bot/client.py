@@ -49,7 +49,7 @@ from agents.board_monitor import BoardMonitorAgent
 from agents.rules_lawyer import RulesLawyerAgent
 from agents.storyteller import StorytellerAgent
 from agents.foundry_architect import FoundryArchitectAgent
-from agents.message_router import MessageRouterAgent
+from agents.message_router import MessageRouterAgent, MessageType
 from agents.chronicler import ChroniclerAgent
 from agents.player_advisor import PlayerAdvisorAgent
 
@@ -449,11 +449,7 @@ async def _handle_game_table(message, user_input: str):
             logger.warning(f"Empty narrative returned for input: {user_input[:100]}")
 
         if narrative:
-            if len(narrative) > 2000:
-                for i in range(0, len(narrative), 2000):
-                    await message.channel.send(narrative[i : i + 2000])
-            else:
-                await message.channel.send(narrative)
+            await _send_chunked(message.channel, narrative)
 
             # Fire post-turn story hook (non-blocking)
             _ambient = bot.get_cog("Ambient")
@@ -507,6 +503,24 @@ async def _handle_game_table(message, user_input: str):
 
 
 # ---------------------------------------------------------------------------
+# Message Chunking Utility
+# ---------------------------------------------------------------------------
+async def _send_chunked(channel, text: str, limit: int = 1990):
+    """Send text in chunks that respect word/line boundaries."""
+    while len(text) > limit:
+        # Prefer splitting at a newline, then a space
+        split_at = text.rfind('\n', 0, limit)
+        if split_at == -1:
+            split_at = text.rfind(' ', 0, limit)
+        if split_at == -1:
+            split_at = limit  # No good break point, hard split
+        await channel.send(text[:split_at])
+        text = text[split_at:].lstrip()
+    if text:
+        await channel.send(text)
+
+
+# ---------------------------------------------------------------------------
 # Solo Session Pipeline Handler
 # ---------------------------------------------------------------------------
 async def _handle_solo_message(message, user_input: str):
@@ -546,6 +560,88 @@ async def _handle_solo_message(message, user_input: str):
         # Get per-session history (Phase 0.1)
         session_history = solo_manager.get_history(message.channel.id)
 
+        # --- Solo Inquiry Mode Detection ---
+        # Hybrid trigger: explicit "DM:" prefix (deterministic, zero API cost)
+        # + LLM classification fallback for untagged questions.
+        is_inquiry = False
+        inquiry_input = user_input
+        dm_prefixes = ("dm:", "for the dm:", "dm,")
+        lower_input = user_input.lower().strip()
+        for prefix in dm_prefixes:
+            if lower_input.startswith(prefix):
+                is_inquiry = True
+                inquiry_input = user_input[len(prefix):].strip()
+                break
+
+        # LLM fallback — classify untagged messages
+        if not is_inquiry:
+            try:
+                await gemini_limiter.acquire()
+                route = await message_router.route(user_input)
+                if route.message_type in (MessageType.GAME_QUESTION, MessageType.OUT_OF_GAME):
+                    is_inquiry = True
+                    inquiry_msg_type = route.message_type
+                else:
+                    inquiry_msg_type = None
+            except Exception as classify_err:
+                logger.warning(f"Solo inquiry classification failed: {classify_err}")
+                inquiry_msg_type = None
+        else:
+            # Explicit prefix — classify as game_question by default
+            inquiry_msg_type = MessageType.GAME_QUESTION
+
+        # --- Handle inquiry: no snapshot, no dice, no turn advance ---
+        if is_inquiry:
+            logger.info(f"[Solo Inquiry] {character_name}: {inquiry_input}")
+            try:
+                if inquiry_msg_type == MessageType.OUT_OF_GAME:
+                    # Out-of-game meta question — use direct response handler
+                    await gemini_limiter.acquire()
+                    response_text = await message_router.generate_direct_response(inquiry_input)
+                else:
+                    # In-game question — run storyteller-only pipeline
+                    inquiry_state = {
+                        "player_input": f"[{character_name}]: {inquiry_input}",
+                        "character_name": character_name,
+                        "session": session.session_number,
+                        "current_location": session.current_location,
+                        "is_solo": True,
+                        "_solo_thread_id": message.channel.id,
+                        # Force storyteller-only: skip rules lawyer and chronicler
+                        "needs_rules_lawyer": False,
+                        "needs_board_monitor": False,
+                        "needs_storyteller": True,
+                    }
+                    async with _pipeline_semaphore:
+                        async with message.channel.typing():
+                            inquiry_result = await game_pipeline.ainvoke(inquiry_state)
+                    response_text = inquiry_result.get("narrative", "")
+
+                if not response_text:
+                    response_text = "The answer eludes you for now..."
+
+                # Format as inquiry response (italic with bookmark emoji)
+                formatted = f"\U0001f4d6 *{response_text.strip('*').strip()}*"
+                await _send_chunked(message.channel, formatted)
+
+                # Lightweight history entry so the DM remembers what was asked
+                if session_history:
+                    session_history.add_event(
+                        f"[Inquiry] {inquiry_input} → {response_text[:200]}",
+                        impact=3,
+                        character=character_name,
+                        location=session.current_location,
+                        age_existing=False,
+                    )
+                session.touch()
+            except Exception as inquiry_err:
+                logger.error(f"Solo inquiry error: {inquiry_err}", exc_info=True)
+                await message.channel.send(
+                    "*The DM flips through their notes but can't find the answer right now...*"
+                )
+            return  # Don't advance the turn
+
+        # --- Full turn flow (action/narrative) ---
         # Snapshot current state for undo (uses per-session history)
         history_snapshot = [
             {
@@ -561,7 +657,7 @@ async def _handle_solo_message(message, user_input: str):
 
         from tools.solo_session import SoloTurnSnapshot
 
-        turn_number = session.turn_count + 1
+        turn_number = session.turn_count
         session.push_snapshot(SoloTurnSnapshot(
             turn_number=turn_number,
             history_snapshot=history_snapshot,
@@ -627,15 +723,30 @@ async def _handle_solo_message(message, user_input: str):
         if not narrative:
             narrative = "*The moment passes quietly...*"
 
-        if len(narrative) > 2000:
-            for i in range(0, len(narrative), 2000):
-                await message.channel.send(narrative[i : i + 2000])
-        else:
-            await message.channel.send(narrative)
+        await _send_chunked(message.channel, narrative)
 
         # Store narrative in snapshot for undo reference
         if session.last_snapshot:
             session.last_snapshot.narrative = narrative
+
+        # Record exchange in per-session history for continuity
+        if session_history:
+            # Player action
+            session_history.add_event(
+                f"[Player] {user_input}",
+                impact=5,
+                character=character_name,
+                location=session.current_location,
+                age_existing=True,
+            )
+            # DM narrative (higher impact — this is what needs to persist)
+            session_history.add_event(
+                narrative[:500],
+                impact=7,
+                character=character_name,
+                location=session.current_location,
+                age_existing=False,
+            )
 
         # Update session state
         await solo_manager.increment_turn(message.channel.id)

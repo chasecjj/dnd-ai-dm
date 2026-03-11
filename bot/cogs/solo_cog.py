@@ -2,15 +2,17 @@
 Solo Cog — Between-session 1-on-1 adventure commands.
 
 Commands:
-  /solo      — Start a solo adventure in a private thread
-  /solo_end  — End the current solo adventure
-  /solo_undo — Undo the last turn (multi-turn rewind, max 5)
+  /solo       — Start or resume a solo adventure in a private thread
+  /solo_end   — End the current solo adventure
+  /solo_pause — Pause your adventure (resume later with /solo)
+  /solo_undo  — Undo the last turn (multi-turn rewind)
 
 Features:
   - Session recap on startup (Phase 1.1)
   - Merge summary on end (Phase 4.1)
   - Concurrent play guards (Phase 4.3)
   - Per-session history isolation (Phase 0.1)
+  - Pause/resume with full state preservation (Phase 4.0)
 """
 
 import logging
@@ -82,7 +84,52 @@ class SoloCog(commands.Cog, name="Solo"):
             )
             return
 
-        await interaction.response.defer(ephemeral=True)
+        # Check for a paused session for this character
+        paused = await self.solo_manager.get_paused_session(
+            user_id=interaction.user.id, character_name=character_name,
+        )
+        if paused:
+            await interaction.response.defer(ephemeral=True)
+            thread_id = paused["thread_id"]
+            thread = None
+            try:
+                thread = interaction.guild.get_channel_or_thread(thread_id)
+                if thread is None:
+                    thread = await interaction.guild.fetch_channel(thread_id)
+                # Unarchive the thread if needed
+                if hasattr(thread, "archived") and thread.archived:
+                    await thread.edit(archived=False)
+            except (discord.NotFound, discord.HTTPException):
+                # Thread is gone — delete the stale paused session and start fresh
+                await self.solo_manager._delete_session(thread_id)
+                thread = None
+
+            if thread:
+                session = await self.solo_manager.resume_session(thread_id)
+                if session:
+                    await thread.send(
+                        f"**Welcome back, {character_name}!**\n"
+                        f"*Resuming from turn {session.turn_count} "
+                        f"at {session.current_location}...*\n\n"
+                        f"Your adventure continues. Type your actions or "
+                        f"use `/solo_end` when done."
+                    )
+                    await interaction.followup.send(
+                        f"Resumed your adventure in {thread.mention}!",
+                        ephemeral=True,
+                    )
+                    # Admin notification
+                    try:
+                        await self.bot.send_to_moderator_log(
+                            f"[Solo] {character_name} resumed paused adventure "
+                            f"(turn {session.turn_count}, thread={thread_id})"
+                        )
+                    except Exception:
+                        pass
+                    return
+            # Thread was gone — already deferred, fall through to create new session
+        else:
+            await interaction.response.defer(ephemeral=True)
 
         # Create private thread
         thread_name = f"{character_name}'s Solo Adventure"
@@ -160,7 +207,8 @@ class SoloCog(commands.Cog, name="Solo"):
         if recap_text:
             embed.add_field(
                 name="Previously...",
-                value=recap_text[:1024],  # Discord embed field limit
+                value=recap_text if len(recap_text) <= 1024
+                    else recap_text[:1020].rsplit(' ', 1)[0] + "...",
                 inline=False,
             )
 
@@ -193,7 +241,8 @@ class SoloCog(commands.Cog, name="Solo"):
 
         embed.set_footer(
             text="Type your actions naturally. "
-                 "/solo_undo to rewind (up to 5), /solo_end when done."
+                 "/solo_undo to rewind, /solo_pause to save for later, "
+                 "/solo_end when done."
         )
 
         await thread.send(embed=embed)
@@ -237,12 +286,9 @@ class SoloCog(commands.Cog, name="Solo"):
 
             narrative = result.get("narrative", "")
             if narrative:
-                # Chunk if needed
-                if len(narrative) > 2000:
-                    for i in range(0, len(narrative), 2000):
-                        await thread.send(narrative[i : i + 2000])
-                else:
-                    await thread.send(narrative)
+                # Use word-boundary-aware chunking
+                from bot.client import _send_chunked
+                await _send_chunked(thread, narrative)
             else:
                 await thread.send(
                     f"*{character_name} finds a quiet moment at {location}...*\n\n"
@@ -259,6 +305,17 @@ class SoloCog(commands.Cog, name="Solo"):
                 narrative=narrative or f"*Solo adventure begins at {location}.*",
                 log_path=session.solo_log_path,
             )
+            # Record opening narrative in per-session history
+            session_history = self.solo_manager.get_history(thread.id)
+            if session_history and narrative:
+                session_history.add_event(
+                    narrative[:500],
+                    impact=8,  # Opening scene is high-impact context
+                    character=character_name,
+                    location=location,
+                    age_existing=False,
+                )
+
             await self.solo_manager.increment_turn(thread.id)
 
         except Exception as e:
@@ -465,6 +522,95 @@ class SoloCog(commands.Cog, name="Solo"):
             f"({remaining} undo{'s' if remaining != 1 else ''} remaining)"
         )
 
+    @app_commands.command(
+        name="solo_pause", description="Pause your solo adventure — resume later with /solo"
+    )
+    async def solo_pause(self, interaction: discord.Interaction):
+        """Pause the current solo adventure, preserving all state for later resume."""
+        if not isinstance(interaction.channel, discord.Thread):
+            await interaction.response.send_message(
+                "This command must be used in a solo adventure thread.",
+                ephemeral=True,
+            )
+            return
+
+        session = self.solo_manager.get_session(interaction.channel.id)
+        if not session:
+            await interaction.response.send_message(
+                "This isn't an active solo adventure thread.",
+                ephemeral=True,
+            )
+            return
+
+        if session.discord_user_id != interaction.user.id:
+            await interaction.response.send_message(
+                "Only the adventurer can pause their solo session.",
+                ephemeral=True,
+            )
+            return
+
+        # Guard: MongoDB must be connected for pause to persist
+        sm = getattr(self.bot, 'state_manager', None)
+        if not sm or not sm.is_connected:
+            await interaction.response.send_message(
+                "Pause requires the database to be running. "
+                "Ask Chase to start MongoDB, then try again!",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer()
+
+        # Pause the session (serialize history, persist, remove from memory)
+        paused = await self.solo_manager.pause_session(interaction.channel.id)
+        if not paused:
+            await interaction.followup.send(
+                "Failed to pause — session may have already ended.",
+                ephemeral=True,
+            )
+            return
+
+        # Build summary
+        summary_lines = [
+            f"**Adventure Paused**",
+            f"Character: {paused.character_name}",
+            f"Turns: {paused.turn_count}",
+            f"Location: {paused.current_location}",
+        ]
+        if paused.active_threads:
+            active = [
+                t for t in paused.active_threads
+                if isinstance(t, dict) and t.get("status") == "active"
+            ]
+            if active:
+                names = [t.get("title", "?") for t in active[:3]]
+                summary_lines.append(f"Open Threads: {', '.join(names)}")
+
+        summary_lines.append(
+            f"\n*Your adventure pauses here. Use `/solo` to resume where you left off.*"
+        )
+        await interaction.channel.send("\n".join(summary_lines))
+
+        # Archive the thread
+        try:
+            await interaction.channel.edit(archived=True)
+        except discord.HTTPException:
+            pass
+
+        # Admin notification
+        try:
+            await self.bot.send_to_moderator_log(
+                f"[Solo] {paused.character_name}'s solo adventure paused "
+                f"(turn {paused.turn_count}, thread={interaction.channel.id})"
+            )
+        except Exception:
+            pass
+
+        await interaction.followup.send(
+            f"Solo adventure paused. Use `/solo` to resume anytime!",
+            ephemeral=True,
+        )
+
     def _build_session_recap(self, character_name: str, session_number: int) -> str:
         """Build a recap from previous solo logs and character knowledge (Phase 1.1).
 
@@ -490,7 +636,12 @@ class SoloCog(commands.Cog, name="Solo"):
                     recent = lines[-3:] if len(lines) > 3 else lines
                     recap_parts.append("Recent insights: " + "; ".join(recent))
 
-            return " ".join(recap_parts) if recap_parts else ""
+            recap = " ".join(recap_parts) if recap_parts else ""
+            # Cap to 900 chars with word-boundary truncation
+            # (leaves room for "Previously: " prefix and embed overhead)
+            if len(recap) > 900:
+                recap = recap[:900].rsplit(' ', 1)[0] + "..."
+            return recap
 
         except Exception as e:
             logger.warning(f"Session recap failed: {e}")

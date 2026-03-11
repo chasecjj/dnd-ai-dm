@@ -273,6 +273,72 @@ These heuristic post-processing systems (`solo_world.py`) are **valuable for par
 
 ---
 
+## Phase 2 — Pause/Resume & Quality of Life (Mar 11)
+
+### Pause/Resume Feature
+
+Players can now `/solo_pause` a session and pick it up later with `/solo`. All live state is serialized to MongoDB as "cold storage" — zero runtime memory consumed while paused.
+
+**Three-state session lifecycle:** active (in-memory + MongoDB) → paused (MongoDB only) → ended (deleted from both).
+
+**Files modified:**
+
+#### `tools/solo_session.py`
+- Added `is_paused: bool` and `conversation_history_data: List[dict]` fields to `SoloSession`
+- Updated `to_dict()` / `from_dict()` to persist new fields
+- `pause_session()` — serializes full `ConversationHistory` entries, sets `is_paused=True`, persists to MongoDB, removes from active memory (frees `_sessions`, `_processing_locks`, `_histories`)
+- `resume_session()` — queries MongoDB for paused doc, rebuilds `SoloSession` + `ConversationHistory` from stored data, registers in active memory, clears serialized history
+- `get_paused_session()` — queries MongoDB for paused sessions by user ID and/or character name (case-insensitive regex)
+- `restore_active()` — now filters `{"is_paused": {"$ne": True}}` so paused sessions stay dormant on bot restart
+- `MAX_SNAPSHOT_DEPTH` raised from 5 → 999 for testing phase (unlimited undo)
+
+#### `bot/cogs/solo_cog.py`
+- **`/solo_pause` command** — validates thread ownership, checks MongoDB connectivity (returns friendly error if DB is down: "Ask Chase to start MongoDB"), serializes session, posts summary embed with turns/location/open threads, archives the Discord thread
+- **`/solo` resume detection** — after resolving character name, checks for paused session in MongoDB. If found: unarchives original thread, resumes session with full context, posts welcome-back message. If thread is gone: deletes stale paused doc, falls through to create new session
+- **Double-defer fix** — restructured defer logic so `interaction.response.defer()` only fires once regardless of which branch executes (paused vs. fresh start)
+- Updated embed footer to mention `/solo_pause`
+
+#### What gets preserved on pause
+
+| State | How |
+|-------|-----|
+| Turn count, location | `SoloSession` fields in MongoDB |
+| Full conversation history | Serialized to `conversation_history_data` |
+| Chaos factor | `SoloSession.chaos_factor` |
+| Active story threads | `SoloSession.active_threads` |
+| Encountered NPCs | `SoloSession.encountered_npcs` |
+| Faction state | `SoloSession.factions` |
+| Active consequences | `SoloSession.active_consequences` |
+| Full undo stack | `SoloSession.snapshot_stack` |
+| Queued directives | `SoloSession.queued_directives` |
+| Discord message history | Thread unarchived on resume |
+| Solo vault log | Vault file persists; new turns append |
+
+### Quality of Life Improvements
+
+#### `bot/client.py`
+- **Inquiry mode** — rules lawyer can now return `INQUIRY:` responses (lore questions, hypotheticals) that bypass the storyteller and reply directly. Detected via prefix match on `rules_ruling`.
+- **`_send_chunked()`** — NEW helper. Splits long narratives at paragraph boundaries (2000 char Discord limit) instead of mid-sentence. Used by solo message handler and solo opener.
+- **Opening scene chunking** — rich opening scenes from the storyteller are now sent via `_send_chunked()` instead of being truncated at 2000 chars.
+
+#### `bot/cogs/solo_cog.py`
+- **Recap truncation** — `_get_recent_recap()` now truncates at 800 chars (from unlimited) to prevent the opening prompt from exceeding context limits on long sessions.
+
+#### `agents/rules_lawyer.py`
+- **Labeled ability checks** — rules lawyer now specifies which ability/skill each check uses (e.g., "Stealth (Dexterity)" instead of just "DC 15"). Helps oracle grading and player understanding.
+
+#### `tools/solo_session.py`
+- **Session timeout** — `SESSION_TIMEOUT_HOURS` changed from 2 → 24 hours. Two hours was too aggressive for players who step away.
+
+#### `tests/test_solo_integration.py`
+- Updated timeout test values from `3 * 3600` to `25 * 3600` to match new 24-hour timeout.
+
+### Architecture Decision: MongoDB Guard on Pause
+
+`/solo_pause` requires MongoDB connectivity. Without it, the session would be removed from active memory but never persisted — effectively lost. The guard checks `state_manager.is_connected` and returns a friendly error directing the player to ask Chase to start the database. This is safer than silently losing state.
+
+---
+
 ## Test Status
 
 - **293 tests passing** (as of 2026-03-10 post-playtest)
