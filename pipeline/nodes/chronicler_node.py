@@ -63,6 +63,20 @@ async def chronicler_node(
 
         is_solo = state.get("is_solo", False)
 
+        # Retrieve previous scene state for incremental updates (Phase 3)
+        previous_scene_state = None
+        if is_solo:
+            try:
+                from tools.solo_session import SoloSessionManager
+                from bot.client import solo_manager
+                thread_id = state.get("_solo_thread_id")
+                if thread_id:
+                    session_obj = solo_manager.get_session(thread_id)
+                    if session_obj and session_obj.scene_state_data:
+                        previous_scene_state = session_obj.scene_state_data
+            except Exception as e:
+                logger.debug(f"Could not load previous scene state: {e}")
+
         await gemini_limiter.acquire()
         changes = await chronicler.process_exchange(
             player_action=player_input,
@@ -72,6 +86,7 @@ async def chronicler_node(
             current_location=current_location,
             character_name=character_name,
             is_solo=is_solo,
+            previous_scene_state=previous_scene_state,
         )
         # Solo sessions use per-session history — don't write to global checkpoint.
         # Global checkpoint is for group play campaign state only.

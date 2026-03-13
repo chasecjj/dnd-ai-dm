@@ -338,6 +338,8 @@ class ContextAssembler:
         history: Optional['ConversationHistory'] = None,
         solo_directives: Optional[List[str]] = None,
         recap: Optional[str] = None,
+        recent_narratives: Optional[List[dict]] = None,
+        scene_state: Optional[dict] = None,
     ) -> str:
         """Build context for a solo session -- single character focus.
 
@@ -381,19 +383,31 @@ class ContextAssembler:
         if knowledge:
             sections.append(knowledge)
 
-        # 7. Solo narrative directives (oracle, chaos, threads, NPCs, factions)
+        # 7. Narrative sliding window (Phase 2 — continuity fix)
+        if recent_narratives:
+            narrative_window = self._build_narrative_window(recent_narratives)
+            if narrative_window:
+                sections.append(narrative_window)
+
+        # 8. Scene state ground truth (Phase 3 — structural continuity)
+        if scene_state:
+            scene_section = self._build_scene_state_section(scene_state)
+            if scene_section:
+                sections.append(scene_section)
+
+        # 9. Solo narrative directives (oracle, chaos, threads, NPCs, factions)
         if solo_directives:
             directive_block = "\n".join(solo_directives)
             sections.append(f"## Solo Narrative Directives\n{directive_block}")
 
-        # 8. Lorebook
+        # 10. Lorebook
         lore_query = query or self._last_query
         if lore_query:
             lore_entries = self.lorebook.search(lore_query)
             for entry in lore_entries:
                 sections.append(f"## Lorebook: {entry.name}\n{entry.content[:800]}")
 
-        # 9. Reference excerpts
+        # 11. Reference excerpts
         ref_query = query or self._last_query
         if ref_query:
             refs = self._build_reference_section(ref_query, mode='lore')
@@ -460,6 +474,86 @@ class ContextAssembler:
         # Truncate to fit context budget
         truncated = body.strip()[:1500]
         return f"## Character Knowledge: {character_name}\n{truncated}"
+
+    @staticmethod
+    def _build_narrative_window(recent_narratives: List[dict]) -> Optional[str]:
+        """Build a sliding window of recent DM narration for continuity.
+
+        Shows the last 3 turns of full prose so the storyteller can see its
+        own previous output — preventing phrase repetition and description drift.
+        Each turn is truncated to ~800 chars to stay within token budget (~2400 tokens total).
+        """
+        if not recent_narratives:
+            return None
+
+        # Take last 3 turns
+        window = recent_narratives[-3:]
+        lines = [
+            "## Recent Narration (your previous output — do NOT repeat phrases from here)"
+        ]
+        for entry in window:
+            turn = entry.get("turn", "?")
+            player_input = entry.get("player_input", "")
+            narrative = entry.get("narrative", "")
+            # Truncate player input and narrative
+            player_short = player_input[:150]
+            narrative_short = narrative[:800]
+            lines.append(f"**Turn {turn}** [Player: {player_short}]")
+            lines.append(narrative_short)
+            lines.append("")  # blank line between turns
+
+        return "\n".join(lines)
+
+    @staticmethod
+    def _build_scene_state_section(scene_state: dict) -> Optional[str]:
+        """Build a ground-truth scene state section from the chronicler's snapshot.
+
+        Renders entities (with physical descriptions), objects (with holders),
+        and spatial layout as canonical facts the storyteller must follow.
+        """
+        if not scene_state:
+            return None
+
+        lines = [
+            "## Scene State (ground truth — match these details exactly)"
+        ]
+
+        entities = scene_state.get("entities_present", [])
+        if entities:
+            lines.append("### Present")
+            for ent in entities:
+                name = ent.get("name", "?")
+                desc = ent.get("physical_description", "")
+                role = ent.get("role_or_relationship", "")
+                demeanor = ent.get("current_demeanor", "")
+                items = ent.get("holding_items", [])
+                parts = [f"- **{name}**"]
+                if role:
+                    parts[0] += f" ({role})"
+                if desc:
+                    parts.append(f"  Appearance: {desc}")
+                if demeanor:
+                    parts.append(f"  Demeanor: {demeanor}")
+                if items:
+                    parts.append(f"  Holding: {', '.join(items)}")
+                lines.extend(parts)
+
+        objects = scene_state.get("objects_in_play", [])
+        if objects:
+            lines.append("### Objects in Play")
+            for obj in objects:
+                name = obj.get("name", "?")
+                holder = obj.get("holder", "")
+                desc = obj.get("description", "")
+                holder_str = f" (held by {holder})" if holder else " (on ground/table)"
+                desc_str = f" — {desc}" if desc else ""
+                lines.append(f"- **{name}**{holder_str}{desc_str}")
+
+        spatial = scene_state.get("spatial_notes", "")
+        if spatial:
+            lines.append(f"### Layout\n{spatial}")
+
+        return "\n".join(lines) if len(lines) > 1 else None
 
     def build_rules_lawyer_context(self, query: Optional[str] = None) -> str:
         """Build context for the Rules Lawyer — focused on mechanics."""
@@ -654,24 +748,22 @@ class ContextAssembler:
             if section:
                 lines.append(section)
         
-        # Add NPCs at this location
+        # Add NPCs at this location (with vault descriptions for continuity)
         npcs = self.vault.get_npcs_at_location(location_name)
         if npcs:
             lines.append("\n### NPCs Present")
             for npc in npcs:
-                npc_fm = npc['frontmatter']
-                disposition = npc_fm.get('disposition', 'unknown')
-                npc_status = npc_fm.get('status', 'alive')
-                display_status = "DEAD" if npc_status == 'dead' else disposition
-                lines.append(f"- **{npc_fm.get('name', '?')}** ({npc_fm.get('role', '?')}) — {display_status}")
-        
+                lines.append(self._format_npc_entry(npc))
+
         return "\n".join(lines)
-    
+
     def _build_brief_location_section(self, location_name: str) -> str:
         """Build a condensed location section for locations already described.
 
         Omits Description, Current State, and Notable Features prose.
         Still includes NPCs present so the AI knows who's around.
+        NPC descriptions are ALWAYS included — appearance must persist
+        even on "[SAME LOCATION]" turns to prevent description drift.
         """
         result = self.vault.get_location(location_name)
         display_name = location_name
@@ -688,13 +780,52 @@ class ContextAssembler:
         if npcs:
             lines.append("\n### NPCs Present")
             for npc in npcs:
-                npc_fm = npc['frontmatter']
-                disposition = npc_fm.get('disposition', 'unknown')
-                npc_status = npc_fm.get('status', 'alive')
-                display_status = "DEAD" if npc_status == 'dead' else disposition
-                lines.append(f"- **{npc_fm.get('name', '?')}** ({npc_fm.get('role', '?')}) — {display_status}")
+                lines.append(self._format_npc_entry(npc))
 
         return "\n".join(lines)
+
+    def _format_npc_entry(self, npc: dict) -> str:
+        """Format a single NPC entry with vault description and personality.
+
+        Extracts Description and Personality sections from the NPC's markdown body
+        so the storyteller has ground-truth physical details to match exactly.
+        Skips template placeholder text (italic underscored prompts).
+        """
+        npc_fm = npc['frontmatter']
+        disposition = npc_fm.get('disposition', 'unknown')
+        npc_status = npc_fm.get('status', 'alive')
+        display_status = "DEAD" if npc_status == 'dead' else disposition
+        header = f"- **{npc_fm.get('name', '?')}** ({npc_fm.get('role', '?')}) — {display_status}"
+
+        body = npc.get('body', '')
+        if not body:
+            return header
+
+        parts = [header]
+
+        # Extract Description section from vault body
+        desc = self._extract_section(body, 'Description')
+        if desc:
+            # Strip the heading line itself, keep the content
+            desc_content = '\n'.join(
+                l for l in desc.split('\n')
+                if not l.strip().startswith('#')
+            ).strip()
+            # Skip template placeholders like "_Physical appearance, mannerisms, voice._"
+            if desc_content and not (desc_content.startswith('_') and desc_content.endswith('_')):
+                parts.append(f"  Appearance: {desc_content[:200]}")
+
+        # Extract Personality section from vault body
+        personality = self._extract_section(body, 'Personality')
+        if personality:
+            pers_content = '\n'.join(
+                l for l in personality.split('\n')
+                if not l.strip().startswith('#')
+            ).strip()
+            if pers_content and not (pers_content.startswith('_') and pers_content.endswith('_')):
+                parts.append(f"  Personality: {pers_content[:150]}")
+
+        return '\n'.join(parts)
 
     def _build_quest_section(self) -> str:
         """Build the active quests section."""

@@ -172,3 +172,8 @@ class ChroniclerOutput(BaseModel):
     new_consequences: List[ConsequenceEntry] = []
     resolved_consequences: List[str] = []
     character_insights: List[CharacterInsight] = []
+
+    # Scene state snapshot for narrative continuity (Phase 3).
+    # Optional dict matching SceneState schema — extracted by chronicler,
+    # stored on SoloSession, injected into next storyteller context.
+    scene_state: Optional[Dict[str, Any]] = None

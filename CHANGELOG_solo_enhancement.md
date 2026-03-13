@@ -340,9 +340,67 @@ Players can now `/solo_pause` a session and pick it up later with `/solo`. All l
 
 ---
 
+## Narrative Continuity Fix (Mar 12)
+
+Solo sessions suffered from severe continuity breaks: NPC physical details flipping between turns, objects teleporting between holders, NPCs named without introduction, and similes repeating verbatim across turns. Root cause: each storyteller call is a separate LLM invocation with no memory of its own previous prose, and NPC vault descriptions were fetched but discarded.
+
+### Phase 1: NPC Descriptions from Vault (immediate impact)
+
+The vault NPC files contain rich descriptions ("A hulking bugbear with thick, sausage-like fingers and dark eyes") but `_build_location_section()` only rendered frontmatter fields (`name`, `role`, `disposition`). The `body` was fetched and thrown away.
+
+**Changes:**
+
+- **`tools/context_assembler.py`** — New `_format_npc_entry()` extracts `## Description` and `## Personality` sections from NPC vault body. Truncates to ~200 chars (description) and ~150 chars (personality). Skips template placeholder text (`_Physical appearance, mannerisms, voice._`). Applied to BOTH `_build_location_section()` and `_build_brief_location_section()` — NPC appearance persists even on "[SAME LOCATION]" turns.
+- **`agents/storyteller.py`** — Added `SCENE CONTINUITY (non-negotiable)` block to `STORYTELLER_IDENTITY`: NPC descriptions are ground truth (match exactly), don't name NPCs without introduction, vary descriptive language (never reuse similes), objects stay where last placed.
+
+### Phase 2: Narrative Sliding Window (high impact)
+
+Stores the last 3-5 turns of full DM narrative prose on the session object and injects into the storyteller context. Gives the LLM its own previous output to reference, preventing both repetition and contradictions. ~2400 tokens added (3 turns x 800 chars). Trivial for Gemini's 1M context window.
+
+**Changes:**
+
+- **`tools/solo_session.py`** — New `recent_narratives: List[dict]` field (each entry: `{turn, player_input, narrative}`). New `push_narrative()` method trims to last 5. Added to `to_dict()`/`from_dict()` for MongoDB persistence.
+- **`bot/client.py`** — Calls `session.push_narrative(turn_number, user_input, narrative)` after narrative delivery in `_handle_solo_message()`.
+- **`tools/context_assembler.py`** — New `_build_narrative_window()` method renders last 3 turns truncated to ~800 chars each with header "do NOT repeat phrases from here". Wired into `build_solo_storyteller_context()` via new `recent_narratives` parameter.
+- **`pipeline/nodes/storyteller_node.py`** — `_build_solo_kwargs()` passes `session.recent_narratives` as `solo_recent_narratives`.
+- **`agents/storyteller.py`** — `process_request()` accepts `solo_recent_narratives` kwarg, forwards to context builder.
+
+### Phase 3: Scene State Object (structural fix)
+
+A structured "scene state" extracted by the chronicler after each turn, tracking who's present, what they look like, who holds what, and spatial layout. Injected as ground truth into the next turn's storyteller context. The chronicler receives the previous scene state and updates incrementally — physical descriptions carry forward unless the narrative explicitly changes them.
+
+**New file:**
+
+| File | Purpose |
+|------|---------|
+| `models/scene_state.py` | `SceneEntity`, `SceneObject`, `SceneState` Pydantic models |
+
+**Changes:**
+
+- **`models/chronicler_output.py`** — Added `scene_state: Optional[Dict[str, Any]]` field to `ChroniclerOutput`.
+- **`agents/chronicler.py`** — Extended `CHRONICLER_SCHEMA` with `scene_state` extraction block (entities, objects, spatial notes). Added `SCENE STATE` rules for incremental updates (keep physical descriptions exactly as-is unless narrative explicitly changes). `process_exchange()` accepts `previous_scene_state` and injects it into the chronicler prompt.
+- **`tools/solo_session.py`** — Added `scene_state_data: dict` field (persisted to MongoDB via `to_dict()`/`from_dict()`).
+- **`pipeline/nodes/chronicler_node.py`** — Loads previous scene state from session via `solo_manager`, passes to `chronicler.process_exchange()`.
+- **`bot/client.py`** — Extracts `scene_state` from chronicler output in `_solo_post_process()` and stores on session.
+- **`tools/context_assembler.py`** — New `_build_scene_state_section()` renders entities (with physical descriptions, held items, demeanor), objects (with holders), and spatial layout. Wired into `build_solo_storyteller_context()` via new `scene_state` parameter.
+- **`pipeline/nodes/storyteller_node.py`** — `_build_solo_kwargs()` passes `session.scene_state_data` as `solo_scene_state`.
+- **`agents/storyteller.py`** — `process_request()` accepts `solo_scene_state` kwarg, forwards to context builder.
+
+### Expected Impact
+
+| Problem | Fix Layer |
+|---------|-----------|
+| NPC description flip-flopping (eye count, build) | Phase 1 (vault descriptions) + Phase 3 (scene state) |
+| Object teleportation (note changes holders) | Phase 3 (scene state tracks holders) |
+| NPC named without introduction | Phase 1 (prompt rule) |
+| Simile repetition ("voice like stones grinding") | Phase 2 (narrative window) + Phase 1 (prompt rule) |
+| Relationship hierarchy drift | Phase 3 (scene state tracks roles) |
+
+---
+
 ## Test Status
 
-- **293 tests passing** (as of 2026-03-10 post-playtest)
+- **293 tests passing** (as of 2026-03-12 post-continuity-fix)
 - **82 solo tests** (test_solo_session.py + test_solo_integration.py)
 - **All pre-existing tests unaffected**
 - 14 pre-existing failures in test_blind_prep/test_cartographer/test_scene_classifier remain (mock/fixture issues, unrelated)

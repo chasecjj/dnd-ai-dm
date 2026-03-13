@@ -155,6 +155,14 @@ def _build_solo_kwargs(state: GameState) -> dict:
                 directives = _build_solo_directives(session)
                 if directives:
                     kwargs["solo_directives"] = directives
+
+                # Narrative sliding window (Phase 2 — continuity)
+                if session.recent_narratives:
+                    kwargs["solo_recent_narratives"] = session.recent_narratives
+
+                # Scene state (Phase 3 — structural continuity)
+                if getattr(session, 'scene_state_data', None):
+                    kwargs["solo_scene_state"] = session.scene_state_data
     except Exception as e:
         logger.warning(f"Failed to build solo kwargs: {e}")
 

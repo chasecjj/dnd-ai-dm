@@ -70,6 +70,14 @@ class SoloSession(BaseModel):
     encountered_npcs: List[dict] = Field(default_factory=list)
     factions: List[dict] = Field(default_factory=list)
 
+    # Recent narrative window (Phase 2 — continuity fix)
+    # Each entry: {"turn": int, "player_input": str, "narrative": str}
+    recent_narratives: List[dict] = Field(default_factory=list)
+
+    # Scene state snapshot (Phase 3 — structural continuity)
+    # Dict matching SceneState schema, maintained by chronicler
+    scene_state_data: dict = Field(default_factory=dict)
+
     # Queued narrative directives that didn't make the cut last turn
     queued_directives: List[dict] = Field(default_factory=list)
 
@@ -100,6 +108,16 @@ class SoloSession(BaseModel):
         """Update last_activity timestamp."""
         self.last_activity = time.time()
 
+    def push_narrative(self, turn: int, player_input: str, narrative: str):
+        """Store a turn's narrative for the sliding window. Keeps last 5."""
+        self.recent_narratives.append({
+            "turn": turn,
+            "player_input": player_input,
+            "narrative": narrative,
+        })
+        if len(self.recent_narratives) > 5:
+            self.recent_narratives.pop(0)
+
     def to_dict(self) -> dict:
         """Serialize for MongoDB persistence."""
         return {
@@ -118,6 +136,8 @@ class SoloSession(BaseModel):
             "active_threads": self.active_threads,
             "encountered_npcs": self.encountered_npcs,
             "factions": self.factions,
+            "recent_narratives": self.recent_narratives,
+            "scene_state_data": self.scene_state_data,
             "queued_directives": self.queued_directives,
             "is_paused": self.is_paused,
             "conversation_history_data": self.conversation_history_data,
@@ -156,6 +176,8 @@ class SoloSession(BaseModel):
             active_threads=data.get("active_threads", []),
             encountered_npcs=data.get("encountered_npcs", []),
             factions=data.get("factions", []),
+            recent_narratives=data.get("recent_narratives", []),
+            scene_state_data=data.get("scene_state_data", {}),
             queued_directives=data.get("queued_directives", []),
             is_paused=data.get("is_paused", False),
             conversation_history_data=data.get("conversation_history_data", []),

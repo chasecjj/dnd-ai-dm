@@ -79,6 +79,17 @@ PASSIVE ACTION POLICY:
   happening around the passive character, narrate those normally — the character
   chose to watch, not to be invisible. React to the world, not the non-action.
 
+SCENE CONTINUITY (non-negotiable):
+- NPC descriptions in the "NPCs Present" section are ground truth. Match them exactly.
+  Do not change eye color, build, scars, or distinguishing features between turns.
+- Do not name an NPC unless they introduce themselves or the player asks their name.
+  Use descriptive references instead ("the scarred bugbear", "the hooded figure").
+- Vary your descriptive language. NEVER reuse the same simile or metaphor across turns.
+  If you described a voice as "like stones grinding together," next turn use something
+  different: "a low, gravelly rumble" or "words rough as rusted iron."
+- Objects stay where they were last placed. If a character was holding a note last turn,
+  they still have it unless the narrative explicitly changes possession.
+
 Output Format:
 One to three paragraphs of immersive narration. NO JSON. Only prose.
 For passive/non-actions with nothing happening: one or two sentences is enough.
@@ -166,7 +177,9 @@ class StorytellerAgent:
                               solo_character: Optional[str] = None,
                               solo_history=None,
                               solo_directives: Optional[list] = None,
-                              solo_recap: Optional[str] = None) -> str:
+                              solo_recap: Optional[str] = None,
+                              solo_recent_narratives: Optional[List[dict]] = None,
+                              solo_scene_state: Optional[dict] = None) -> str:
         """Generate narrative response from a player action and rules ruling.
 
         Args:
@@ -195,6 +208,8 @@ class StorytellerAgent:
                 history=solo_history,
                 solo_directives=solo_directives,
                 recap=solo_recap,
+                recent_narratives=solo_recent_narratives,
+                scene_state=solo_scene_state,
             )
         else:
             # Normal: full party, split-party awareness
@@ -232,6 +247,72 @@ Narrate what happens. Incorporate any Due Consequences naturally if present abov
             return response.text
         except Exception as e:
             logger.error(f"Storyteller generation failed: {e}", exc_info=True)
+            raise
+
+    async def answer_inquiry(
+        self,
+        question: str,
+        character_name: str,
+        location: str,
+        solo_history=None,
+    ) -> str:
+        """Answer a player's meta/DM question without advancing the narrative.
+
+        Uses the same vault context as the storyteller but with a system prompt
+        that explicitly forbids story progression, new events, or NPC actions.
+        """
+        logger.info(f"Answering inquiry from {character_name}: {question}")
+
+        vault_context = self.context.build_solo_storyteller_context(
+            character_name=character_name,
+            location=location,
+            new_locations=set(),  # Never describe a new location for an inquiry
+            history=solo_history,
+        )
+
+        prompt = f"""## Current World State (from vault)
+{vault_context}
+
+---
+
+## Player Question (out-of-narrative inquiry)
+**Character:** {character_name}
+**Question:** {question}
+
+Answer this question helpfully using the world state above. Stay in character as
+a friendly, knowledgeable DM."""
+
+        inquiry_identity = (
+            "You are a helpful D&D Dungeon Master answering a player's question.\n\n"
+            "CRITICAL RULES:\n"
+            "- Answer the question using what the character would know, what the DM "
+            "would share, or what the world state says.\n"
+            "- Do NOT advance the story. No new events, no NPC actions, no scene changes, "
+            "no time passing, no consequences.\n"
+            "- Do NOT introduce new characters, items, or plot hooks.\n"
+            "- You may remind the player of things they've seen, heard, or know from "
+            "their backstory, the current scene, or general world lore.\n"
+            "- Keep it concise — a short paragraph is usually enough.\n"
+            "- Stay in the DM's voice, warm and helpful."
+        )
+
+        if not self.client:
+            raise RuntimeError("Storyteller Agent not connected to model.")
+
+        try:
+            from tools.rate_limiter import gemini_limiter
+            await gemini_limiter.acquire()
+            response = await self.client.aio.models.generate_content(
+                model=self.model_id,
+                contents=prompt,
+                config=genai.types.GenerateContentConfig(
+                    system_instruction=inquiry_identity,
+                    temperature=0.5,  # Informative, not creative
+                )
+            )
+            return response.text
+        except Exception as e:
+            logger.error(f"Inquiry answer failed: {e}", exc_info=True)
             raise
 
     async def generate_recap(self, session_number: int) -> str:

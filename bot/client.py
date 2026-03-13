@@ -599,23 +599,16 @@ async def _handle_solo_message(message, user_input: str):
                     await gemini_limiter.acquire()
                     response_text = await message_router.generate_direct_response(inquiry_input)
                 else:
-                    # In-game question — run storyteller-only pipeline
-                    inquiry_state = {
-                        "player_input": f"[{character_name}]: {inquiry_input}",
-                        "character_name": character_name,
-                        "session": session.session_number,
-                        "current_location": session.current_location,
-                        "is_solo": True,
-                        "_solo_thread_id": message.channel.id,
-                        # Force storyteller-only: skip rules lawyer and chronicler
-                        "needs_rules_lawyer": False,
-                        "needs_board_monitor": False,
-                        "needs_storyteller": True,
-                    }
-                    async with _pipeline_semaphore:
-                        async with message.channel.typing():
-                            inquiry_result = await game_pipeline.ainvoke(inquiry_state)
-                    response_text = inquiry_result.get("narrative", "")
+                    # In-game question — direct LLM call, bypasses pipeline
+                    # so no router reclassification, no chronicler, no story
+                    # progression. Just an answer using vault context.
+                    async with message.channel.typing():
+                        response_text = await storyteller.answer_inquiry(
+                            question=inquiry_input,
+                            character_name=character_name,
+                            location=session.current_location,
+                            solo_history=session_history,
+                        )
 
                 if not response_text:
                     response_text = "The answer eludes you for now..."
@@ -748,6 +741,9 @@ async def _handle_solo_message(message, user_input: str):
                 age_existing=False,
             )
 
+        # Store full narrative in sliding window for continuity (Phase 2)
+        session.push_narrative(turn_number, user_input, narrative)
+
         # Update session state
         await solo_manager.increment_turn(message.channel.id)
 
@@ -828,6 +824,11 @@ async def _solo_post_process(session, pipeline_result: dict, turn_number: int):
 
         # Consequence tracking — scan narrative for consequence-related content
         # (prompt-first: consequences are managed by the LLM, we just track them)
+
+        # Extract and store scene state from chronicler output (Phase 3)
+        scene_state = chronicler_data.get("scene_state")
+        if scene_state and isinstance(scene_state, dict):
+            session.scene_state_data = scene_state
 
         # Write updated state back to session
         session.chaos_factor = chaos.factor

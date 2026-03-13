@@ -93,7 +93,27 @@ You must respond with ONLY valid JSON matching this exact schema. No markdown, n
       "observation": "What was revealed about this character through their actions/dialogue",
       "category": "personality|backstory|relationship|goal|fear|habit|preference"
     }
-  ]
+  ],
+  "scene_state": {
+    "entities_present": [
+      {
+        "name": "Entity Name",
+        "physical_description": "Concise physical appearance — scars, build, coloring, distinguishing marks",
+        "holding_items": ["item1", "item2"],
+        "role_or_relationship": "Role or relationship to PC",
+        "current_demeanor": "Current emotional state or attitude"
+      }
+    ],
+    "objects_in_play": [
+      {
+        "name": "Object Name",
+        "holder": "Who has it (empty string if on ground/table)",
+        "description": "Brief physical description"
+      }
+    ],
+    "spatial_notes": "Brief layout: who is where relative to whom",
+    "turn_updated": 0
+  }
 }
 
 IMPACT SCALE:
@@ -124,6 +144,20 @@ CHARACTER INSIGHTS (important for solo sessions, useful for group too):
 - Categories: personality, backstory, relationship, goal, fear, habit, preference
 - Keep observations concise and specific (one sentence each).
 - These build a persistent character profile that enriches future AI responses.
+
+SCENE STATE (critical for solo sessions — include when is_solo):
+- scene_state is a snapshot of the current scene for narrative continuity.
+- If a previous scene state is provided in the context, UPDATE it incrementally:
+  * Keep physical descriptions EXACTLY as they were unless the narrative EXPLICITLY changes them.
+  * Add new entities/objects that appeared this turn.
+  * Remove entities that left the scene.
+  * Update holding_items when objects change hands.
+  * Update current_demeanor based on the narrative.
+- If no previous scene state is provided, build one from scratch using the narrative.
+- physical_description should include: build, coloring, scars, distinguishing features, clothing.
+- objects_in_play: only track objects that were mentioned, held, exchanged, or relevant to the scene.
+- spatial_notes: brief relative positions ("PC at the bar, Grigor near the door").
+- Set scene_state to null if the exchange is trivial (no NPCs, no objects, no spatial info).
 
 NEW NPC DETECTION:
 - If the narrative introduces a NAMED NPC who is NOT in the "NPCs Present" context,
@@ -166,7 +200,8 @@ If nothing changed in a category, omit it or use null.
     
     async def process_exchange(self, player_action: str, rules_response: str, story_response: str,
                                session_number: int, current_location: str = None,
-                               character_name: str = None, is_solo: bool = False) -> Dict[str, Any]:
+                               character_name: str = None, is_solo: bool = False,
+                               previous_scene_state: Optional[Dict] = None) -> Dict[str, Any]:
         """Process a game exchange and update the vault.
 
         Args:
@@ -186,9 +221,19 @@ If nothing changed in a category, omit it or use null.
             current_location=current_location
         )
         
+        # Inject previous scene state for incremental updates (Phase 3)
+        scene_state_context = ""
+        if is_solo and previous_scene_state:
+            import json as _json
+            scene_state_context = (
+                "\n\n## Previous Scene State (UPDATE incrementally — keep physical "
+                "descriptions exactly as-is unless narrative explicitly changes them)\n"
+                f"```json\n{_json.dumps(previous_scene_state, indent=2)}\n```"
+            )
+
         prompt = f"""Analyze this D&D exchange and extract what changed.
 
-{context}
+{context}{scene_state_context}
 
 Respond with ONLY the JSON extraction. No other text."""
         
