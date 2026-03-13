@@ -656,6 +656,8 @@ async def _handle_solo_message(message, user_input: str):
             history_snapshot=history_snapshot,
             location_before=session.current_location,
             player_input=user_input,
+            recent_narratives_snapshot=list(session.recent_narratives),
+            scene_state_snapshot=dict(session.scene_state_data),
         ))
 
         # Auto-roll dice

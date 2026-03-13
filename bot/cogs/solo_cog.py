@@ -513,6 +513,10 @@ class SoloCog(commands.Cog, name="Solo"):
         # Restore location
         session.current_location = snapshot.location_before
 
+        # Restore narrative continuity fields
+        session.recent_narratives = snapshot.recent_narratives_snapshot
+        session.scene_state_data = snapshot.scene_state_snapshot
+
         # Note: Solo events are NOT written to the global memory checkpoint (fixed in
         # chronicler_node.py), so undo doesn't need to touch it. Solo uses per-session
         # history only, which was already restored above.

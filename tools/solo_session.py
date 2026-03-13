@@ -26,7 +26,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger("SoloSession")
 
 # Current snapshot schema version — increment on breaking changes
-SNAPSHOT_SCHEMA_VERSION = 2
+SNAPSHOT_SCHEMA_VERSION = 3
 
 # Maximum undo stack depth (set high for testing phase)
 MAX_SNAPSHOT_DEPTH = 999
@@ -40,6 +40,8 @@ class SoloTurnSnapshot(BaseModel):
     location_before: str  # Location before this turn
     player_input: str  # What the player said
     narrative: str = ""  # What the AI responded
+    recent_narratives_snapshot: List[dict] = Field(default_factory=list)  # Narrative window before this turn
+    scene_state_snapshot: dict = Field(default_factory=dict)  # Scene state before this turn
     schema_version: int = SNAPSHOT_SCHEMA_VERSION
 
 
