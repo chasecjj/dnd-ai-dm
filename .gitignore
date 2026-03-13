@@ -33,3 +33,6 @@ Thumbs.db
 
 # Web project (standalone, separate repo)
 web_project/
+
+# Git worktrees
+.worktrees/
