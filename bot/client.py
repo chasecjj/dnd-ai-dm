@@ -830,6 +830,11 @@ async def _solo_post_process(session, pipeline_result: dict, turn_number: int):
         # Extract and store scene state from chronicler output (Phase 3)
         scene_state = chronicler_data.get("scene_state")
         if scene_state and isinstance(scene_state, dict):
+            scene_state = scene_state.copy()
+            # Cap entities_present to 20 entries (keep most recent)
+            entities = scene_state.get("entities_present")
+            if isinstance(entities, list) and len(entities) > 20:
+                scene_state["entities_present"] = entities[-20:]
             session.scene_state_data = scene_state
 
         # Write updated state back to session

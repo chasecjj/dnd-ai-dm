@@ -486,8 +486,13 @@ class ContextAssembler:
         if not recent_narratives:
             return None
 
-        # Take last 3 turns
-        window = recent_narratives[-3:]
+        # Take last 3 turns, filter out entries with empty narratives
+        window = [
+            entry for entry in recent_narratives[-3:]
+            if entry.get("narrative", "").strip()
+        ]
+        if not window:
+            return None
         lines = [
             "## Recent Narration (your previous output — do NOT repeat phrases from here)"
         ]
@@ -519,6 +524,8 @@ class ContextAssembler:
         ]
 
         entities = scene_state.get("entities_present", [])
+        if not isinstance(entities, list):
+            entities = []
         if entities:
             lines.append("### Present")
             for ent in entities:
@@ -539,6 +546,8 @@ class ContextAssembler:
                 lines.extend(parts)
 
         objects = scene_state.get("objects_in_play", [])
+        if not isinstance(objects, list):
+            objects = []
         if objects:
             lines.append("### Objects in Play")
             for obj in objects:
@@ -791,7 +800,7 @@ class ContextAssembler:
         so the storyteller has ground-truth physical details to match exactly.
         Skips template placeholder text (italic underscored prompts).
         """
-        npc_fm = npc['frontmatter']
+        npc_fm = npc.get('frontmatter', {})
         disposition = npc_fm.get('disposition', 'unknown')
         npc_status = npc_fm.get('status', 'alive')
         display_status = "DEAD" if npc_status == 'dead' else disposition

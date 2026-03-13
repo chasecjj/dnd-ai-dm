@@ -492,6 +492,7 @@ class SoloCog(commands.Cog, name="Solo"):
 
         snapshot = session.pop_snapshot()
         turn_num = snapshot.turn_number
+        session.turn_count = snapshot.turn_number
 
         # Restore per-session history from snapshot (Phase 0.1)
         session_history = self.solo_manager.get_history(interaction.channel.id)
