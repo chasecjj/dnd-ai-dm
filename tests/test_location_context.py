@@ -196,3 +196,151 @@ class TestBuildContextWithNewLocations:
         )
         assert "famous tavern" in ctx
         assert "[SAME LOCATION" not in ctx
+
+
+# ---------------------------------------------------------------------------
+# _format_npc_entry
+# ---------------------------------------------------------------------------
+
+class TestFormatNpcEntry:
+    """Tests for NPC entry formatting with description and personality extraction."""
+
+    def test_format_npc_entry_with_description(self, assembler):
+        npc = {
+            "frontmatter": {"name": "Durnan", "role": "Barkeep", "disposition": "gruff", "status": "alive"},
+            "body": "## Description\nA burly man with a scarred face and thick arms.\n## Personality\nGruff but fair.",
+        }
+        result = assembler._format_npc_entry(npc)
+        assert "Appearance:" in result
+        assert "A burly man" in result
+        # Description should be truncated to 200 chars max
+        assert len(result.split("Appearance: ")[1].split("\n")[0]) <= 200
+
+    def test_format_npc_entry_with_personality(self, assembler):
+        npc = {
+            "frontmatter": {"name": "Durnan", "role": "Barkeep", "disposition": "gruff", "status": "alive"},
+            "body": "## Description\nA burly man.\n## Personality\nGruff but fair, with a heart of gold buried under years of hardship.",
+        }
+        result = assembler._format_npc_entry(npc)
+        assert "Personality:" in result
+        # Personality should be capped at 150 chars
+        pers_line = [l for l in result.split("\n") if "Personality:" in l][0]
+        pers_text = pers_line.split("Personality: ")[1]
+        assert len(pers_text) <= 150
+
+    def test_format_npc_entry_empty_body(self, assembler):
+        npc = {
+            "frontmatter": {"name": "Durnan", "role": "Barkeep", "disposition": "gruff", "status": "alive"},
+            "body": "",
+        }
+        result = assembler._format_npc_entry(npc)
+        assert result == "- **Durnan** (Barkeep) — gruff"
+        assert "Appearance:" not in result
+        assert "Personality:" not in result
+
+    def test_format_npc_entry_skips_placeholders(self, assembler):
+        npc = {
+            "frontmatter": {"name": "Durnan", "role": "Barkeep", "disposition": "gruff", "status": "alive"},
+            "body": "## Description\n_Physical appearance, mannerisms, voice._\n## Personality\n_Key traits._",
+        }
+        result = assembler._format_npc_entry(npc)
+        assert "Appearance:" not in result
+        assert "Personality:" not in result
+
+
+# ---------------------------------------------------------------------------
+# _build_narrative_window
+# ---------------------------------------------------------------------------
+
+class TestBuildNarrativeWindow:
+    """Tests for the narrative sliding window builder."""
+
+    def test_build_narrative_window_last_three(self):
+        entries = [
+            {"turn": i, "player_input": f"action {i}", "narrative": f"narration {i}"}
+            for i in range(1, 6)
+        ]
+        result = ContextAssembler._build_narrative_window(entries)
+        assert result is not None
+        # Only last 3 turns (3, 4, 5) should appear
+        assert "Turn 3" in result
+        assert "Turn 4" in result
+        assert "Turn 5" in result
+        assert "Turn 1" not in result
+        assert "Turn 2" not in result
+
+    def test_build_narrative_window_truncation(self):
+        long_input = "x" * 200
+        long_narrative = "y" * 1000
+        entries = [{"turn": 1, "player_input": long_input, "narrative": long_narrative}]
+        result = ContextAssembler._build_narrative_window(entries)
+        assert result is not None
+        # Player input truncated to 150 chars
+        assert "x" * 150 in result
+        assert "x" * 151 not in result
+        # Narrative truncated to 800 chars
+        assert "y" * 800 in result
+        assert "y" * 801 not in result
+
+    def test_build_narrative_window_empty(self):
+        result = ContextAssembler._build_narrative_window([])
+        assert result is None
+
+
+# ---------------------------------------------------------------------------
+# _build_scene_state_section
+# ---------------------------------------------------------------------------
+
+class TestBuildSceneStateSection:
+    """Tests for the scene state ground-truth section builder."""
+
+    def test_build_scene_state_entities(self):
+        scene_state = {
+            "entities_present": [
+                {
+                    "name": "Durnan",
+                    "physical_description": "A burly man",
+                    "current_demeanor": "watchful",
+                    "holding_items": ["mug", "towel"],
+                },
+                {
+                    "name": "Yagra",
+                    "physical_description": "A half-orc bruiser",
+                    "current_demeanor": "aggressive",
+                    "holding_items": [],
+                },
+            ],
+        }
+        result = ContextAssembler._build_scene_state_section(scene_state)
+        assert result is not None
+        assert "**Durnan**" in result
+        assert "**Yagra**" in result
+        assert "### Present" in result
+
+    def test_build_scene_state_objects(self):
+        scene_state = {
+            "objects_in_play": [
+                {"name": "Ale Mug", "holder": "Durnan", "description": "A frothy pint"},
+                {"name": "Longsword", "holder": "", "description": "Leaning against the wall"},
+            ],
+        }
+        result = ContextAssembler._build_scene_state_section(scene_state)
+        assert result is not None
+        assert "**Ale Mug**" in result
+        assert "held by Durnan" in result
+        assert "**Longsword**" in result
+        assert "on ground/table" in result
+        assert "### Objects in Play" in result
+
+    def test_build_scene_state_empty(self):
+        result = ContextAssembler._build_scene_state_section({})
+        assert result is None
+
+    def test_build_scene_state_spatial(self):
+        scene_state = {
+            "spatial_notes": "The bar runs along the north wall. The pit is in the center.",
+        }
+        result = ContextAssembler._build_scene_state_section(scene_state)
+        assert result is not None
+        assert "### Layout" in result
+        assert "bar runs along the north wall" in result

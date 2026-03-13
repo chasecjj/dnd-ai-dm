@@ -737,3 +737,81 @@ class TestConcurrentPlayGuards:
     @pytest.mark.asyncio
     async def test_get_by_character_missing(self, manager):
         assert manager.get_by_character("Nobody") is None
+
+
+# ---------------------------------------------------------------------------
+# Undo Continuity Fields (Phase 2/3 narrative continuity)
+# ---------------------------------------------------------------------------
+
+class TestUndoContinuityFields:
+    """Test that undo flow restores recent_narratives and scene_state_data."""
+
+    def test_undo_restores_recent_narratives(self):
+        session = SoloSession(
+            discord_user_id=100, thread_id=200,
+            character_name="Victor", current_location="Docks", session_number=3,
+        )
+        # Build up 2 narratives
+        session.push_narrative(1, "I look around", "The docks stretch before you.")
+        session.push_narrative(2, "I talk to the guard", "The guard eyes you warily.")
+
+        # Push snapshot capturing those 2 narratives
+        session.push_snapshot(SoloTurnSnapshot(
+            turn_number=3,
+            history_snapshot=[],
+            location_before="Docks",
+            player_input="I attack",
+            recent_narratives_snapshot=list(session.recent_narratives),
+            scene_state_snapshot=dict(session.scene_state_data),
+        ))
+
+        # Add a 3rd narrative (the turn we'll undo)
+        session.push_narrative(3, "I attack", "The sword strikes!")
+        assert len(session.recent_narratives) == 3
+
+        # Pop snapshot and restore
+        snapshot = session.pop_snapshot()
+        session.recent_narratives = snapshot.recent_narratives_snapshot
+        session.scene_state_data = snapshot.scene_state_snapshot
+
+        # Should be back to 2 narratives
+        assert len(session.recent_narratives) == 2
+        assert session.recent_narratives[-1]["turn"] == 2
+        assert session.recent_narratives[-1]["narrative"] == "The guard eyes you warily."
+
+    def test_undo_restores_scene_state(self):
+        session = SoloSession(
+            discord_user_id=100, thread_id=200,
+            character_name="Victor", current_location="Market", session_number=3,
+        )
+        # Set initial scene state
+        session.scene_state_data = {
+            "entities_present": [{"name": "Merchant"}],
+            "objects_in_play": [{"name": "Apple", "holder": "Merchant"}],
+        }
+
+        # Push snapshot capturing this state
+        session.push_snapshot(SoloTurnSnapshot(
+            turn_number=3,
+            history_snapshot=[],
+            location_before="Market",
+            player_input="I steal the apple",
+            recent_narratives_snapshot=list(session.recent_narratives),
+            scene_state_snapshot=dict(session.scene_state_data),
+        ))
+
+        # Mutate scene state (the turn we'll undo)
+        session.scene_state_data = {
+            "entities_present": [{"name": "Merchant"}, {"name": "Guard"}],
+            "objects_in_play": [{"name": "Apple", "holder": "Victor"}],
+        }
+
+        # Pop snapshot and restore
+        snapshot = session.pop_snapshot()
+        session.recent_narratives = snapshot.recent_narratives_snapshot
+        session.scene_state_data = snapshot.scene_state_snapshot
+
+        # Should be back to pre-steal state
+        assert len(session.scene_state_data["entities_present"]) == 1
+        assert session.scene_state_data["entities_present"][0]["name"] == "Merchant"
+        assert session.scene_state_data["objects_in_play"][0]["holder"] == "Merchant"

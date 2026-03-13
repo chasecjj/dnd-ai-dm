@@ -205,3 +205,78 @@ class TestSoloSessionManager:
         assert popped is not None
         assert popped.turn_number == 1
         assert session.last_snapshot is None
+
+
+# ---------------------------------------------------------------------------
+# Narrative Continuity Fields (Phase 2/3)
+# ---------------------------------------------------------------------------
+
+class TestNarrativeContinuityFields:
+    """Test push_narrative, recent_narratives, scene_state_data, and roundtrips."""
+
+    def test_push_narrative_appends(self):
+        session = SoloSession(
+            discord_user_id=123, thread_id=456, character_name="Victor",
+            current_location="The Yawning Portal", session_number=3,
+        )
+        session.push_narrative(1, "I attack", "The sword strikes...")
+        assert len(session.recent_narratives) == 1
+        entry = session.recent_narratives[0]
+        assert entry["turn"] == 1
+        assert entry["player_input"] == "I attack"
+        assert entry["narrative"] == "The sword strikes..."
+
+    def test_push_narrative_trims_to_five(self):
+        session = SoloSession(
+            discord_user_id=123, thread_id=456, character_name="Victor",
+            current_location="The Yawning Portal", session_number=3,
+        )
+        for i in range(6):
+            session.push_narrative(i + 1, f"action {i}", f"narrative {i}")
+        assert len(session.recent_narratives) == 5
+        # First one (turn 1) should have been dropped
+        assert session.recent_narratives[0]["turn"] == 2
+        assert session.recent_narratives[-1]["turn"] == 6
+
+    def test_recent_narratives_roundtrip(self):
+        session = SoloSession(
+            discord_user_id=123, thread_id=456, character_name="Victor",
+            current_location="The Yawning Portal", session_number=3,
+        )
+        session.push_narrative(1, "I look around", "The tavern is quiet.")
+        session.push_narrative(2, "I talk to Durnan", "Durnan nods slowly.")
+        session.push_narrative(3, "I order ale", "He slides a mug across.")
+
+        d = session.to_dict()
+        restored = SoloSession.from_dict(d)
+
+        assert len(restored.recent_narratives) == 3
+        assert restored.recent_narratives[0]["turn"] == 1
+        assert restored.recent_narratives[1]["player_input"] == "I talk to Durnan"
+        assert restored.recent_narratives[2]["narrative"] == "He slides a mug across."
+
+    def test_scene_state_data_roundtrip(self):
+        session = SoloSession(
+            discord_user_id=123, thread_id=456, character_name="Victor",
+            current_location="The Yawning Portal", session_number=3,
+        )
+        session.scene_state_data = {
+            "entities_present": [{"name": "Durnan"}],
+            "objects_in_play": [],
+        }
+
+        d = session.to_dict()
+        restored = SoloSession.from_dict(d)
+
+        assert restored.scene_state_data["entities_present"] == [{"name": "Durnan"}]
+        assert restored.scene_state_data["objects_in_play"] == []
+
+    def test_push_narrative_empty_strings(self):
+        session = SoloSession(
+            discord_user_id=123, thread_id=456, character_name="Victor",
+            current_location="The Yawning Portal", session_number=3,
+        )
+        session.push_narrative(1, "", "")
+        assert len(session.recent_narratives) == 1
+        assert session.recent_narratives[0]["player_input"] == ""
+        assert session.recent_narratives[0]["narrative"] == ""
