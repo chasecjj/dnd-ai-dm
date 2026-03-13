@@ -16,6 +16,7 @@ If StateManager is not connected, falls back silently to vault-only mode.
 import json
 import os
 import logging
+import re
 import tempfile
 import time
 from typing import Dict, Any, List, Optional, TYPE_CHECKING
@@ -1032,21 +1033,23 @@ class ContextAssembler:
             if not npcs_here:
                 return base
 
-            # Replace the vault's NPC section with DB-accurate statuses
-            npc_lines = ["\n### NPCs Present (verified)"]
+            # Update DB-authoritative status/disposition in the vault-generated base,
+            # preserving descriptions and personality from _format_npc_entry().
+            # _format_npc_entry outputs headers like: "- **Name** (role) — disposition"
+            # We replace only the disposition token after the em dash on that line.
             for npc in npcs_here:
-                name = npc.get("name", "?")
-                role = npc.get("role", "?")
+                name = npc.get("name", "")
+                if not name:
+                    continue
                 npc_status = npc.get("status", "alive")
-                disposition = npc.get("disposition", "unknown")
-                display_status = "DEAD" if npc_status == "dead" else disposition
-                npc_lines.append(f"- **{name}** ({role}) — {display_status}")
+                db_disposition = npc.get("disposition", "unknown")
+                display_status = "DEAD" if npc_status == "dead" else db_disposition
 
-            # If vault base already has an NPC section, replace it
-            if "### NPCs Present" in base:
-                idx = base.index("### NPCs Present")
-                base = base[:idx].rstrip()
-            return base + "\n" + "\n".join(npc_lines)
+                pattern = rf'(\- \*\*{re.escape(name)}\*\* \([^)]*\)) — [^\n]+'
+                replacement = rf'\1 — {display_status}'
+                base = re.sub(pattern, replacement, base)
+
+            return base
         except Exception as e:
             logger.warning(f"StateManager NPC fetch failed: {e}")
             return base
