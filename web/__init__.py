@@ -1,1 +1,1 @@
-"""Quest Mirror — Web interface for the D&D AI Dungeon Master."""
+"""Quest Mirror — Web companion for the D&D AI Dungeon Master."""
