@@ -1,0 +1,50 @@
+/* Quest Mirror — Dark Glassmorphism + Warm Fire token set.
+   All visual theming flows through these CSS custom properties.
+   Environment presets override these at runtime via JS. */
+
+[data-brand="quest-mirror"] {
+  /* Base palette — Tavern/Warm Dark (default) */
+  --qm-bg: #0a0908;
+  --qm-surface: rgba(20, 18, 15, 0.85);
+  --qm-surface-glass: rgba(30, 27, 22, 0.6);
+  --qm-text: #e8e0d4;
+  --qm-text-dim: #9a9080;
+  --qm-text-warm: #f0e6d8;
+  --qm-accent: #d4a855;
+  --qm-accent-dim: rgba(212, 168, 85, 0.3);
+  --qm-border: rgba(212, 168, 85, 0.15);
+  --qm-border-bright: rgba(212, 168, 85, 0.4);
+
+  /* Glassmorphism */
+  --qm-blur: 16px;
+  --qm-glass-bg: rgba(20, 18, 15, 0.7);
+
+  /* Typography */
+  --qm-font-narrative: "Crimson Pro", Georgia, serif;
+  --qm-font-heading: "Cormorant Garamond", Georgia, serif;
+  --qm-font-dropcap: "Cinzel", serif;
+  --qm-font-ui: "Inter", system-ui, sans-serif;
+
+  /* Ambient */
+  --qm-glow-color: rgba(212, 168, 85, 0.08);
+  --qm-ambient-origin: center bottom;
+
+  /* Layout */
+  --qm-spine-width: 55%;
+  --qm-rail-width: 30%;
+
+  /* Transitions */
+  --qm-transition-theme: 2s ease-in-out;
+
+  color-scheme: dark;
+}
+
+/* Night variant — darker, cooler */
+[data-brand="quest-mirror"][data-time="night"] {
+  --qm-bg: #060506;
+  --qm-surface: rgba(12, 10, 15, 0.9);
+  --qm-text: #d0c8be;
+  --qm-text-dim: #706860;
+  --qm-accent: #b89040;
+  --qm-glow-color: rgba(180, 140, 60, 0.05);
+}

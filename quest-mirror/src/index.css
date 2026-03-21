@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@theme {
+  --font-narrative: "Crimson Pro", Georgia, serif;
+  --font-heading: "Cormorant Garamond", Georgia, serif;
+  --font-dropcap: "Cinzel", serif;
+  --font-ui: "Inter", system-ui, sans-serif;
+}
