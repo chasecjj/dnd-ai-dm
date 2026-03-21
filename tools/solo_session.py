@@ -206,6 +206,10 @@ class SoloSessionManager:
         self._histories: Dict[int, Any] = {}  # thread_id -> ConversationHistory
         self._state_manager = state_manager  # Optional MongoDB for persistence
 
+        # Web session UUID → int key mapping (Quest Mirror)
+        self._web_session_keys: Dict[str, int] = {}  # session.id -> negative int key
+        self._next_web_key: int = 0  # Decremented for each new web session
+
     async def start_session(
         self,
         discord_user_id: int,
@@ -384,6 +388,112 @@ class SoloSessionManager:
                 f"Solo session paused: {session.character_name} "
                 f"(turn {session.turn_count}, thread {thread_id})"
             )
+            return session
+
+    # ------------------------------------------------------------------
+    # Web session support (Quest Mirror)
+    # ------------------------------------------------------------------
+
+    async def start_web_session(
+        self,
+        character_name: str,
+        current_location: str,
+        session_number: int,
+    ) -> Optional[SoloSession]:
+        """Register a new web (Quest Mirror) solo session.
+
+        Uses negative integer keys to avoid collision with Discord snowflake IDs.
+        Returns None if the character already has an active session (any source).
+        """
+        async with self._lock:
+            # Atomic duplicate check — no two sessions for the same character
+            if self._find_by_character_unlocked(character_name) is not None:
+                logger.warning(
+                    f"Web session rejected: {character_name} already has an active session"
+                )
+                return None
+
+            # Allocate a unique negative key
+            self._next_web_key -= 1
+            web_key = self._next_web_key
+
+            session = SoloSession(
+                discord_user_id=0,
+                thread_id=web_key,
+                character_name=character_name,
+                current_location=current_location,
+                session_number=session_number,
+            )
+            self._sessions[web_key] = session
+            self._processing_locks[web_key] = asyncio.Lock()
+
+            # Create per-session ConversationHistory (same as Discord sessions)
+            from tools.context_assembler import ConversationHistory
+            self._histories[web_key] = ConversationHistory()
+
+            # Map session UUID → negative int key for web handler lookups
+            self._web_session_keys[session.id] = web_key
+
+            logger.info(
+                f"Web solo session started: {character_name} (key={web_key}, id={session.id})"
+            )
+            return session
+
+    def _find_by_character_unlocked(self, character_name: str) -> Optional[SoloSession]:
+        """Find an active session by character name (case-insensitive).
+
+        Must be called under self._lock.
+        """
+        char_lower = character_name.lower()
+        for session in self._sessions.values():
+            if session.character_name.lower() == char_lower:
+                return session
+        return None
+
+    def get_by_session_id(self, session_id: str) -> Optional[SoloSession]:
+        """Get a web session by its UUID (session.id)."""
+        web_key = self._web_session_keys.get(session_id)
+        if web_key is None:
+            return None
+        return self._sessions.get(web_key)
+
+    def get_web_history(self, session_id: str):
+        """Get the ConversationHistory for a web session by UUID."""
+        web_key = self._web_session_keys.get(session_id)
+        if web_key is None:
+            return None
+        return self._histories.get(web_key)
+
+    def get_web_processing_lock(self, session_id: str) -> Optional[asyncio.Lock]:
+        """Get the processing lock for a web session by UUID."""
+        web_key = self._web_session_keys.get(session_id)
+        if web_key is None:
+            return None
+        return self._processing_locks.get(web_key)
+
+    def get_web_thread_key(self, session_id: str) -> Optional[int]:
+        """Get the negative int thread key for a web session UUID.
+
+        Needed by the web handler to set _solo_thread_id in GameState.
+        """
+        return self._web_session_keys.get(session_id)
+
+    async def end_web_session(self, session_id: str) -> Optional[SoloSession]:
+        """End and remove a web session by UUID. Returns the session or None."""
+        async with self._lock:
+            web_key = self._web_session_keys.pop(session_id, None)
+            if web_key is None:
+                return None
+
+            session = self._sessions.pop(web_key, None)
+            self._processing_locks.pop(web_key, None)
+            self._histories.pop(web_key, None)
+
+            if session:
+                logger.info(
+                    f"Web solo session ended: {session.character_name} "
+                    f"({session.turn_count} turns, key={web_key})"
+                )
             return session
 
     async def resume_session(self, thread_id: int) -> Optional[SoloSession]:
