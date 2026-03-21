@@ -687,78 +687,13 @@ async def _solo_post_process(
 ) -> None:
     """Post-process pipeline results for solo-specific tracking.
 
-    Non-blocking — errors are logged and swallowed.  Mirrors the
-    ``_solo_post_process()`` function in ``bot/client.py``.
+    Delegates to the canonical implementation in bot.client to avoid
+    duplicating ~70 lines of chaos/thread/NPC/faction logic.
+    Non-blocking — errors are logged and swallowed.
     """
     try:
-        from tools.solo_engine import ChaosTracker
-        from tools.solo_world import (
-            ThreadTracker,
-            SoloNPCRegistry,
-            FactionTracker,
-            extract_threads_from_chronicler,
-            extract_npcs_from_chronicler,
-        )
-
-        # Rebuild trackers from session state
-        chaos = ChaosTracker(factor=session.chaos_factor)
-        threads = ThreadTracker.from_list(session.active_threads)
-        npcs = SoloNPCRegistry.from_list(session.encountered_npcs)
-        factions = FactionTracker.from_list(session.factions)
-
-        chronicler_data = pipeline_result.get("_chronicler_output") or {}
-        if "scene_changes" not in chronicler_data:
-            chronicler_data["scene_changes"] = (
-                pipeline_result.get("scene_changes") or {}
-            )
-
-        # Chaos assessment
-        direction = chaos.assess_chronicler_output(chronicler_data)
-        if direction != "none":
-            chaos.adjust(direction)
-
-        # Thread extraction
-        narrative = pipeline_result.get("narrative", "")
-        thread_candidates = extract_threads_from_chronicler(
-            chronicler_data, narrative, turn_number
-        )
-        for candidate in thread_candidates:
-            threads.add_thread(
-                candidate["title"],
-                turn_number,
-                candidate.get("priority", 5),
-            )
-        threads.check_dormancy(turn_number)
-
-        # NPC extraction
-        npc_data = extract_npcs_from_chronicler(chronicler_data, turn_number)
-        for npc in npc_data:
-            npcs.register(
-                name=npc["name"],
-                turn=turn_number,
-                disposition=npc.get("disposition", "neutral"),
-                location=npc.get("location", ""),
-                motivation=npc.get("motivation", ""),
-            )
-
-        # Faction tick
-        factions.tick(turn_number)
-
-        # Scene state from chronicler
-        scene_state = chronicler_data.get("scene_state")
-        if scene_state and isinstance(scene_state, dict):
-            scene_state = scene_state.copy()
-            entities = scene_state.get("entities_present")
-            if isinstance(entities, list) and len(entities) > 20:
-                scene_state["entities_present"] = entities[-20:]
-            session.scene_state_data = scene_state
-
-        # Write back
-        session.chaos_factor = chaos.factor
-        session.active_threads = threads.to_list()
-        session.encountered_npcs = npcs.to_list()
-        session.factions = factions.to_list()
-
+        from bot.client import _solo_post_process as _bot_post_process
+        await _bot_post_process(session, pipeline_result, turn_number)
     except Exception as e:
         logger.warning("Solo/Web post-processing error (non-blocking): %s", e)
 
