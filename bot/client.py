@@ -1687,14 +1687,64 @@ async def load_cogs():
     logger.info("All Cogs loaded.")
 
 
+# Quest Mirror — uvicorn server without signal handler interference
+try:
+    import uvicorn
+
+    class _NoSignalServer(uvicorn.Server):
+        """Uvicorn server that does NOT install its own signal handlers.
+
+        By default, uvicorn.Server.serve() installs SIGINT/SIGTERM handlers
+        that swallow Ctrl+C and prevent propagation to the event loop.
+        This subclass disables that so TaskGroup handles signals correctly.
+        See: https://github.com/encode/uvicorn/issues/1579
+        """
+        def install_signal_handlers(self):
+            pass
+except ImportError:
+    _NoSignalServer = None  # uvicorn not installed
+
+
 async def main():
-    """Async entry point — load cogs then start the bot."""
+    """Async entry point — load cogs, start bot, optionally start web server."""
+    web_server = None
     try:
+        web_port = int(os.getenv("QUEST_MIRROR_PORT", "0"))
+        if (web_port > 0 or os.getenv("QUEST_MIRROR_SECRET")) and _NoSignalServer is not None:
+            try:
+                from web.app import create_app, WEB_PORT
+                port = web_port if web_port > 0 else WEB_PORT
+                app = create_app()
+                config = uvicorn.Config(
+                    app,
+                    host="0.0.0.0",
+                    port=port,
+                    log_level="info",
+                    access_log=False,
+                )
+                web_server = _NoSignalServer(config)
+                logger.info(f"Quest Mirror web server will start on port {port}")
+            except ImportError:
+                logger.warning("web module not available — Quest Mirror disabled")
+            except Exception as e:
+                logger.error(f"Failed to initialize Quest Mirror: {e}")
+
         async with bot:
             await load_cogs()
-            await bot.start(DISCORD_TOKEN)
+            if web_server:
+                async with asyncio.TaskGroup() as tg:
+                    tg.create_task(bot.start(DISCORD_TOKEN))
+                    tg.create_task(web_server.serve())
+            else:
+                await bot.start(DISCORD_TOKEN)
     finally:
         await foundry_client.close()
+        if web_server:
+            try:
+                from web.auth import clear_all_tokens
+                clear_all_tokens()
+            except Exception:
+                pass
 
 
 def _acquire_lockfile() -> bool:
