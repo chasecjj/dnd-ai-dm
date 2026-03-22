@@ -1,76 +1,74 @@
-/* Quest Mirror — Warm Parchment Manuscript token set.
-   All visual theming flows through these CSS custom properties.
-   Environment presets can override at runtime via JS. */
+/* Quest Mirror — Aged Parchment Manuscript.
+   Colors extracted from Stitch mockup reference (scoria/stitch/).
+   All visual theming flows through these CSS custom properties. */
 
 [data-brand="quest-mirror"] {
-  /* Base palette — Aged Parchment (warmer, darker than bright paper) */
-  --qm-bg: #e8dcc8;
-  --qm-bg-deep: #ddd0b8;
-  --qm-surface: #ddd0b8;
-  --qm-surface-glass: rgba(221, 208, 184, 0.85);
-  --qm-surface-input: rgba(221, 208, 184, 0.6);
+  /* Parchment hierarchy — warm, golden, aged paper */
+  --qm-bg: #e2d5be;
+  --qm-bg-light: #e8dcc8;
+  --qm-bg-deep: #d8cab0;
+  --qm-bg-shadow: #cfc0a6;
+  --qm-surface: #d8cab0;
+  --qm-surface-glass: rgba(226, 213, 190, 0.85);
 
-  /* Dark sidebar / nav rail */
+  /* Dark sidebar — quiet, warm-dark */
   --qm-sidebar-bg: #1a1814;
   --qm-sidebar-text: #a09888;
-  --qm-sidebar-border: rgba(212, 168, 75, 0.08);
-  --qm-text: #2a2018;
-  --qm-text-dim: #8a7e6e;
-  --qm-text-warm: #3d3022;
-  --qm-accent: #8b1a1a;
-  --qm-accent-dim: rgba(139, 26, 26, 0.15);
-  --qm-accent-hover: #a52222;
-  --qm-accent-soft: #c4a87a;
-  --qm-border: rgba(139, 26, 26, 0.15);
-  --qm-border-bright: rgba(139, 26, 26, 0.35);
-  --qm-border-subtle: rgba(42, 32, 24, 0.1);
+  --qm-sidebar-active: #c4a060;
+  --qm-sidebar-border: rgba(160, 152, 136, 0.08);
 
-  /* Player input styling */
-  --qm-player-bg: rgba(237, 229, 216, 0.5);
-  --qm-player-border: rgba(139, 26, 26, 0.25);
+  /* Ink — rich dark brown */
+  --qm-text: #2a2018;
+  --qm-text-light: #4a3f30;
+  --qm-text-dim: #8a7e6e;
+  --qm-text-ghost: #b0a590;
+
+  /* Crimson — used SPARINGLY */
+  --qm-accent: #8b1a1a;
+  --qm-accent-hover: #a52828;
+  --qm-accent-dim: rgba(139, 26, 26, 0.12);
+  --qm-accent-border: rgba(139, 26, 26, 0.25);
+
+  /* Gold — for warmth accents */
+  --qm-gold: #c4a060;
+  --qm-gold-dim: rgba(196, 160, 96, 0.3);
+
+  /* Player input */
+  --qm-player-bg: var(--qm-bg);
+  --qm-player-border: var(--qm-accent-border);
 
   /* Dice */
-  --qm-dice-bg: #3d3022;
-  --qm-dice-text: #ede5d8;
-  --qm-dice-accent: #8b1a1a;
-  --qm-dice-badge: #8b1a1a;
-  --qm-dice-badge-text: #f5f0e8;
+  --qm-dice-bg: var(--qm-text);
+  --qm-dice-text: var(--qm-bg-light);
+  --qm-dice-badge: var(--qm-accent);
+  --qm-dice-badge-text: var(--qm-bg-light);
 
   /* Conditions */
-  --qm-condition-neutral-bg: rgba(42, 32, 24, 0.08);
-  --qm-condition-neutral-border: rgba(42, 32, 24, 0.2);
-  --qm-condition-neutral-text: #3d3022;
-  --qm-condition-negative-bg: rgba(139, 26, 26, 0.1);
-  --qm-condition-negative-border: rgba(139, 26, 26, 0.3);
-  --qm-condition-negative-text: #8b1a1a;
+  --qm-condition-neutral-border: var(--qm-text-ghost);
+  --qm-condition-neutral-text: var(--qm-text-light);
+  --qm-condition-negative-bg: var(--qm-accent-dim);
+  --qm-condition-negative-border: var(--qm-accent-border);
+  --qm-condition-negative-text: var(--qm-accent);
 
   /* NPC dispositions */
-  --qm-npc-hostile: #8b1a1a;
+  --qm-npc-hostile: var(--qm-accent);
   --qm-npc-friendly: #2a5a2a;
-  --qm-npc-neutral: #2a2018;
-  --qm-npc-background: #8a7e6e;
+  --qm-npc-neutral: var(--qm-text);
+  --qm-npc-background: var(--qm-text-ghost);
+
+  /* Borders */
+  --qm-border: var(--qm-accent-border);
+  --qm-border-subtle: var(--qm-bg-shadow);
 
   /* Typography */
-  --qm-font-narrative: "Crimson Pro", Georgia, serif;
-  --qm-font-heading: "Cormorant Garamond", Georgia, serif;
-  --qm-font-dropcap: "Cinzel", serif;
-  --qm-font-ui: "Inter", system-ui, sans-serif;
+  --qm-font-narrative: 'Crimson Pro', Georgia, serif;
+  --qm-font-heading: 'Cormorant Garamond', Georgia, serif;
+  --qm-font-dropcap: 'Cinzel', serif;
+  --qm-font-ui: 'Inter', system-ui, sans-serif;
 
   /* Layout */
   --qm-spine-width: 60%;
-  --qm-rail-width: 28%;
-
-  /* Transitions */
-  --qm-transition-theme: 2s ease-in-out;
+  --qm-rail-width: 320px;
 
   color-scheme: light;
-}
-
-/* Night variant — darker parchment, candlelit warmth */
-[data-brand="quest-mirror"][data-time="night"] {
-  --qm-bg: #e8dfd0;
-  --qm-surface: #ddd3c2;
-  --qm-text: #1e1810;
-  --qm-text-dim: #6e6458;
-  --qm-accent-soft: #b89860;
 }

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quest Mirror — Design Mockup v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&family=Cinzel:wght@400;500;600&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    /* Aged parchment — warm, golden, NOT pink */
+    --parchment: #e2d5be;
+    --parchment-light: #e8dcc8;
+    --parchment-deep: #d8cab0;
+    --parchment-shadow: #cfc0a6;
+
+    /* Text — rich dark brown */
+    --ink: #2a2018;
+    --ink-light: #4a3f30;
+    --ink-faded: #8a7e6e;
+    --ink-ghost: #b0a590;
+
+    /* Crimson — used SPARINGLY */
+    --crimson: #8b1a1a;
+    --crimson-light: #a52828;
+    --crimson-dim: rgba(139, 26, 26, 0.12);
+    --crimson-border: rgba(139, 26, 26, 0.25);
+
+    /* Gold accent — for warmth */
+    --gold: #c4a060;
+    --gold-dim: rgba(196, 160, 96, 0.3);
+
+    /* Sidebar — dark, quiet */
+    --sidebar-bg: #1a1814;
+    --sidebar-text: #a09888;
+    --sidebar-border: rgba(160, 152, 136, 0.08);
+
+    /* Fonts */
+    --f-narrative: 'Crimson Pro', Georgia, serif;
+    --f-heading: 'Cormorant Garamond', Georgia, serif;
+    --f-dropcap: 'Cinzel', serif;
+    --f-ui: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: var(--f-ui);
+    height: 100vh;
+    overflow: hidden;
+    font-size: 14px;
+  }
+
+  /* === LAYOUT === */
+  .quest-mirror {
+    display: grid;
+    grid-template-columns: 48px 1fr 320px;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+  }
+
+  /* === NAV RAIL === */
+  .nav-rail {
+    grid-row: 1 / -1;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    gap: 16px;
+  }
+  .nav-rail button {
+    width: 32px; height: 32px;
+    background: none; border: none;
+    color: var(--sidebar-text);
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-rail button:hover { color: var(--gold); background: rgba(196,160,96,0.06); }
+  .nav-rail button.active { color: var(--gold); }
+  .nav-rail .spacer { flex: 1; }
+
+  /* === NARRATIVE SPINE === */
+  .narrative-spine {
+    background: var(--parchment-light);
+    overflow-y: auto;
+    padding: 40px 56px;
+    border-right: 1px solid var(--parchment-shadow);
+  }
+  .narrative-inner {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  /* Location header */
+  .location-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 32px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--parchment-shadow);
+  }
+  .location-name {
+    font-family: var(--f-heading);
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+  .location-meta {
+    font-family: var(--f-ui);
+    font-size: 0.72rem;
+    color: var(--ink-faded);
+    font-style: italic;
+    text-align: right;
+    line-height: 1.5;
+  }
+
+  /* Turn marker */
+  .turn-marker {
+    font-family: var(--f-ui);
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-ghost);
+    margin: 28px 0 12px;
+  }
+
+  /* Narrative prose */
+  .narrative-prose {
+    font-family: var(--f-narrative);
+    font-size: 17px;
+    line-height: 1.85;
+    color: var(--ink);
+    text-align: justify;
+    hyphens: auto;
+  }
+  .narrative-prose p {
+    margin-bottom: 16px;
+  }
+  .narrative-prose em {
+    font-style: italic;
+  }
+
+  /* Drop cap */
+  .drop-cap::first-letter {
+    font-family: var(--f-dropcap);
+    font-size: 3.4em;
+    float: left;
+    line-height: 0.78;
+    margin-right: 8px;
+    margin-top: 4px;
+    color: var(--crimson);
+    font-weight: 600;
+  }
+
+  /* Player input block */
+  .player-action {
+    font-family: var(--f-narrative);
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--ink);
+    background: var(--parchment);
+    border-left: 3px solid var(--crimson-border);
+    padding: 12px 20px;
+    margin: 20px 0;
+    border-radius: 2px;
+  }
+
+  /* Dice badge */
+  .dice-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--crimson);
+    color: var(--parchment-light);
+    font-family: var(--f-ui);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    vertical-align: middle;
+    margin: 0 2px;
+  }
+
+  /* Dialogue */
+  .narrative-prose .dialogue {
+    font-style: normal;
+  }
+
+  /* Quill cursor */
+  .quill-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 18px;
+    background: var(--crimson);
+    margin-left: 4px;
+    vertical-align: middle;
+    animation: quill-pulse 1.2s ease-in-out infinite;
+    border-radius: 1px;
+  }
+  @keyframes quill-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  /* === INPUT AREA === */
+  .input-area {
+    margin-top: 32px;
+    border-top: 1px solid var(--parchment-shadow);
+    padding-top: 20px;
+  }
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .input-field {
+    flex: 1;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--parchment-shadow);
+    font-family: var(--f-narrative);
+    font-size: 15px;
+    font-style: italic;
+    color: var(--ink-faded);
+    padding: 8px 0;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+  .input-field:focus {
+    border-color: var(--crimson-border);
+    color: var(--ink);
+    font-style: normal;
+  }
+  .input-field::placeholder { color: var(--ink-ghost); }
+  .send-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--crimson);
+    border: none;
+    color: var(--parchment-light);
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--crimson-light); transform: scale(1.05); }
+
+  /* Hint chips */
+  .hint-chips {
+    display: flex;
+    gap: 4px;
+    margin-top: 10px;
+    font-family: var(--f-ui);
+    font-size: 12px;
+    color: var(--ink-ghost);
+  }
+  .hint-chip {
+    background: none;
+    border: none;
+    color: var(--ink-faded);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--f-ui);
+    padding: 2px 4px;
+    transition: color 0.2s;
+  }
+  .hint-chip:hover { color: var(--crimson); }
+  .hint-sep { color: var(--ink-ghost); padding: 0 4px; }
+
+  /* === DICE ROLLER === */
+  .dice-roller {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--parchment);
+    border: 1px solid var(--parchment-shadow);
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-top: 16px;
+  }
+  .dice-prompt {
+    font-family: var(--f-narrative);
+    font-style: italic;
+    font-size: 13px;
+    color: var(--ink-faded);
+    white-space: nowrap;
+  }
+  .dice-formula {
+    background: var(--ink);
+    color: var(--parchment-light);
+    font-family: var(--f-ui);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  .dice-cast-btn {
+    background: var(--crimson);
+    color: var(--parchment-light);
+    border: none;
+    font-family: var(--f-ui);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .dice-cast-btn:hover { background: var(--crimson-light); }
+  .dice-auto {
+    font-family: var(--f-ui);
+    font-size: 11px;
+    color: var(--ink-ghost);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* === CHARACTER PANEL === */
+  .character-panel {
+    grid-row: 1 / -1;
+    background: var(--parchment);
+    overflow-y: auto;
+    padding: 24px 28px;
+    border-left: 1px solid var(--parchment-shadow);
+  }
+
+  .char-header {
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .char-header-label {
+    font-family: var(--f-ui);
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+  }
+  .char-header-sub {
+    font-family: var(--f-ui);
+    font-size: 9px;
+    color: var(--ink-ghost);
+    font-style: italic;
+    margin-top: 1px;
+  }
+  .char-separator {
+    border: none;
+    border-top: 1px solid var(--parchment-shadow);
+    margin: 12px 0 20px;
+  }
+  .char-name {
+    font-family: var(--f-heading);
+    font-size: 1.5rem;
+    text-align: center;
+    color: var(--ink);
+    font-weight: 400;
+    margin-bottom: 2px;
+  }
+  .char-title {
+    font-family: var(--f-heading);
+    font-size: 0.85rem;
+    text-align: center;
+    color: var(--ink-faded);
+    font-style: italic;
+    margin-bottom: 20px;
+  }
+
+  /* Stat boxes */
+  .stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .stat-box {
+    border: 1px solid var(--ink-ghost);
+    border-radius: 3px;
+    padding: 10px 6px 8px;
+    text-align: center;
+  }
+  .stat-value {
+    font-family: var(--f-heading);
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: var(--f-ui);
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+    margin-top: 4px;
+  }
+
+  /* HP bar */
+  .hp-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .hp-label {
+    font-family: var(--f-ui);
+    font-size: 10px;
+    font-style: italic;
+    color: var(--ink-faded);
+    letter-spacing: 0.05em;
+  }
+  .hp-value {
+    font-family: var(--f-ui);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-light);
+  }
+  .hp-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--parchment-deep);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .hp-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--crimson) 0%, #c04828 50%, var(--gold) 100%);
+    transition: width 0.5s ease;
+  }
+
+  /* Section headers */
+  .section-header {
+    font-family: var(--f-ui);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+    margin-bottom: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--parchment-shadow);
+  }
+
+  /* Conditions */
+  .conditions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .condition-tag {
+    font-family: var(--f-ui);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+  .condition-neutral {
+    color: var(--ink-light);
+    border-color: var(--ink-ghost);
+    background: transparent;
+  }
+  .condition-negative {
+    color: var(--crimson);
+    border-color: var(--crimson-border);
+    background: var(--crimson-dim);
+  }
+
+  /* Arcane reserves */
+  .arcane-slots {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .arcane-slot {
+    width: 16px; height: 16px;
+    border: 1px solid var(--ink-ghost);
+    border-radius: 2px;
+  }
+  .arcane-slot.filled {
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  /* Possessions */
+  .possession-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+  }
+  .possession-name {
+    font-family: var(--f-narrative);
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .possession-prop {
+    font-family: var(--f-narrative);
+    font-size: 12px;
+    font-style: italic;
+    color: var(--ink-faded);
+  }
+
+  /* Present in scene */
+  .npc-item {
+    margin-bottom: 4px;
+    font-family: var(--f-narrative);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .npc-name { font-weight: 600; }
+  .npc-hostile { color: var(--crimson); }
+  .npc-desc {
+    color: var(--ink-faded);
+    font-style: italic;
+  }
+  .npc-background {
+    color: var(--ink-ghost);
+    font-style: italic;
+  }
+
+  /* === FOOTER BAR === */
+  .footer-bar {
+    grid-column: 2 / 3;
+    display: flex;
+    align-items: center;
+    padding: 8px 20px;
+    background: var(--parchment-light);
+    border-top: 1px solid var(--parchment-shadow);
+    font-family: var(--f-ui);
+    font-size: 12px;
+    color: var(--ink-faded);
+  }
+  .footer-bar .spacer { flex: 1; }
+  .footer-btn {
+    background: none;
+    border: 1px solid var(--parchment-shadow);
+    color: var(--ink-faded);
+    font-family: var(--f-ui);
+    font-size: 11px;
+    padding: 4px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 8px;
+    transition: all 0.2s;
+  }
+  .footer-btn:hover { border-color: var(--ink-ghost); color: var(--ink); }
+  .footer-btn.danger {
+    border-color: var(--crimson-border);
+    color: var(--crimson);
+  }
+  .footer-btn.danger:hover {
+    background: var(--crimson-dim);
+  }
+</style>
+</head>
+<body>
+<div class="quest-mirror">
+
+  <!-- NAV RAIL -->
+  <nav class="nav-rail">
+    <button title="Close">&#x2715;</button>
+    <button title="Bookmarks" class="active">&#x2605;</button>
+    <button title="Character">&#x263A;</button>
+    <button title="Quests">&#x1F525;</button>
+    <div class="spacer"></div>
+    <button title="Settings">&#x2699;</button>
+  </nav>
+
+  <!-- NARRATIVE SPINE -->
+  <main class="narrative-spine">
+    <div class="narrative-inner">
+
+      <!-- Location Header -->
+      <div class="location-header">
+        <div class="location-name">The Rusty Flagon</div>
+        <div class="location-meta">
+          Evening, 14th of Deepwinter<br>
+          Solo XLII &middot; Turn VII
+        </div>
+      </div>
+
+      <!-- Turn VI -->
+      <div class="turn-marker">Turn VI</div>
+
+      <!-- Player action -->
+      <div class="player-action">
+        I approach the hooded figure in the corner booth and slide into the seat across from them. "You sent the note. I'm here."
+      </div>
+
+      <!-- Narrative with drop cap -->
+      <div class="narrative-prose drop-cap">
+        <p>The figure didn't move for a long moment. The candle between you guttered, throwing shadows that made their face impossible to read. Then a hand emerged from the folds of the cloak &mdash; long fingers, <em>ink-stained and trembling</em> &mdash; and pushed a folded parchment across the table.</p>
+
+        <p>"You're either brave or foolish, coming here alone." The voice was rougher than you expected. Female. Old. "The Magistrate has three days before the Consequence arrives. After that, no amount of gold will &mdash; "</p>
+
+        <p>She stopped. Her eyes flicked to the door. Someone had just walked in.</p>
+      </div>
+
+      <!-- Turn VII -->
+      <div class="turn-marker">Turn VII</div>
+
+      <!-- Player action -->
+      <div class="player-action">
+        I palm my dagger under the table and glance at the newcomer without turning my head. Perception check on who just walked in.
+      </div>
+
+      <!-- Narrative continues -->
+      <div class="narrative-prose">
+        <p>You feel the worn leather grip settle into your hand like an old friend &mdash; <span class="dice-badge">&#x1F3B2; 17</span> &mdash; and your eyes do what years of training taught them: sweep without moving.</p>
+
+        <p>The newcomer is tall. <em>Armored, but not guard armor &mdash; mercenary plate, scarred and practical.</em> A longsword rides their hip with the ease of constant use. They scan the room the same way you just did &mdash; professional, methodical<span class="quill-cursor"></span></p>
+      </div>
+
+      <!-- Input area -->
+      <div class="input-area">
+        <div class="input-row">
+          <input class="input-field" placeholder="What does Kallisar do next?" />
+          <button class="send-btn">&#x25B6;</button>
+        </div>
+        <div class="hint-chips">
+          <button class="hint-chip">&#x23EA; Undo last</button>
+          <span class="hint-sep">&middot;</span>
+          <button class="hint-chip">&#x1F50D; Survey the room</button>
+          <span class="hint-sep">&middot;</span>
+          <button class="hint-chip">&#x1F3B2; Cast the bones</button>
+        </div>
+
+        <!-- Dice roller -->
+        <div class="dice-roller">
+          <span class="dice-prompt">The fates demand a roll:</span>
+          <span class="dice-formula">1d20 + 5</span>
+          <button class="dice-cast-btn">Cast the Bones</button>
+          <span class="dice-auto">auto in 18s</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- CHARACTER PANEL -->
+  <aside class="character-panel">
+    <div class="char-header">
+      <div class="char-header-label">Character</div>
+      <div class="char-header-sub">auto-updated</div>
+    </div>
+    <hr class="char-separator">
+
+    <div class="char-name">Kallisar</div>
+    <div class="char-title">Rogue of the Seventh Circle</div>
+
+    <!-- Stats -->
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-value">18</div>
+        <div class="stat-label">Armour</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">24</div>
+        <div class="stat-label">Vitality</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">+5</div>
+        <div class="stat-label">Initiative</div>
+      </div>
+    </div>
+
+    <!-- HP -->
+    <div class="hp-row">
+      <span class="hp-label">Hit Points</span>
+      <span class="hp-value">24 of 45</span>
+    </div>
+    <div class="hp-bar">
+      <div class="hp-fill" style="width: 53%"></div>
+    </div>
+
+    <!-- Conditions -->
+    <div class="section-header">Conditions</div>
+    <div class="conditions">
+      <span class="condition-tag condition-neutral">Darkvision</span>
+      <span class="condition-tag condition-negative">Poisoned (3 turns)</span>
+    </div>
+
+    <!-- Arcane Reserves -->
+    <div class="section-header">Arcane Reserves</div>
+    <div class="arcane-slots">
+      <div class="arcane-slot filled"></div>
+      <div class="arcane-slot filled"></div>
+      <div class="arcane-slot"></div>
+      <div class="arcane-slot"></div>
+    </div>
+
+    <!-- Possessions -->
+    <div class="section-header">Possessions</div>
+    <div class="possession-item">
+      <span class="possession-name">Dagger of Whispers</span>
+      <span class="possession-prop">+1, finesse</span>
+    </div>
+    <div class="possession-item">
+      <span class="possession-name">Thieves' Tools</span>
+      <span class="possession-prop">proficient</span>
+    </div>
+    <div class="possession-item">
+      <span class="possession-name">Magistrate's Seal</span>
+      <span class="possession-prop">quest item</span>
+    </div>
+    <div class="possession-item">
+      <span class="possession-name">Gold</span>
+      <span class="possession-prop">127 gp</span>
+    </div>
+
+    <!-- Present in Scene -->
+    <div class="section-header">Present in Scene</div>
+    <div class="npc-item">
+      <span class="npc-name">Hooded Woman</span> &mdash; <span class="npc-desc">weary, ink-stained hands</span>
+    </div>
+    <div class="npc-item">
+      <span class="npc-name npc-hostile">Armored Newcomer</span> &mdash; <span class="npc-desc">mercenary, scanning room</span>
+    </div>
+    <div class="npc-item npc-background">
+      Barkeep, Bard (background)
+    </div>
+  </aside>
+
+  <!-- FOOTER -->
+  <div class="footer-bar">
+    <span>Turn 7</span>
+    <div class="spacer"></div>
+    <button class="footer-btn">Undo</button>
+    <button class="footer-btn danger">End Session</button>
+  </div>
+
+</div>
+</body>
+</html>

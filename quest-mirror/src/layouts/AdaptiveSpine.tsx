@@ -13,43 +13,50 @@ export function AdaptiveSpine({
 }: AdaptiveSpineProps) {
   return (
     <div
-      className="flex h-screen w-screen overflow-hidden"
-      style={{ background: "var(--qm-bg)" }}
+      className="h-screen w-screen overflow-hidden"
+      style={{
+        display: "grid",
+        gridTemplateColumns: isRailOpen
+          ? "48px 1fr 320px"
+          : "48px 1fr",
+        gridTemplateRows: "1fr",
+        background: "var(--qm-bg)",
+      }}
     >
-      {/* Left sidebar — icon buttons */}
+      {/* Nav rail — dark sidebar */}
       <nav
-        className="flex flex-col items-center gap-4 py-6 px-3"
+        className="flex flex-col items-center gap-4 py-5 px-2"
         style={{
           background: "var(--qm-sidebar-bg)",
           borderRight: "1px solid var(--qm-sidebar-border)",
         }}
       >
         <SidebarIcon label="Close" symbol="✕" />
-        <SidebarIcon label="Bookmarks" symbol="★" />
+        <SidebarIcon label="Bookmarks" symbol="★" active />
         <SidebarIcon label="Character" symbol="☻" />
         <SidebarIcon label="Quests" symbol="🔥" />
         <div className="flex-1" />
         <SidebarIcon label="Settings" symbol="⚙" />
       </nav>
 
-      {/* Narrative spine — center */}
+      {/* Narrative spine — center, takes remaining space */}
       <main
-        className="flex-1 overflow-hidden transition-all duration-500"
+        className="overflow-hidden"
         style={{
-          maxWidth: isRailOpen ? "var(--qm-spine-width)" : "100%",
+          background: "var(--qm-bg-light)",
+          borderRight: isRailOpen ? "1px solid var(--qm-bg-shadow)" : undefined,
         }}
       >
         {narrative}
       </main>
 
-      {/* Context rail — right side */}
+      {/* Character panel — right side, fixed width */}
       {isRailOpen && contextRail && (
         <aside
           className="h-screen overflow-y-auto"
           style={{
-            width: "var(--qm-rail-width)",
-            background: "var(--qm-surface)",
-            borderLeft: "1px solid var(--qm-border-subtle)",
+            background: "var(--qm-bg)",
+            borderLeft: "1px solid var(--qm-bg-shadow)",
           }}
         >
           {contextRail}
@@ -59,12 +66,14 @@ export function AdaptiveSpine({
   );
 }
 
-function SidebarIcon({ label, symbol }: { label: string; symbol: string }) {
+function SidebarIcon({ label, symbol, active }: { label: string; symbol: string; active?: boolean }) {
   return (
     <button
       title={label}
-      className="w-8 h-8 flex items-center justify-center rounded text-sm transition-colors hover:opacity-70"
-      style={{ color: "var(--qm-sidebar-text)" }}
+      className="w-8 h-8 flex items-center justify-center rounded text-sm transition-colors"
+      style={{
+        color: active ? "var(--qm-sidebar-active)" : "var(--qm-sidebar-text)",
+      }}
     >
       {symbol}
     </button>
