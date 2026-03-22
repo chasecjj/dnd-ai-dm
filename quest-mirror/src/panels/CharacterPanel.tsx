@@ -330,9 +330,9 @@ export default function CharacterPanel({
           marginBottom: "0.75rem",
         }}
       >
-        <StatBox label="ARMOUR" value={character.ac ?? "\u2014"} />
+        <StatBox label="ARMOUR" value={character.ac ?? "—"} />
         <StatBox label="VITALITY" value={hpCurrent} />
-        <StatBox label="INITIATIVE" value="\u2014" />
+        <StatBox label="INITIATIVE" value="—" />
       </div>
 
       {/* ── HP Bar ───────────────────────────────────────────── */}
