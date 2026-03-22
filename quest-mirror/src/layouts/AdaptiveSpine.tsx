@@ -20,8 +20,8 @@ export function AdaptiveSpine({
       <nav
         className="flex flex-col items-center gap-4 py-6 px-3"
         style={{
-          background: "var(--qm-surface)",
-          borderRight: "1px solid var(--qm-border-subtle)",
+          background: "var(--qm-sidebar-bg)",
+          borderRight: "1px solid var(--qm-sidebar-border)",
         }}
       >
         <SidebarIcon label="Close" symbol="✕" />
@@ -64,7 +64,7 @@ function SidebarIcon({ label, symbol }: { label: string; symbol: string }) {
     <button
       title={label}
       className="w-8 h-8 flex items-center justify-center rounded text-sm transition-colors hover:opacity-70"
-      style={{ color: "var(--qm-text-dim)" }}
+      style={{ color: "var(--qm-sidebar-text)" }}
     >
       {symbol}
     </button>

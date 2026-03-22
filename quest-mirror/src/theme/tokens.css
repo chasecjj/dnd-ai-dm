@@ -3,12 +3,17 @@
    Environment presets can override at runtime via JS. */
 
 [data-brand="quest-mirror"] {
-  /* Base palette — Warm Parchment */
-  --qm-bg: #f5f0e8;
-  --qm-bg-deep: #ede5d8;
-  --qm-surface: #ede5d8;
-  --qm-surface-glass: rgba(237, 229, 216, 0.85);
-  --qm-surface-input: rgba(237, 229, 216, 0.6);
+  /* Base palette — Aged Parchment (warmer, darker than bright paper) */
+  --qm-bg: #e8dcc8;
+  --qm-bg-deep: #ddd0b8;
+  --qm-surface: #ddd0b8;
+  --qm-surface-glass: rgba(221, 208, 184, 0.85);
+  --qm-surface-input: rgba(221, 208, 184, 0.6);
+
+  /* Dark sidebar / nav rail */
+  --qm-sidebar-bg: #1a1814;
+  --qm-sidebar-text: #a09888;
+  --qm-sidebar-border: rgba(212, 168, 75, 0.08);
   --qm-text: #2a2018;
   --qm-text-dim: #8a7e6e;
   --qm-text-warm: #3d3022;
