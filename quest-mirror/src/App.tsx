@@ -316,6 +316,7 @@ export default function App() {
                 characterName={characterName}
                 processing={isProcessing}
                 onPlayerInput={handlePlayerInput}
+                turnCount={turnCount}
               />
               {/* Dice roller overlay */}
               {rollRequest && (
