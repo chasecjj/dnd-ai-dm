@@ -17,10 +17,18 @@ function parseFormula(formula: string) {
   };
 }
 
+/** Format a formula string with spaces around the operator for display. */
+function formatFormula(formula: string): string {
+  return formula.replace(/([+-])/, " $1 ");
+}
+
 /**
- * Click-to-roll dice component with auto-timeout and nat 20/1 color treatment.
+ * Parchment-manuscript dice roller bar.
  *
- * Appears as a glass panel when a RollRequestMsg is active; hidden otherwise.
+ * Appears as a horizontal strip above the input area when a RollRequestMsg
+ * is active; hidden otherwise. Thematic language: "The fates demand a roll",
+ * "Cast the Bones".
+ *
  * Uses a ref-based stale-closure fix (H9) so the auto-roll timeout always
  * reads the latest rollRequest.
  */
@@ -102,113 +110,166 @@ export function DiceRoller({ rollRequest, onRollResult }: Props) {
   const isNat20 = result !== null && dieSize === 20 && result.natural === 20;
   const isNat1 = result !== null && dieSize === 20 && result.natural === 1;
 
-  const resultBorder = isNat20
-    ? "2px solid rgba(255, 200, 50, 0.8)"
-    : isNat1
-      ? "2px solid rgba(220, 50, 50, 0.8)"
-      : "2px solid var(--qm-border)";
-
-  const resultBg = isNat20
-    ? "rgba(255, 200, 50, 0.15)"
-    : isNat1
-      ? "rgba(220, 50, 50, 0.15)"
-      : "transparent";
-
   return (
     <div
-      className="flex flex-col items-center gap-3 rounded-lg border p-5"
       style={{
-        background: "var(--qm-surface-glass)",
-        backdropFilter: "blur(var(--qm-blur))",
-        WebkitBackdropFilter: "blur(var(--qm-blur))",
-        borderColor: "var(--qm-border)",
+        display: "flex",
+        alignItems: "center",
+        gap: "0.75rem",
+        padding: "0.625rem 1rem",
+        background: "var(--qm-surface)",
+        border: "1px solid var(--qm-border-subtle)",
+        borderRadius: "0.5rem",
         fontFamily: "var(--qm-font-ui)",
       }}
     >
-      {/* DM prompt */}
-      <p
-        className="text-center text-sm leading-relaxed italic"
+      {/* Left: narrative prompt */}
+      <span
         style={{
           fontFamily: "var(--qm-font-narrative)",
+          fontStyle: "italic",
+          fontSize: "0.875rem",
           color: "var(--qm-text-warm)",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
         }}
       >
-        {rollRequest.prompt}
-      </p>
-
-      {/* Roll info: type + formula */}
-      <span
-        className="text-xs font-semibold tracking-widest uppercase"
-        style={{ color: "var(--qm-text-dim)" }}
-      >
-        {rollRequest.roll_type.toUpperCase()} &mdash; {rollRequest.formula}
+        The fates demand a roll:
       </span>
 
-      {/* Die button or result display */}
-      {result === null ? (
-        <button
-          onClick={performRoll}
-          disabled={rolling}
-          className="flex items-center justify-center transition-transform duration-150 hover:scale-110 disabled:cursor-not-allowed"
+      {/* Center: formula pill */}
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "0.2rem 0.75rem",
+          background: "var(--qm-dice-bg)",
+          color: "var(--qm-dice-text)",
+          borderRadius: "9999px",
+          fontSize: "0.8125rem",
+          fontWeight: 600,
+          letterSpacing: "0.03em",
+          flexShrink: 0,
+        }}
+      >
+        {formatFormula(rollRequest.formula)}
+      </span>
+
+      {/* Spacer */}
+      <span style={{ flex: 1 }} />
+
+      {/* Result display or action button */}
+      {result !== null ? (
+        <span
           style={{
-            width: 72,
-            height: 72,
-            border: "2px solid var(--qm-accent)",
-            borderRadius: 8,
-            background: "var(--qm-surface)",
-            color: "var(--qm-accent)",
-            fontFamily: "var(--qm-font-heading)",
-            fontSize: "1.5rem",
-            fontWeight: 700,
-            animation: rolling ? "qm-dice-spin 0.4s linear infinite" : "none",
-          }}
-        >
-          d{dieSize}
-        </button>
-      ) : (
-        <div
-          className="flex items-center justify-center rounded-lg"
-          style={{
-            width: 80,
-            height: 80,
-            border: resultBorder,
-            background: resultBg,
-            fontFamily: "var(--qm-font-heading)",
-            fontSize: "2.25rem",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            fontFamily: "var(--qm-font-heading, var(--qm-font-ui))",
+            fontSize: "1.25rem",
             fontWeight: 700,
             color: isNat20
-              ? "#ffd666"
+              ? "#b8860b"
               : isNat1
-                ? "#ff6b6b"
-                : "var(--qm-text)",
+                ? "#8b1a1a"
+                : "var(--qm-text-warm)",
+            textShadow: isNat20
+              ? "0 0 8px rgba(218,165,32,0.4)"
+              : isNat1
+                ? "0 0 8px rgba(139,26,26,0.3)"
+                : "none",
           }}
         >
           {result.total}
-        </div>
-      )}
-
-      {/* Auto-roll countdown */}
-      {result === null && countdown !== null && countdown > 0 && !rolling && (
-        <span className="text-xs" style={{ color: "var(--qm-text-dim)" }}>
-          Auto-roll in {countdown}s
+          {/* Natural roll breakdown when modifier is present */}
+          {result.total !== result.natural && (
+            <span
+              style={{
+                fontSize: "0.75rem",
+                fontWeight: 400,
+                color: "var(--qm-text-dim)",
+                textShadow: "none",
+              }}
+            >
+              (nat {result.natural})
+            </span>
+          )}
         </span>
-      )}
+      ) : (
+        <>
+          {/* Cast the Bones button */}
+          <button
+            onClick={performRoll}
+            disabled={rolling}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.375rem",
+              padding: "0.375rem 1rem",
+              background: "var(--qm-accent)",
+              color: "#f5f0e8",
+              border: "none",
+              borderRadius: "0.375rem",
+              fontSize: "0.8125rem",
+              fontWeight: 600,
+              fontFamily: "var(--qm-font-ui)",
+              cursor: rolling ? "not-allowed" : "pointer",
+              opacity: rolling ? 0.7 : 1,
+              transition: "opacity 150ms, background 150ms",
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              if (!rolling) {
+                (e.currentTarget as HTMLButtonElement).style.background =
+                  "var(--qm-accent-hover)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background =
+                "var(--qm-accent)";
+            }}
+          >
+            {rolling ? (
+              <>
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: "0.875rem",
+                    height: "0.875rem",
+                    border: "2px solid rgba(245,240,232,0.3)",
+                    borderTopColor: "#f5f0e8",
+                    borderRadius: "50%",
+                    animation: "qm-bones-spin 0.6s linear infinite",
+                  }}
+                />
+                Casting...
+              </>
+            ) : (
+              "Cast the Bones"
+            )}
+          </button>
 
-      {/* Natural roll breakdown when modifier is present */}
-      {result !== null && result.total !== result.natural && (
-        <span className="text-xs" style={{ color: "var(--qm-text-dim)" }}>
-          Natural {result.natural}
-        </span>
+          {/* Far right: auto countdown */}
+          {countdown !== null && countdown > 0 && !rolling && (
+            <span
+              style={{
+                fontSize: "0.75rem",
+                color: "var(--qm-text-dim)",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              auto in {countdown}s
+            </span>
+          )}
+        </>
       )}
 
       {/* CSS keyframes injected once */}
       <style>{`
-        @keyframes qm-dice-spin {
-          0%   { transform: rotate(0deg) scale(1); }
-          25%  { transform: rotate(90deg) scale(1.05); }
-          50%  { transform: rotate(180deg) scale(1); }
-          75%  { transform: rotate(270deg) scale(1.05); }
-          100% { transform: rotate(360deg) scale(1); }
+        @keyframes qm-bones-spin {
+          0%   { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
     </div>
