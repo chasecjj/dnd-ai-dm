@@ -5,8 +5,6 @@ React SPA and providing REST + WebSocket endpoints for the solo-mode
 web companion.
 """
 
-from __future__ import annotations
-
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -77,6 +75,7 @@ def create_app() -> FastAPI:
     if extra:
         origins.extend(o.strip() for o in extra.split(",") if o.strip())
 
+    # CORS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -111,10 +110,12 @@ def create_app() -> FastAPI:
         logger.warning("web.ws_handler not available yet — WebSocket skipped")
 
     # -- SPA static files ---------------------------------------------------
+    # NOTE: Mount at /app instead of / to avoid intercepting WebSocket routes.
+    # Starlette 0.52+ StaticFiles with html=True at / can block WebSocket upgrades.
     spa_dir = os.path.join(os.path.dirname(__file__), "..", "quest-mirror", "dist")
     if os.path.isdir(spa_dir):
-        app.mount("/", StaticFiles(directory=spa_dir, html=True), name="spa")
-        logger.info("Serving SPA from %s", spa_dir)
+        app.mount("/app", StaticFiles(directory=spa_dir, html=True), name="spa")
+        logger.info("Serving SPA from %s (at /app)", spa_dir)
     else:
         logger.info("SPA directory not found (%s) — static serving disabled", spa_dir)
 

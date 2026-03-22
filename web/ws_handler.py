@@ -12,14 +12,13 @@ Key differences from the Discord handler:
 - Heartbeat monitoring replaces Discord's built-in keep-alive
 """
 
-from __future__ import annotations
-
 import asyncio
 import logging
 import time
 from collections import deque
 from typing import Any, Dict, Optional
 
+from fastapi import WebSocket
 from starlette.websockets import WebSocketState
 
 from web.auth import validate_token
@@ -134,10 +133,16 @@ def register_ws(app: Any) -> None:
     """Register the WebSocket endpoint on the FastAPI app."""
 
     @app.websocket("/ws/solo/{session_id}")
-    async def ws_solo(websocket: Any, session_id: str) -> None:
+    async def ws_solo(websocket: WebSocket, session_id: str) -> None:
+        # MUST accept before close — Starlette sends HTTP 403 if we
+        # close without accepting first.
+        await websocket.accept()
+
         # -- Auth -----------------------------------------------------------
         token = websocket.query_params.get("token", "")
+        logger.info("WS auth: session=%s token=%s...", session_id, token[:16] if token else "EMPTY")
         if not validate_token(token):
+            logger.warning("WS auth failed: invalid token for session %s", session_id)
             await websocket.close(code=4001, reason="Invalid token")
             return
 
@@ -146,11 +151,9 @@ def register_ws(app: Any) -> None:
 
         session = solo_manager.get_by_session_id(session_id)
         if session is None:
+            logger.warning("WS session not found: %s", session_id)
             await websocket.close(code=4004, reason="Session not found")
             return
-
-        # -- Accept + setup -------------------------------------------------
-        await websocket.accept()
         ws_session = WebSocketSession(websocket, session_id, token)
         _active_connections[session_id] = ws_session
 
