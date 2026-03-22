@@ -22,8 +22,9 @@ export function NarrativeSpine({
   characterName,
   processing,
   onPlayerInput,
-  turnCount,
+  turnCount: _turnCount,
 }: NarrativeSpineProps) {
+  // _turnCount available for sessionInfo display — turn grouping derives from groups
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom on new content
