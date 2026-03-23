@@ -18,5 +18,15 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/three/")) return "three";
+          if (id.includes("@react-three/fiber") || id.includes("@react-three/drei")) return "r3f";
+          if (id.includes("@react-three/rapier")) return "r3f-physics";
+          if (id.includes("@react-three/postprocessing")) return "r3f-postprocessing";
+        },
+      },
+    },
   },
 });
