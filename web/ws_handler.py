@@ -103,7 +103,7 @@ class WebSocketSession:
         except Exception:
             return False
 
-    async def stream_narrative(self, narrative: str, mood: str = "neutral") -> None:
+    async def stream_narrative(self, narrative: str, mood: str = "neutral", breath_timing: str = "neutral") -> None:
         """Chunk *narrative* via ``chunk_narrative()`` and send each piece.
 
         Buffers the last ``BREATH_GROUP_BUFFER_SIZE`` chunks for potential
@@ -115,6 +115,7 @@ class WebSocketSession:
             msg = NarrativeStream(
                 text=chunk["text"],
                 mood=chunk["mood"],
+                breath_timing=breath_timing,
                 breath_group=chunk["breath_group"],
                 is_final=chunk["is_final"],
             )
@@ -516,7 +517,9 @@ async def _handle_player_input(
             narrative = "*The moment passes quietly...*"
 
         mood = result.get("mood", "neutral")
-        await ws_session.stream_narrative(narrative, mood=mood)
+        mood_assessment = result.get("mood_assessment", {})
+        breath_timing = mood_assessment.get("breath_timing", "neutral") if mood_assessment else "neutral"
+        await ws_session.stream_narrative(narrative, mood=mood, breath_timing=breath_timing)
 
         # 8. Store narrative in snapshot for undo reference
         if session.last_snapshot:

@@ -322,6 +322,7 @@ class TestSerialization:
             "type": "narrative_stream",
             "text": "Hello",
             "mood": "calm",
+            "breath_timing": "neutral",
             "breath_group": 0,
             "is_final": True,
         }

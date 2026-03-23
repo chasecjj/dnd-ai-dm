@@ -97,6 +97,7 @@ class NarrativeStream(BaseModel):
     type: Literal["narrative_stream"] = "narrative_stream"
     text: str
     mood: str = "neutral"
+    breath_timing: str = "neutral"
     breath_group: int = 0
     is_final: bool = False
 
