@@ -2,10 +2,11 @@
 Solo Cog — Between-session 1-on-1 adventure commands.
 
 Commands:
-  /solo       — Start or resume a solo adventure in a private thread
-  /solo_end   — End the current solo adventure
-  /solo_pause — Pause your adventure (resume later with /solo)
-  /solo_undo  — Undo the last turn (multi-turn rewind)
+  /solo           — Start or resume a solo adventure in a private thread
+  /solo_end       — End the current solo adventure
+  /solo_pause     — Pause your adventure (resume later with /solo)
+  /solo_undo      — Undo the last turn (multi-turn rewind)
+  /solo_force_end — (Admin) Force-end a session by character name
 
 Features:
   - Session recap on startup (Phase 1.1)
@@ -444,6 +445,61 @@ class SoloCog(commands.Cog, name="Solo"):
             pass
 
         await interaction.followup.send("Solo adventure archived.", ephemeral=True)
+
+    @app_commands.command(
+        name="solo_force_end",
+        description="(Admin) Force-end a solo session by character name",
+    )
+    @app_commands.describe(character="Character name to force-end (e.g. 'Kallisar Voidcaller')")
+    async def solo_force_end(self, interaction: discord.Interaction, character: str):
+        """Admin command to force-end a stale or inaccessible solo session."""
+        is_admin = (
+            interaction.user.guild_permissions.administrator
+            if interaction.guild
+            else False
+        )
+        if not is_admin:
+            await interaction.response.send_message(
+                "This command is admin-only.", ephemeral=True,
+            )
+            return
+
+        session = self.solo_manager.get_by_character(character)
+        if not session:
+            await interaction.response.send_message(
+                f"No active solo session found for **{character}**.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        thread_id = session.thread_id
+        char_name = session.character_name
+        turn_count = session.turn_count
+
+        await self.solo_manager.end_session(thread_id)
+
+        # Try to archive the thread if it still exists
+        try:
+            thread = interaction.guild.get_channel_or_thread(thread_id)
+            if thread:
+                await thread.edit(archived=True)
+        except Exception:
+            pass
+
+        try:
+            await self.bot.send_to_moderator_log(
+                f"[Solo] Admin force-ended {char_name}'s solo session "
+                f"({turn_count} turns) via /solo_force_end"
+            )
+        except Exception:
+            pass
+
+        await interaction.followup.send(
+            f"Force-ended **{char_name}**'s solo session ({turn_count} turns).",
+            ephemeral=True,
+        )
 
     @app_commands.command(
         name="solo_undo", description="Undo your last solo adventure turn"
