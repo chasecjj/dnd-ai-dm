@@ -39,6 +39,9 @@ class GameState(TypedDict, total=False):
     board_context: str
     rules_ruling: Optional[Dict[str, Any]]
     narrative: str
+    # Mood system (Phase 1b)
+    mood: Optional[str]
+    mood_assessment: Optional[Dict[str, Any]]
     scene_changes: Optional[Dict[str, Any]]
     chronicler_done: bool
     session: int
