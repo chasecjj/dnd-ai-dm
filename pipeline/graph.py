@@ -24,6 +24,7 @@ from pipeline.nodes.rules_node import rules_node
 from pipeline.nodes.storyteller_node import storyteller_node
 from pipeline.nodes.scene_sync_node import scene_sync_node
 from pipeline.nodes.chronicler_node import chronicler_node
+from pipeline.nodes.mood_node import mood_node
 
 logger = logging.getLogger("pipeline.graph")
 
@@ -51,6 +52,12 @@ def _route_after_router(state: dict) -> str:
         return "end"
     if state.get("direct_response"):
         return "end"
+    # All game-action paths go through mood assessment first
+    return "mood"
+
+
+def _route_after_mood(state: dict) -> str:
+    """Conditional edge after the mood node — dispatches using original routing flags."""
     if state.get("needs_board_monitor"):
         return "board"
     if state.get("needs_rules_lawyer"):
@@ -98,6 +105,7 @@ def build_game_pipeline(agents: Dict[str, Any]):
 
     # Bind agents into node functions via partial application, wrapped with timing
     _router = _timed_node("router", partial(router_node, message_router=agents["message_router"]))
+    _mood = _timed_node("mood", partial(mood_node, mood_agent=agents["mood_agent"]))
     _board = _timed_node("board", partial(board_monitor_node, board_monitor=agents["board_monitor"],
                      vault_manager=agents.get("vault_manager"),
                      state_manager=agents.get("state_manager")))
@@ -122,6 +130,7 @@ def build_game_pipeline(agents: Dict[str, Any]):
     graph = StateGraph(GameState)
 
     graph.add_node("router", _router)
+    graph.add_node("mood", _mood)
     graph.add_node("board", _board)
     graph.add_node("rules", _rules)
     graph.add_node("storyteller", _story)
@@ -135,6 +144,16 @@ def build_game_pipeline(agents: Dict[str, Any]):
     graph.add_conditional_edges(
         "router",
         _route_after_router,
+        {
+            "mood": "mood",
+            "end": END,
+        },
+    )
+
+    # Conditional edges from mood
+    graph.add_conditional_edges(
+        "mood",
+        _route_after_mood,
         {
             "board": "board",
             "rules": "rules",

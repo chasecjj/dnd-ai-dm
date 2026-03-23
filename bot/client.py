@@ -52,6 +52,7 @@ from agents.foundry_architect import FoundryArchitectAgent
 from agents.message_router import MessageRouterAgent, MessageType
 from agents.chronicler import ChroniclerAgent
 from agents.player_advisor import PlayerAdvisorAgent
+from agents.mood_agent import MoodAgent
 
 
 # LangGraph pipeline
@@ -166,6 +167,7 @@ storyteller = StorytellerAgent(gemini_client, context_assembler, model_id=MODEL_
 foundry_architect = FoundryArchitectAgent(gemini_client, foundry=foundry_client, model_id=MODEL_ID)
 message_router = MessageRouterAgent(gemini_client, context_assembler, model_id=MODEL_ID)
 chronicler = ChroniclerAgent(gemini_client, vault, context_assembler, model_id=MODEL_ID, storyteller=storyteller)
+mood_agent = MoodAgent(gemini_client, context_assembler, model_id=MODEL_ID)
 player_advisor = PlayerAdvisorAgent(gemini_client, context_assembler, vault, model_id=MODEL_ID)
 
 # ---------------------------------------------------------------------------
@@ -197,6 +199,7 @@ game_pipeline = build_game_pipeline({
     "rules_lawyer": rules_lawyer,
     "storyteller": storyteller,
     "chronicler": chronicler,
+    "mood_agent": mood_agent,
     "context_assembler": context_assembler,
     "gemini_client": gemini_client,
     "model_id": MODEL_ID,
@@ -1473,6 +1476,10 @@ async def on_message(message):
     # Let commands go through the normal handler
     if message.content.startswith("!"):
         await bot.process_commands(message)
+        return
+
+    # Ignore messages that look like slash commands typed as text
+    if message.content.startswith("/"):
         return
 
     user_input = message.content
