@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Suspense, lazy } from "react";
 import { useSession } from "./hooks/useSession";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { useBreathGroups } from "./hooks/useBreathGroups";
@@ -7,7 +7,8 @@ import { NarrativeSpine } from "./panels/NarrativeSpine";
 import CharacterPanel from "./panels/CharacterPanel";
 import { SessionList } from "./components/SessionList";
 import { SessionControls } from "./components/SessionControls";
-import { DiceRoller } from "./components/DiceRoller";
+
+const DiceScene = lazy(() => import("./scenes/DiceScene"));
 import { applyPreset, PRESETS } from "./theme/environments";
 import type {
   ServerMsg,
@@ -318,14 +319,34 @@ export default function App() {
                 onPlayerInput={handlePlayerInput}
                 turnCount={turnCount}
               />
-              {/* Dice roller overlay */}
+              {/* 3D Dice scene (lazy-loaded) */}
               {rollRequest && (
-                <div className="absolute inset-x-0 bottom-24 flex justify-center px-4">
-                  <div className="w-full max-w-md">
-                    <DiceRoller
-                      rollRequest={rollRequest}
-                      onRollResult={handleRollResult}
-                    />
+                <div className="absolute inset-x-0 bottom-4 flex justify-center px-4" style={{ zIndex: 50 }}>
+                  <div className="w-full max-w-lg">
+                    <Suspense fallback={
+                      <div style={{
+                        height: "280px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "var(--qm-surface)",
+                        borderRadius: "0.5rem",
+                        fontFamily: "var(--qm-font-narrative)",
+                        fontStyle: "italic",
+                        color: "var(--qm-text-dim)",
+                      }}>
+                        Summoning the bones...
+                      </div>
+                    }>
+                      <DiceScene
+                        formula={rollRequest.formula}
+                        rollType={rollRequest.roll_type}
+                        prompt={rollRequest.prompt}
+                        requestId={rollRequest.request_id}
+                        autoTimeoutS={rollRequest.auto_timeout_s}
+                        onResult={handleRollResult}
+                      />
+                    </Suspense>
                   </div>
                 </div>
               )}
