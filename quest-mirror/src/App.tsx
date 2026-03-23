@@ -9,6 +9,7 @@ import { SessionList } from "./components/SessionList";
 import { SessionControls } from "./components/SessionControls";
 
 const DiceScene = lazy(() => import("./scenes/DiceScene"));
+import { DeathSaveOverlay } from "./scenes/DeathSaveOverlay";
 import { applyPreset, PRESETS } from "./theme/environments";
 import type {
   ServerMsg,
@@ -44,6 +45,8 @@ export default function App() {
   const [location, setLocation] = useState("Unknown");
   const [isProcessing, setIsProcessing] = useState(false);
   const [rollRequest, setRollRequest] = useState<RollRequestMsg | null>(null);
+  const [isDeathSave, setIsDeathSave] = useState(false);
+  const [deathSaveResult, setDeathSaveResult] = useState<number | null>(null);
   const [turnCount, setTurnCount] = useState(0);
   const [passphrase, setPassphrase] = useState("");
 
@@ -103,9 +106,13 @@ export default function App() {
           }
           break;
 
-        case "roll_request":
+        case "roll_request": {
           setRollRequest(msg);
+          const isDeathRoll = msg.roll_type.toLowerCase().includes("death save");
+          setIsDeathSave(isDeathRoll);
+          if (isDeathRoll) setDeathSaveResult(null);
           break;
+        }
 
         case "session_event":
           if (msg.event_type === "start") {
@@ -183,8 +190,11 @@ export default function App() {
         natural,
       });
       setRollRequest(null);
+      if (isDeathSave) {
+        setDeathSaveResult(natural);
+      }
     },
-    [send],
+    [send, isDeathSave],
   );
 
   // ── Auth screen ─────────────────────────────────────────────────
@@ -367,6 +377,19 @@ export default function App() {
         turnCount={turnCount}
         onUndo={handleUndo}
         onEndSession={handleEndSession}
+      />
+
+      {/* Death save isolation overlay */}
+      <DeathSaveOverlay
+        active={isDeathSave}
+        onRoll={() => {
+          // The DiceScene handles the actual roll via rollRequest
+        }}
+        result={deathSaveResult}
+        onComplete={() => {
+          setIsDeathSave(false);
+          setDeathSaveResult(null);
+        }}
       />
     </div>
   );
