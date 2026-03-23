@@ -21,6 +21,9 @@ import {
   createFaceNumberMap,
 } from "../dice/d20Faces.ts"
 import { recordBattleScar } from "../dice/battleScars"
+import { createCeremony, tickCeremony, getCeremonyType } from "../dice/ceremonyMachine.ts"
+import type { CeremonyState } from "../dice/ceremonyMachine.ts"
+import { CeremonyOverlay } from "./CeremonyOverlay.tsx"
 
 // ── Formula parser (shared with DiceRoller) ─────────────────────────
 function parseFormula(formula: string) {
@@ -182,6 +185,8 @@ export default function DiceScene({
   const [phase, setPhase] = useState<DicePhase>("ready")
   const [displayResult, setDisplayResult] = useState<number | null>(null)
   const [countdown, setCountdown] = useState(autoTimeoutS)
+  const [ceremony, setCeremony] = useState<CeremonyState | null>(null)
+  const [ceremonyVisual, setCeremonyVisual] = useState<string | undefined>()
 
   // Stale-closure prevention refs (H9 pattern)
   const phaseRef = useRef<DicePhase>(phase)
@@ -276,25 +281,48 @@ export default function DiceScene({
         )
       }
 
-      // Determine hold duration
-      const isNat20 = dieSize === 20 && natural === 20
-      const isNat1 = dieSize === 20 && natural === 1
-      const holdMs = isNat20 || isNat1 ? 3000 : 800
+      const ceremonyType = getCeremonyType(natural, dieSize)
 
-      if (isNat20 || isNat1) {
+      if (ceremonyType === "nat20" || ceremonyType === "nat1") {
         setPhase("ceremony")
+        setCeremony(createCeremony(ceremonyType))
       } else {
         setPhase("result")
+        // Report result after a brief hold for normal rolls
+        setTimeout(() => {
+          setPhase("done")
+          onResultRef.current(requestId, total, natural)
+        }, 800)
       }
+    },
+    [predeterminedNatural, modifier, dieSize, requestId, characterName],
+  )
 
-      // Report result after hold
-      setTimeout(() => {
+  // ── Ceremony tick — advances state machine at ~60fps ────────────
+  useEffect(() => {
+    if (!ceremony || ceremony.isComplete) return
+
+    // Capture total for the closure (predeterminedNatural + modifier)
+    const total = predeterminedNatural + modifier
+    const natural = predeterminedNatural
+
+    const interval = setInterval(() => {
+      const { state: newState, visual } = tickCeremony(ceremony, performance.now())
+      setCeremony(newState)
+      if (visual !== undefined) {
+        setCeremonyVisual(visual)
+      }
+      if (newState.isComplete) {
+        clearInterval(interval)
+        setCeremony(null)
+        setCeremonyVisual(undefined)
         setPhase("done")
         onResultRef.current(requestId, total, natural)
-      }, holdMs)
-    },
-    [predeterminedNatural, modifier, dieSize, requestId],
-  )
+      }
+    }, 16)
+
+    return () => clearInterval(interval)
+  }, [ceremony, predeterminedNatural, modifier, requestId])
 
   // Derive display state
   const isNat20 =
@@ -335,6 +363,11 @@ export default function DiceScene({
           />
         </Physics>
       </Canvas>
+
+      {/* Ceremony overlay — full-viewport CSS effects for nat 20 / nat 1 */}
+      {ceremony && (
+        <CeremonyOverlay type={ceremony.type} visual={ceremonyVisual} />
+      )}
 
       {/* HUD Overlay — prompt, result, controls */}
       <div
