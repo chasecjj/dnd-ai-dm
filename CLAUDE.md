@@ -41,13 +41,14 @@ No formal linter or formatter is configured. Python 3.12+ (developed on 3.14), P
 ### Pipeline Graph Topology
 
 ```text
-router ──conditional──┬─→ board ──conditional──┬─→ rules ──→ storyteller ──→ scene_sync ──→ chronicler ──→ END
-                      ├─→ rules                ├─→ storyteller
-                      ├─→ storyteller           └─→ END
-                      └─→ END (casual_chat, direct_response, error)
+router ──conditional──┬─→ mood ──conditional──┬─→ board ──conditional──┬─→ rules ──→ storyteller ──→ scene_sync ──→ chronicler ──→ END
+                      └─→ END                 ├─→ rules                ├─→ storyteller
+                        (casual_chat,         ├─→ storyteller           └─→ END
+                         direct_response,     └─→ END
+                         error)
 ```
 
-The router sets flags (`needs_board_monitor`, `needs_rules_lawyer`, `needs_storyteller`) that conditional edges read. After rules, the path is always linear: rules → storyteller → scene_sync → chronicler → END. Agents are bound to nodes via `functools.partial()` in `pipeline/graph.py`.
+The router sets flags (`needs_board_monitor`, `needs_rules_lawyer`, `needs_storyteller`) and the mood node passes them through. After rules, the path is always linear: rules → storyteller → scene_sync → chronicler → END. Agents are bound to nodes via `functools.partial()` in `pipeline/graph.py`.
 
 ### Admin Console (AI Monitoring + Override)
 
@@ -187,7 +188,7 @@ Configured in `.env`: `DISCORD_BOT_TOKEN`, `GEMINI_API_KEY`, `FOUNDRY_API_KEY`, 
 
 ## Development Notes
 
-- **Test baseline:** 14 pre-existing failures in `test_blind_prep`/`test_cartographer`/`test_scene_classifier` (mock/fixture issues). 228 passing tests are the regression gate.
+- **Test baseline:** 311 passing tests are the regression gate. 7 pre-existing warnings (unawaited coroutines in Foundry mock tests).
 - `docs/` — GETTING_STARTED, DM_GUIDE (Admin), PLAYER_GUIDE, CAMPAIGN_SETUP, SESSION_WALKTHROUGH
 - `ENHANCEMENT_PLAN.md` — unified dev roadmap. Rate limiting is DONE — do not re-implement
 - System paradigm: **AI is the DM, human is the admin**. `pyrightconfig.json` targets Python 3.14.

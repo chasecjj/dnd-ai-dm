@@ -108,7 +108,7 @@ class MoodAgent:
             return MoodAssessment.model_validate_json(response.text)
         except Exception as e:
             logger.warning(f"Mood assessment failed, using neutral default: {e}")
-            return _NEUTRAL_DEFAULT
+            return _NEUTRAL_DEFAULT.model_copy()
 
     def _build_prompt(
         self,

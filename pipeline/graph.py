@@ -92,8 +92,8 @@ def build_game_pipeline(agents: Dict[str, Any]):
 
     Args:
         agents: Dict with keys matching agent names. Expected keys:
-            message_router, board_monitor, rules_lawyer, storyteller,
-            chronicler, context_assembler, gemini_client, model_id
+            message_router, mood_agent, board_monitor, rules_lawyer,
+            storyteller, chronicler, context_assembler, gemini_client, model_id
 
     Returns:
         A compiled LangGraph Pregel object (call .ainvoke(state)).
