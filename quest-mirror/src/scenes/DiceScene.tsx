@@ -20,6 +20,7 @@ import {
   swapForResult,
   createFaceNumberMap,
 } from "../dice/d20Faces.ts"
+import { recordBattleScar } from "../dice/battleScars"
 
 // ── Formula parser (shared with DiceRoller) ─────────────────────────
 function parseFormula(formula: string) {
@@ -176,6 +177,7 @@ export default function DiceScene({
   autoTimeoutS,
   onResult,
   characterClass,
+  characterName,
 }: DiceSceneProps) {
   const [phase, setPhase] = useState<DicePhase>("ready")
   const [displayResult, setDisplayResult] = useState<number | null>(null)
@@ -264,6 +266,15 @@ export default function DiceScene({
       const natural = predeterminedNatural
       const total = natural + modifier
       setDisplayResult(total)
+
+      // Record battle scar for nat 20 or nat 1
+      if (natural === 20 || natural === 1) {
+        recordBattleScar(
+          characterName ?? "Unknown",
+          natural,
+          topIdx,
+        )
+      }
 
       // Determine hold duration
       const isNat20 = dieSize === 20 && natural === 20
